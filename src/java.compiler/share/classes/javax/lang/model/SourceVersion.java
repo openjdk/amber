@@ -66,8 +66,7 @@ public enum SourceVersion {
      *  17: sealed classes, floating-point always strict (pattern
      *      matching for switch in preview)
      *  18: no changes (pattern matching for switch in second preview)
-     *  19: no changes (pattern matching for switch in third preview,
-     *      record patterns in preview)
+     *  19: TBD
      */
 
     /**
@@ -347,19 +346,9 @@ public enum SourceVersion {
      * The version recognized by the Java Platform, Standard Edition
      * 19.
      *
-     * No major changes from the prior release.
-     *
      * @since 19
      */
-    RELEASE_19,
-
-    /**
-     * The version recognized by the Java Platform, Standard Edition
-     * 20.
-     *
-     * @since 20
-     */
-    RELEASE_20;
+    RELEASE_19;
 
     // Note that when adding constants for newer releases, the
     // behavior of latest() and latestSupported() must be updated too.
@@ -368,7 +357,7 @@ public enum SourceVersion {
      * {@return the latest source version that can be modeled}
      */
     public static SourceVersion latest() {
-        return RELEASE_20;
+        return RELEASE_19;
     }
 
     private static final SourceVersion latestSupported = getLatestSupported();
@@ -383,7 +372,7 @@ public enum SourceVersion {
     private static SourceVersion getLatestSupported() {
         int intVersion = Runtime.version().feature();
         return (intVersion >= 11) ?
-            valueOf("RELEASE_" + Math.min(20, intVersion)):
+            valueOf("RELEASE_" + Math.min(19, intVersion)):
             RELEASE_10;
     }
 

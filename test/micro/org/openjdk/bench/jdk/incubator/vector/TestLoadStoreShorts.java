@@ -23,6 +23,7 @@
  */
 package org.openjdk.bench.jdk.incubator.vector;
 
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.TimeUnit;
 
@@ -52,9 +53,9 @@ import org.openjdk.jmh.annotations.Warmup;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(value = 1, jvmArgsAppend = {
     "--add-modules=jdk.incubator.vector",
-    "--enable-preview",
+    "-Dforeign.restricted=permit",
     "--enable-native-access", "ALL-UNNAMED"})
-public class TestLoadStoreShorts {
+public class TestLoadStoreShort {
   private static final VectorSpecies<Short> SPECIES = VectorSpecies.ofLargestShape(short.class);
 
   @Param("256")
@@ -67,24 +68,33 @@ public class TestLoadStoreShorts {
   private short[] dstArray;
 
 
-  private MemorySegment srcSegmentHeap;
+  private ByteBuffer srcBufferHeap;
 
-  private MemorySegment dstSegmentHeap;
+  private ByteBuffer dstBufferHeap;
+
+  private ByteBuffer srcBufferNative;
+
+  private ByteBuffer dstBufferNative;
 
 
   private MemorySession implicitScope;
 
-  private MemorySegment srcSegment;
+  private MemorySegment srcSegmentImplicit;
 
-  private MemorySegment dstSegment;
+  private MemorySegment dstSegmentImplicit;
+
+  private ByteBuffer srcBufferSegmentImplicit;
+
+  private ByteBuffer dstBufferSegmentImplicit;
 
 
   private MemoryAddress srcAddress;
 
   private MemoryAddress dstAddress;
 
-  private short[] a, b, c;
+//  private byte[] bigArray = new byte[Integer.MAX_VALUE];
 
+  private volatile short[] a, b, c;
   @Setup
   public void setup() {
     var longSize = size / Short.BYTES;
@@ -94,24 +104,34 @@ public class TestLoadStoreShorts {
       srcArray[i] = (short) i;
     }
 
-    srcSegmentHeap = MemorySegment.ofArray(new byte[size]);
-    dstSegmentHeap = MemorySegment.ofArray(new byte[size]);
 
-    implicitScope = MemorySession.openImplicit();
-    srcSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
-    dstSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
+    srcBufferHeap = ByteBuffer.allocate(size);
+    dstBufferHeap = ByteBuffer.allocate(size);
 
-    srcAddress = srcSegment.address();
-    dstAddress = dstSegment.address();
+    srcBufferNative = ByteBuffer.allocateDirect(size);
+    dstBufferNative = ByteBuffer.allocateDirect(size);
+
+
+    implicitScope = MemorySession.openShared();
+    srcSegmentImplicit = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
+    srcBufferSegmentImplicit = srcSegmentImplicit.asByteBuffer();
+    dstSegmentImplicit = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
+    dstBufferSegmentImplicit = dstSegmentImplicit.asByteBuffer();
+
+
+    srcAddress = MemorySegment.allocateNative(size, implicitScope).address();
+    dstAddress = MemorySegment.allocateNative(size, implicitScope).address();
 
     this.longSize = longSize;
 
     a = new short[size];
     b = new short[size];
     c = new short[size];
+
   }
 
   @Benchmark
+  @CompilerControl(CompilerControl.Mode.PRINT)
   public void array() {
     for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
       var v = ShortVector.fromArray(SPECIES, srcArray, i);
@@ -155,30 +175,47 @@ public class TestLoadStoreShorts {
   }
 
   @Benchmark
-  public void heapSegment() {
-    for (long i = 0; i < SPECIES.loopBound(longSize); i += SPECIES.length()) {
-      var v = ShortVector.fromMemorySegment(SPECIES, srcSegmentHeap, i, ByteOrder.nativeOrder());
-      v.intoMemorySegment(dstSegmentHeap, i, ByteOrder.nativeOrder());
+  public void bufferHeap() {
+    for (int i = 0; i < SPECIES.loopBound(longSize); i += SPECIES.length()) {
+      var v = ShortVector.fromByteBuffer(SPECIES, srcBufferHeap, i, ByteOrder.nativeOrder());
+      v.intoByteBuffer(dstBufferHeap, i, ByteOrder.nativeOrder());
     }
   }
 
   @Benchmark
-  public void segmentNativeImplicit() {
-    for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
-      var v = ShortVector.fromMemorySegment(SPECIES, srcSegment, i, ByteOrder.nativeOrder());
-      v.intoMemorySegment(dstSegment, i, ByteOrder.nativeOrder());
+  public void bufferNative() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ShortVector.fromByteBuffer(SPECIES, srcBufferNative, i, ByteOrder.nativeOrder());
+      v.intoByteBuffer(dstBufferNative, i, ByteOrder.nativeOrder());
     }
   }
 
   @Benchmark
-  public void segmentNativeConfined() {
-    try (final var session = MemorySession.openConfined()) {
-      final var srcSegmentConfined = MemorySegment.ofAddress(srcAddress, size, session);
-      final var dstSegmentConfined = MemorySegment.ofAddress(dstAddress, size, session);
+  public void bufferNativeAdd() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ShortVector.fromByteBuffer(SPECIES, srcBufferNative, i, ByteOrder.nativeOrder());
+      v = v.add(v);
+      v.intoByteBuffer(dstBufferNative, i, ByteOrder.nativeOrder());
+    }
+  }
 
-      for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
-        var v = ShortVector.fromMemorySegment(SPECIES, srcSegmentConfined, i, ByteOrder.nativeOrder());
-        v.intoMemorySegment(dstSegmentConfined, i, ByteOrder.nativeOrder());
+  @Benchmark
+  public void bufferSegmentImplicit() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ShortVector.fromByteBuffer(SPECIES, srcBufferSegmentImplicit, i, ByteOrder.nativeOrder());
+      v.intoByteBuffer(dstBufferSegmentImplicit, i, ByteOrder.nativeOrder());
+    }
+  }
+
+  @Benchmark
+  public void bufferSegmentConfined() {
+    try (final var scope = MemorySession.openConfined()) {
+      final var srcBufferSegmentConfined = MemorySegment.ofAddress(srcAddress, size, scope).asByteBuffer();
+      final var dstBufferSegmentConfined = MemorySegment.ofAddress(dstAddress, size, scope).asByteBuffer();
+
+      for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+        var v = ShortVector.fromByteBuffer(SPECIES, srcBufferSegmentConfined, i, ByteOrder.nativeOrder());
+        v.intoByteBuffer(dstBufferSegmentConfined, i, ByteOrder.nativeOrder());
       }
     }
   }

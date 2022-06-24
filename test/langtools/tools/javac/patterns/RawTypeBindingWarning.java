@@ -18,7 +18,7 @@ public class RawTypeBindingWarning<T> {
             default -> {}
         }
         switch (o) {
-            case RawTypeBindingWarning w when w == null -> {}
+            case (RawTypeBindingWarning w && false) -> {}
             default -> {}
         }
     }

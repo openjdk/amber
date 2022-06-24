@@ -54,7 +54,6 @@ import static org.testng.Assert.*;
 public class TestSocketChannels extends AbstractChannelsTest {
 
     static final Class<IllegalStateException> ISE = IllegalStateException.class;
-    static final Class<WrongThreadException> WTE = WrongThreadException.class;
 
     @Test(dataProvider = "closeableSessions")
     public void testBasicIOWithClosedSegment(Supplier<MemorySession> sessionSupplier)
@@ -152,7 +151,7 @@ public class TestSocketChannels extends AbstractChannelsTest {
             );
             for (var ioOp : ioOps) {
                 AtomicReference<Exception> exception = new AtomicReference<>();
-                Runnable task = () -> exception.set(expectThrows(WTE, ioOp));
+                Runnable task = () -> exception.set(expectThrows(ISE, ioOp));
                 var t = new Thread(task);
                 t.start();
                 t.join();

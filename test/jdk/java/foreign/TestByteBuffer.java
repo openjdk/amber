@@ -166,19 +166,15 @@ public class TestByteBuffer {
             MemorySegment resizedSegment = base.asSlice(i * elemSize, limit * elemSize);
             ByteBuffer bb = resizedSegment.asByteBuffer();
             Z z = bufFactory.apply(bb);
-            MemorySegment segmentBufferView = MemorySegment.ofBuffer(z);
             for (long j = i ; j < limit ; j++) {
                 Object handleValue = handleExtractor.apply(resizedSegment, j - i);
                 Object bufferValue = bufferExtractor.apply(z);
-                Object handleViewValue = handleExtractor.apply(segmentBufferView, j - i);
                 if (handleValue instanceof Number) {
                     assertEquals(((Number)handleValue).longValue(), j);
                     assertEquals(((Number)bufferValue).longValue(), j);
-                    assertEquals(((Number)handleViewValue).longValue(), j);
                 } else {
                     assertEquals((long)(char)handleValue, j);
                     assertEquals((long)(char)bufferValue, j);
-                    assertEquals((long)(char)handleViewValue, j);
                 }
             }
         }
@@ -214,7 +210,7 @@ public class TestByteBuffer {
         //write to channel
         try (FileChannel channel = FileChannel.open(f.toPath(), StandardOpenOption.READ, StandardOpenOption.WRITE)) {
             withMappedBuffer(channel, FileChannel.MapMode.READ_WRITE, 0, tuples.byteSize(), mbb -> {
-                MemorySegment segment = MemorySegment.ofBuffer(mbb);
+                MemorySegment segment = MemorySegment.ofByteBuffer(mbb);
                 initTuples(segment, tuples.elementCount());
                 mbb.force();
             });
@@ -223,7 +219,7 @@ public class TestByteBuffer {
         //read from channel
         try (FileChannel channel = FileChannel.open(f.toPath(), StandardOpenOption.READ)) {
             withMappedBuffer(channel, FileChannel.MapMode.READ_ONLY, 0, tuples.byteSize(), mbb -> {
-                MemorySegment segment = MemorySegment.ofBuffer(mbb);
+                MemorySegment segment = MemorySegment.ofByteBuffer(mbb);
                 checkTuples(segment, mbb, tuples.elementCount());
             });
         }
@@ -454,7 +450,7 @@ public class TestByteBuffer {
     public void testResizeBuffer(Consumer<MemorySegment> checker, Consumer<MemorySegment> initializer, SequenceLayout seq) {
         checkByteArrayAlignment(seq.elementLayout());
         int capacity = (int)seq.byteSize();
-        MemorySegment base = MemorySegment.ofBuffer(ByteBuffer.wrap(new byte[capacity]));
+        MemorySegment base = MemorySegment.ofByteBuffer(ByteBuffer.wrap(new byte[capacity]));
         initializer.accept(base);
         checker.accept(base);
     }
@@ -466,7 +462,7 @@ public class TestByteBuffer {
         byte[] arr = new byte[capacity];
         MemorySegment segment = MemorySegment.ofArray(arr);
         initializer.accept(segment);
-        MemorySegment second = MemorySegment.ofBuffer(segment.asByteBuffer());
+        MemorySegment second = MemorySegment.ofByteBuffer(segment.asByteBuffer());
         checker.accept(second);
     }
 
@@ -475,7 +471,7 @@ public class TestByteBuffer {
         try (MemorySession session = MemorySession.openConfined()) {
             MemorySegment segment = MemorySegment.allocateNative(seq, session);
             initializer.accept(segment);
-            MemorySegment second = MemorySegment.ofBuffer(segment.asByteBuffer());
+            MemorySegment second = MemorySegment.ofByteBuffer(segment.asByteBuffer());
             checker.accept(second);
         }
     }
@@ -611,13 +607,13 @@ public class TestByteBuffer {
     public void testDefaultAccessModesOfBuffer() {
         ByteBuffer rwBuffer = ByteBuffer.wrap(new byte[4]);
         {
-            MemorySegment segment = MemorySegment.ofBuffer(rwBuffer);
+            MemorySegment segment = MemorySegment.ofByteBuffer(rwBuffer);
             assertFalse(segment.isReadOnly());
         }
 
         {
             ByteBuffer roBuffer = rwBuffer.asReadOnlyBuffer();
-            MemorySegment segment = MemorySegment.ofBuffer(roBuffer);
+            MemorySegment segment = MemorySegment.ofByteBuffer(roBuffer);
             assertTrue(segment.isReadOnly());
         }
     }
@@ -625,7 +621,7 @@ public class TestByteBuffer {
     @Test
     public void testOfBufferScopeReachable() throws InterruptedException {
         ByteBuffer buffer = ByteBuffer.allocateDirect(1000);
-        MemorySegment segment = MemorySegment.ofBuffer(buffer);
+        MemorySegment segment = MemorySegment.ofByteBuffer(buffer);
         try {
             AtomicBoolean reachable = new AtomicBoolean(true);
             Cleaner.create().register(buffer, () -> {
@@ -646,13 +642,13 @@ public class TestByteBuffer {
 
     @Test(dataProvider="bufferSources")
     public void testBufferToSegment(ByteBuffer bb, Predicate<MemorySegment> segmentChecker) {
-        MemorySegment segment = MemorySegment.ofBuffer(bb);
+        MemorySegment segment = MemorySegment.ofByteBuffer(bb);
         assertEquals(segment.isReadOnly(), bb.isReadOnly());
         assertTrue(segmentChecker.test(segment));
         assertTrue(segmentChecker.test(segment.asSlice(0, segment.byteSize())));
         assertEquals(bb.capacity(), segment.byteSize());
         //another round trip
-        segment = MemorySegment.ofBuffer(segment.asByteBuffer());
+        segment = MemorySegment.ofByteBuffer(segment.asByteBuffer());
         assertEquals(segment.isReadOnly(), bb.isReadOnly());
         assertTrue(segmentChecker.test(segment));
         assertTrue(segmentChecker.test(segment.asSlice(0, segment.byteSize())));
@@ -661,7 +657,7 @@ public class TestByteBuffer {
 
     @Test(dataProvider="bufferSources")
     public void bufferProperties(ByteBuffer bb, Predicate<MemorySegment> _unused) {
-        MemorySegment segment = MemorySegment.ofBuffer(bb);
+        MemorySegment segment = MemorySegment.ofByteBuffer(bb);
         ByteBuffer buffer = segment.asByteBuffer();
         assertEquals(buffer.position(), 0);
         assertEquals(buffer.capacity(), segment.byteSize());
@@ -673,7 +669,7 @@ public class TestByteBuffer {
         try (MemorySession session = MemorySession.openConfined()) {
             MemorySegment ms = MemorySegment.allocateNative(4, 1, session);
             MemorySegment msNoAccess = ms.asReadOnly();
-            MemorySegment msRoundTrip = MemorySegment.ofBuffer(msNoAccess.asByteBuffer());
+            MemorySegment msRoundTrip = MemorySegment.ofByteBuffer(msNoAccess.asByteBuffer());
             assertEquals(msNoAccess.isReadOnly(), msRoundTrip.isReadOnly());
         }
     }
@@ -681,7 +677,7 @@ public class TestByteBuffer {
     @Test(expectedExceptions = IllegalStateException.class)
     public void testDeadAccessOnClosedBufferSegment() {
         MemorySegment s1 = MemorySegment.allocateNative(JAVA_INT, MemorySession.openConfined());
-        MemorySegment s2 = MemorySegment.ofBuffer(s1.asByteBuffer());
+        MemorySegment s2 = MemorySegment.ofByteBuffer(s1.asByteBuffer());
 
         // memory freed
         s1.session().close();

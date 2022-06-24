@@ -202,25 +202,25 @@ public abstract class AbstractDoclet implements Doclet {
         }
         messages.notice("doclet.build_version",
             configuration.getDocletVersion());
-        ClassTree classTree = new ClassTree(configuration);
+        ClassTree classtree = new ClassTree(configuration, configuration.getOptions().noDeprecated());
 
-        generateClassFiles(classTree);
+        generateClassFiles(classtree);
 
         ElementListWriter.generate(configuration);
-        generatePackageFiles(classTree);
+        generatePackageFiles(classtree);
         generateModuleFiles();
 
-        generateOtherFiles(classTree);
+        generateOtherFiles(classtree);
         configuration.tagletManager.printReport();
     }
 
     /**
      * Generate additional documentation that is added to the API documentation.
      *
-     * @param classTree the data structure representing the class tree
+     * @param classtree the data structure representing the class tree
      * @throws DocletException if there is a problem while generating the documentation
      */
-    protected void generateOtherFiles(ClassTree classTree) throws DocletException {
+    protected void generateOtherFiles(ClassTree classtree) throws DocletException {
         BuilderFactory builderFactory = configuration.getBuilderFactory();
         AbstractBuilder constantsSummaryBuilder = builderFactory.getConstantsSummaryBuilder();
         constantsSummaryBuilder.build();
@@ -239,28 +239,28 @@ public abstract class AbstractDoclet implements Doclet {
     /**
      * Generate the package documentation.
      *
-     * @param classTree the data structure representing the class tree
+     * @param classtree the data structure representing the class tree
      * @throws DocletException if there is a problem while generating the documentation
      */
-    protected abstract void generatePackageFiles(ClassTree classTree) throws DocletException;
+    protected abstract void generatePackageFiles(ClassTree classtree) throws DocletException;
 
     /**
      * Generate the class documentation.
      *
      * @param arr the set of types to be documented
-     * @param classTree the data structure representing the class tree
+     * @param classtree the data structure representing the class tree
      * @throws DocletException if there is a problem while generating the documentation
      */
-    protected abstract void generateClassFiles(SortedSet<TypeElement> arr, ClassTree classTree)
+    protected abstract void generateClassFiles(SortedSet<TypeElement> arr, ClassTree classtree)
             throws DocletException;
 
     /**
      * Iterate through all classes and construct documentation for them.
      *
-     * @param classTree the data structure representing the class tree
+     * @param classtree the data structure representing the class tree
      * @throws DocletException if there is a problem while generating the documentation
      */
-    protected void generateClassFiles(ClassTree classTree)
+    protected void generateClassFiles(ClassTree classtree)
             throws DocletException {
 
         SortedSet<TypeElement> classes = new TreeSet<>(utils.comparators.makeGeneralPurposeComparator());
@@ -278,6 +278,6 @@ public abstract class AbstractDoclet implements Doclet {
             classes.addAll(utils.getAllClasses(pkg));
         }
 
-        generateClassFiles(classes, classTree);
+        generateClassFiles(classes, classtree);
     }
 }

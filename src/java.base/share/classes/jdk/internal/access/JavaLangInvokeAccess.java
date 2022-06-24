@@ -25,7 +25,7 @@
 
 package jdk.internal.access;
 
-import jdk.internal.foreign.abi.NativeEntryPoint;
+import jdk.internal.invoke.NativeEntryPoint;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -130,9 +130,17 @@ public interface JavaLangInvokeAccess {
      * Will allow JIT to intrinsify.
      *
      * @param nep the native entry point
+     * @param fallback the fallback handle
      * @return the native method handle
      */
-    MethodHandle nativeMethodHandle(NativeEntryPoint nep);
+    MethodHandle nativeMethodHandle(NativeEntryPoint nep, MethodHandle fallback);
+
+    /**
+     * Ensure given method handle is customized
+     *
+     * @param mh the method handle
+     */
+    void ensureCustomized(MethodHandle mh);
 
     /**
      * Produces a method handle unreflecting from a {@code Constructor} with

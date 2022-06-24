@@ -32,7 +32,6 @@ import javax.sound.midi.Synthesizer;
 
 /**
  * @test
- * @key sound
  * @bug 4616517
  * @summary Receiver.send() does not work properly
  */

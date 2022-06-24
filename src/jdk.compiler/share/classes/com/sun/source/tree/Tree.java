@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -176,11 +176,6 @@ public interface Tree {
         INSTANCE_OF(InstanceOfTree.class),
 
         /**
-         * Used for instances of {@link StringTemplateTree}.
-         */
-        TEMPLATE(StringTemplateTree.class),
-
-        /**
          * Used for instances of {@link LabeledStatementTree}.
          */
         LABELED_STATEMENT(LabeledStatementTree.class),
@@ -234,6 +229,14 @@ public interface Tree {
         BINDING_PATTERN(BindingPatternTree.class),
 
         /**
+         * Used for instances of {@link GuardedPatternTree}.
+         *
+         * @since 17
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+        GUARDED_PATTERN(GuardedPatternTree.class),
+
+        /**
          * Used for instances of {@link ParenthesizedPatternTree}.
          *
          * @since 17
@@ -248,30 +251,6 @@ public interface Tree {
          */
         @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
         DEFAULT_CASE_LABEL(DefaultCaseLabelTree.class),
-
-        /**
-         * Used for instances of {@link ConstantCaseLabelTree}.
-         *
-         * @since 19
-         */
-        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
-        CONSTANT_CASE_LABEL(ConstantCaseLabelTree.class),
-
-        /**
-         * Used for instances of {@link PatternCaseLabelTree}.
-         *
-         * @since 19
-         */
-        @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
-        PATTERN_CASE_LABEL(PatternCaseLabelTree.class),
-
-        /**
-         * Used for instances of {@link DeconstructionPatternTree}.
-         *
-         * @since 19
-         */
-        @PreviewFeature(feature=PreviewFeature.Feature.RECORD_PATTERNS, reflective=true)
-        DECONSTRUCTION_PATTERN(DeconstructionPatternTree.class),
 
         /**
          * Used for instances of {@link PrimitiveTypeTree}.
@@ -634,13 +613,13 @@ public interface Tree {
 
         /**
          * Used for instances of {@link WildcardTree} representing
-         * an upper-bounded wildcard type argument.
+         * an extends bounded wildcard type argument.
          */
         EXTENDS_WILDCARD(WildcardTree.class),
 
         /**
          * Used for instances of {@link WildcardTree} representing
-         * a lower-bounded wildcard type argument.
+         * a super bounded wildcard type argument.
          */
         SUPER_WILDCARD(WildcardTree.class),
 

@@ -1,4 +1,3 @@
-
     static $type$ [[TEST]]ReduceMasked($type$[] a, int idx, boolean[] mask) {
         $type$ res = [[TEST_INIT]];
         for (int i = idx; i < (idx + SPECIES.length()); i++) {

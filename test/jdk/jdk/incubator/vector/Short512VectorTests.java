@@ -261,55 +261,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
-    static void assertcompressArraysEquals(short[] r, short[] a, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + k], a[i + j]);
-                        k++;
-                    }
-                }
-                for (; k < vector_len; k++) {
-                    Assert.assertEquals(r[i + k], (short)0);
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + k;
-            if (m[(i + j) % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + j], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], (short)0, "at index #" + idx);
-            }
-        }
-    }
-
-    static void assertexpandArraysEquals(short[] r, short[] a, boolean[] m, int vector_len) {
-        int i = 0, j = 0, k = 0;
-        try {
-            for (; i < a.length; i += vector_len) {
-                k = 0;
-                for (j = 0; j < vector_len; j++) {
-                    if (m[(i + j) % SPECIES.length()]) {
-                        Assert.assertEquals(r[i + j], a[i + k]);
-                        k++;
-                    } else {
-                        Assert.assertEquals(r[i + j], (short)0);
-                    }
-                }
-            }
-        } catch (AssertionError e) {
-            int idx = i + j;
-            if (m[idx % SPECIES.length()]) {
-                Assert.assertEquals(r[idx], a[i + k], "at index #" + idx);
-            } else {
-                Assert.assertEquals(r[idx], (short)0, "at index #" + idx);
-            }
-        }
-    }
-
     static void assertSelectFromArraysEquals(short[] r, short[] a, short[] order, int vector_len) {
         int i = 0, j = 0;
         try {
@@ -933,6 +884,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     static short bits(short e) {
         return  e;
     }
@@ -1027,6 +979,8 @@ public class Short512VectorTests extends AbstractVectorTest {
                 toArray(Object[][]::new);
     }
 
+
+
     @DataProvider
     public Object[][] maskProvider() {
         return BOOLEAN_MASK_GENERATORS.stream().
@@ -1101,6 +1055,7 @@ public class Short512VectorTests extends AbstractVectorTest {
                 }))).
                 toArray(Object[][]::new);
     }
+
 
     static final List<IntFunction<short[]>> SHORT_COMPARE_GENERATORS = List.of(
             withToString("short[i]", (int s) -> {
@@ -1240,22 +1195,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
     static short ROR_scalar(short a, short b) {
         return (short)(((((short)a) & 0xFFFF) >>> (b & 15)) | ((((short)a) & 0xFFFF) << (16 - (b & 15))));
-    }
-
-    static short TRAILING_ZEROS_COUNT_scalar(short a) {
-        return (short) (a != 0 ? Integer.numberOfTrailingZeros(a) : 16);
-    }
-
-    static short LEADING_ZEROS_COUNT_scalar(short a) {
-        return (short) (a >= 0 ? Integer.numberOfLeadingZeros(a) - 16 : 0);
-    }
-
-    static short REVERSE_scalar(short a) {
-        short b = ROL_scalar(a, (short) 8);
-        b = (short) (((b & 0x5555) << 1) | ((b & 0xAAAA) >>> 1));
-        b = (short) (((b & 0x3333) << 2) | ((b & 0xCCCC) >>> 2));
-        b = (short) (((b & 0x0F0F) << 4) | ((b & 0xF0F0) >>> 4));
-        return b;
     }
 
     static boolean eq(short a, short b) {
@@ -1407,7 +1346,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         } catch (ArithmeticException e) {
         }
     }
-
     static short ADD(short a, short b) {
         return (short)(a + b);
     }
@@ -1428,7 +1366,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::ADD);
     }
-
     static short add(short a, short b) {
         return (short)(a + b);
     }
@@ -1485,7 +1422,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::add);
     }
-
     static short SUB(short a, short b) {
         return (short)(a - b);
     }
@@ -1506,7 +1442,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::SUB);
     }
-
     static short sub(short a, short b) {
         return (short)(a - b);
     }
@@ -1563,7 +1498,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::sub);
     }
-
     static short MUL(short a, short b) {
         return (short)(a * b);
     }
@@ -1584,7 +1518,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::MUL);
     }
-
     static short mul(short a, short b) {
         return (short)(a * b);
     }
@@ -1642,6 +1575,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, mask, Short512VectorTests::mul);
     }
 
+
+
     static short DIV(short a, short b) {
         return (short)(a / b);
     }
@@ -1664,7 +1599,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::DIV);
     }
-
     static short div(short a, short b) {
         return (short)(a / b);
     }
@@ -1687,6 +1621,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::div);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void DIVShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -1793,7 +1729,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::AND);
     }
-
     static short and(short a, short b) {
         return (short)(a & b);
     }
@@ -1812,6 +1747,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::and);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ANDShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -1832,6 +1769,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::AND);
     }
+
 
     static short AND_NOT(short a, short b) {
         return (short)(a & ~b);
@@ -1854,6 +1792,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::AND_NOT);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void AND_NOTShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -1873,6 +1813,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::AND_NOT);
     }
+
 
     static short OR(short a, short b) {
         return (short)(a | b);
@@ -1894,7 +1835,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::OR);
     }
-
     static short or(short a, short b) {
         return (short)(a | b);
     }
@@ -1913,6 +1853,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::or);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ORShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -1933,6 +1875,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::OR);
     }
+
 
     static short XOR(short a, short b) {
         return (short)(a ^ b);
@@ -1955,6 +1898,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::XOR);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void XORShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -1974,6 +1919,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::XOR);
     }
+
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void addShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2068,6 +2014,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, mask, Short512VectorTests::mul);
     }
 
+
+
+
     @Test(dataProvider = "shortBinaryOpProvider")
     static void divShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -2083,6 +2032,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(r, a, b, Short512VectorTests::div);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void divShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -2102,6 +2053,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(r, a, b, mask, Short512VectorTests::div);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ORShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2131,6 +2084,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, Short512VectorTests::or);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ORShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2147,6 +2102,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertBroadcastArraysEquals(r, a, b, mask, Short512VectorTests::OR);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ANDShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2176,6 +2133,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, Short512VectorTests::and);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ANDShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2193,6 +2152,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a, b, mask, Short512VectorTests::AND);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ORShort512VectorTestsBroadcastLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -2206,6 +2167,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertBroadcastLongArraysEquals(r, a, b, Short512VectorTests::OR);
     }
+
+
 
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ORShort512VectorTestsBroadcastMaskedLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -2223,6 +2186,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertBroadcastLongArraysEquals(r, a, b, mask, Short512VectorTests::OR);
     }
+
 
     @Test(dataProvider = "shortBinaryOpProvider")
     static void ADDShort512VectorTestsBroadcastLongSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -2255,6 +2219,10 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertBroadcastLongArraysEquals(r, a, b, mask, Short512VectorTests::ADD);
     }
 
+
+
+
+
     static short LSHL(short a, short b) {
         return (short)((a << (b & 0xF)));
     }
@@ -2276,6 +2244,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::LSHL);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHLShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2295,6 +2265,11 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::LSHL);
     }
+
+
+
+
+
 
     static short ASHR(short a, short b) {
         return (short)((a >> (b & 0xF)));
@@ -2317,6 +2292,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::ASHR);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ASHRShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2336,6 +2313,11 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::ASHR);
     }
+
+
+
+
+
 
     static short LSHR(short a, short b) {
         return (short)(((a & 0xFFFF) >>> (b & 0xF)));
@@ -2358,6 +2340,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::LSHR);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHRShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2377,6 +2361,11 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::LSHR);
     }
+
+
+
+
+
 
     static short LSHL_unary(short a, short b) {
         return (short)((a << (b & 15)));
@@ -2398,6 +2387,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short512VectorTests::LSHL_unary);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHLShort512VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2416,6 +2407,11 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short512VectorTests::LSHL_unary);
     }
+
+
+
+
+
 
     static short LSHR_unary(short a, short b) {
         return (short)(((a & 0xFFFF) >>> (b & 15)));
@@ -2437,6 +2433,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short512VectorTests::LSHR_unary);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void LSHRShort512VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2455,6 +2453,11 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short512VectorTests::LSHR_unary);
     }
+
+
+
+
+
 
     static short ASHR_unary(short a, short b) {
         return (short)((a >> (b & 15)));
@@ -2476,6 +2479,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short512VectorTests::ASHR_unary);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ASHRShort512VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2494,6 +2499,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short512VectorTests::ASHR_unary);
     }
+
 
     static short ROR(short a, short b) {
         return (short)(ROR_scalar(a,b));
@@ -2516,6 +2522,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::ROR);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void RORShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2535,6 +2543,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::ROR);
     }
+
 
     static short ROL(short a, short b) {
         return (short)(ROL_scalar(a,b));
@@ -2557,6 +2566,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, Short512VectorTests::ROL);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ROLShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2576,6 +2587,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, mask, Short512VectorTests::ROL);
     }
+
 
     static short ROR_unary(short a, short b) {
         return (short)(ROR_scalar(a, b));
@@ -2597,6 +2609,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short512VectorTests::ROR_unary);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void RORShort512VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2615,6 +2629,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short512VectorTests::ROR_unary);
     }
+
 
     static short ROL_unary(short a, short b) {
         return (short)(ROL_scalar(a, b));
@@ -2636,6 +2651,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftArraysEquals(r, a, b, Short512VectorTests::ROL_unary);
     }
 
+
+
     @Test(dataProvider = "shortBinaryOpMaskProvider")
     static void ROLShort512VectorTestsScalarShiftMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
                                           IntFunction<boolean[]> fm) {
@@ -2654,6 +2671,12 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftArraysEquals(r, a, b, mask, Short512VectorTests::ROL_unary);
     }
+
+
+
+
+
+
     static short LSHR_binary_const(short a) {
         return (short)(((a & 0xFFFF) >>> CONST_SHIFT));
     }
@@ -2673,6 +2696,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short512VectorTests::LSHR_binary_const);
     }
 
+
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void LSHRShort512VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2690,6 +2715,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short512VectorTests::LSHR_binary_const);
     }
+
+
 
     static short LSHL_binary_const(short a) {
         return (short)((a << CONST_SHIFT));
@@ -2710,6 +2737,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short512VectorTests::LSHL_binary_const);
     }
 
+
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void LSHLShort512VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2727,6 +2756,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short512VectorTests::LSHL_binary_const);
     }
+
+
 
     static short ASHR_binary_const(short a) {
         return (short)((a >> CONST_SHIFT));
@@ -2747,6 +2778,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short512VectorTests::ASHR_binary_const);
     }
 
+
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ASHRShort512VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2764,6 +2797,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short512VectorTests::ASHR_binary_const);
     }
+
+
 
     static short ROR_binary_const(short a) {
         return (short)(ROR_scalar(a, CONST_SHIFT));
@@ -2784,6 +2819,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertShiftConstEquals(r, a, Short512VectorTests::ROR_binary_const);
     }
 
+
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void RORShort512VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
                                           IntFunction<boolean[]> fm) {
@@ -2801,6 +2838,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, mask, Short512VectorTests::ROR_binary_const);
     }
+
+
 
     static short ROL_binary_const(short a) {
         return (short)(ROL_scalar(a, CONST_SHIFT));
@@ -2820,6 +2859,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertShiftConstEquals(r, a, Short512VectorTests::ROL_binary_const);
     }
+
+
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ROLShort512VectorTestsScalarShiftMaskedConst(IntFunction<short[]> fa,
@@ -2860,7 +2901,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::MIN);
     }
-
     static short min(short a, short b) {
         return (short)(Math.min(a, b));
     }
@@ -2879,7 +2919,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::min);
     }
-
     static short MAX(short a, short b) {
         return (short)(Math.max(a, b));
     }
@@ -2900,7 +2939,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, Short512VectorTests::MAX);
     }
-
     static short max(short a, short b) {
         return (short)(Math.max(a, b));
     }
@@ -2994,6 +3032,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         return res;
     }
 
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ANDReduceShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3019,6 +3058,7 @@ public class Short512VectorTests extends AbstractVectorTest {
                 Short512VectorTests::ANDReduce, Short512VectorTests::ANDReduceAll);
     }
 
+
     static short ANDReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = -1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3037,6 +3077,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ANDReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
@@ -3065,6 +3106,7 @@ public class Short512VectorTests extends AbstractVectorTest {
                 Short512VectorTests::ANDReduceMasked, Short512VectorTests::ANDReduceAllMasked);
     }
 
+
     static short ORReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3082,6 +3124,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ORReduceShort512VectorTests(IntFunction<short[]> fa) {
@@ -3108,6 +3151,7 @@ public class Short512VectorTests extends AbstractVectorTest {
                 Short512VectorTests::ORReduce, Short512VectorTests::ORReduceAll);
     }
 
+
     static short ORReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3126,6 +3170,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ORReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
@@ -3154,6 +3199,7 @@ public class Short512VectorTests extends AbstractVectorTest {
                 Short512VectorTests::ORReduceMasked, Short512VectorTests::ORReduceAllMasked);
     }
 
+
     static short XORReduce(short[] a, int idx) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3171,6 +3217,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void XORReduceShort512VectorTests(IntFunction<short[]> fa) {
@@ -3197,6 +3244,7 @@ public class Short512VectorTests extends AbstractVectorTest {
                 Short512VectorTests::XORReduce, Short512VectorTests::XORReduceAll);
     }
 
+
     static short XORReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3215,6 +3263,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void XORReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
@@ -3260,7 +3309,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ADDReduceShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3285,7 +3333,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short512VectorTests::ADDReduce, Short512VectorTests::ADDReduceAll);
     }
-
     static short ADDReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3304,7 +3351,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ADDReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3331,7 +3377,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short512VectorTests::ADDReduceMasked, Short512VectorTests::ADDReduceAllMasked);
     }
-
     static short MULReduce(short[] a, int idx) {
         short res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3349,7 +3394,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void MULReduceShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3374,7 +3418,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short512VectorTests::MULReduce, Short512VectorTests::MULReduceAll);
     }
-
     static short MULReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = 1;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3393,7 +3436,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void MULReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3420,7 +3462,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short512VectorTests::MULReduceMasked, Short512VectorTests::MULReduceAllMasked);
     }
-
     static short MINReduce(short[] a, int idx) {
         short res = Short.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3438,7 +3479,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void MINReduceShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3463,7 +3503,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short512VectorTests::MINReduce, Short512VectorTests::MINReduceAll);
     }
-
     static short MINReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = Short.MAX_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3482,7 +3521,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void MINReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3509,7 +3547,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short512VectorTests::MINReduceMasked, Short512VectorTests::MINReduceAllMasked);
     }
-
     static short MAXReduce(short[] a, int idx) {
         short res = Short.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3527,7 +3564,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void MAXReduceShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3552,7 +3588,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short512VectorTests::MAXReduce, Short512VectorTests::MAXReduceAll);
     }
-
     static short MAXReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = Short.MIN_VALUE;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3571,7 +3606,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void MAXReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3598,7 +3632,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEqualsMasked(r, ra, a, mask,
                 Short512VectorTests::MAXReduceMasked, Short512VectorTests::MAXReduceAllMasked);
     }
-
     static short FIRST_NONZEROReduce(short[] a, int idx) {
         short res = (short) 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3616,7 +3649,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void FIRST_NONZEROReduceShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -3641,7 +3673,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionArraysEquals(r, ra, a,
                 Short512VectorTests::FIRST_NONZEROReduce, Short512VectorTests::FIRST_NONZEROReduceAll);
     }
-
     static short FIRST_NONZEROReduceMasked(short[] a, int idx, boolean[] mask) {
         short res = (short) 0;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3660,7 +3691,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
-
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void FIRST_NONZEROReduceShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<boolean[]> fm) {
         short[] a = fa.apply(SPECIES.length());
@@ -3697,6 +3727,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         return res;
     }
 
+
     @Test(dataProvider = "boolUnaryOpProvider")
     static void anyTrueShort512VectorTests(IntFunction<boolean[]> fm) {
         boolean[] mask = fm.apply(SPECIES.length());
@@ -3712,6 +3743,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertReductionBoolArraysEquals(r, mask, Short512VectorTests::anyTrue);
     }
 
+
     static boolean allTrue(boolean[] a, int idx) {
         boolean res = true;
         for (int i = idx; i < (idx + SPECIES.length()); i++) {
@@ -3720,6 +3752,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         return res;
     }
+
 
     @Test(dataProvider = "boolUnaryOpProvider")
     static void allTrueShort512VectorTests(IntFunction<boolean[]> fm) {
@@ -3735,6 +3768,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertReductionBoolArraysEquals(r, mask, Short512VectorTests::allTrue);
     }
+
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void withShort512VectorTests(IntFunction<short []> fa) {
@@ -3753,7 +3787,6 @@ public class Short512VectorTests extends AbstractVectorTest {
             assertInsertArraysEquals(r, a, (short)(65535+i), (j++ & (SPECIES.length()-1)), i , i + SPECIES.length());
         }
     }
-
     static boolean testIS_DEFAULT(short a) {
         return bits(a)==0;
     }
@@ -3794,7 +3827,6 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
-
     static boolean testIS_NEGATIVE(short a) {
         return bits(a)<0;
     }
@@ -3836,6 +3868,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void LTShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -3854,6 +3889,7 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -3897,6 +3933,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void GTShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -3939,6 +3976,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void EQShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -3957,6 +3995,7 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void eqShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -4000,6 +4039,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void NEShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4041,6 +4081,7 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void LEShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -4084,6 +4125,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void GEShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4126,6 +4168,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_LTShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4144,6 +4188,8 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_LTShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4168,6 +4214,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_GTShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4186,6 +4235,8 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_GTShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4210,6 +4261,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_LEShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4228,6 +4282,8 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_LEShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4252,6 +4308,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void UNSIGNED_GEShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4270,6 +4329,8 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void UNSIGNED_GEShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4294,6 +4355,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
+
     @Test(dataProvider = "shortCompareOpProvider")
     static void LTShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
         short[] a = fa.apply(SPECIES.length());
@@ -4309,6 +4372,7 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void LTShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4346,6 +4410,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void LTShort512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
@@ -4382,6 +4447,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
+
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void EQShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa,
                                 IntFunction<short[]> fb, IntFunction<boolean[]> fm) {
@@ -4417,6 +4483,7 @@ public class Short512VectorTests extends AbstractVectorTest {
             }
         }
     }
+
 
     @Test(dataProvider = "shortCompareOpMaskProvider")
     static void EQShort512VectorTestsBroadcastLongMaskedSmokeTest(IntFunction<short[]> fa,
@@ -4496,43 +4563,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertRearrangeArraysEquals(r, a, order, mask, SPECIES.length());
     }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void compressShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.compress(vmask).intoArray(r, i);
-            }
-        }
-
-        assertcompressArraysEquals(r, a, mask, SPECIES.length());
-    }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void expandShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.expand(vmask).intoArray(r, i);
-            }
-        }
-
-        assertexpandArraysEquals(r, a, mask, SPECIES.length());
-    }
-
     @Test(dataProvider = "shortUnaryOpProvider")
     static void getShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -4703,6 +4733,10 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertBroadcastArraysEquals(r, a);
     }
 
+
+
+
+
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ZeroShort512VectorTests(IntFunction<short[]> fa) {
         short[] a = fa.apply(SPECIES.length());
@@ -4716,6 +4750,9 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         Assert.assertEquals(a, r);
     }
+
+
+
 
     static short[] sliceUnary(short[] a, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
@@ -4742,7 +4779,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, origin, Short512VectorTests::sliceUnary);
     }
-
     static short[] sliceBinary(short[] a, short[] b, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4772,7 +4808,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, origin, Short512VectorTests::sliceBinary);
     }
-
     static short[] slice(short[] a, short[] b, int origin, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4806,7 +4841,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, origin, mask, Short512VectorTests::slice);
     }
-
     static short[] unsliceUnary(short[] a, int origin, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4834,7 +4868,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, origin, Short512VectorTests::unsliceUnary);
     }
-
     static short[] unsliceBinary(short[] a, short[] b, int origin, int part, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4874,7 +4907,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, origin, part, Short512VectorTests::unsliceBinary);
     }
-
     static short[] unslice(short[] a, short[] b, int origin, int part, boolean[] mask, int idx) {
         short[] res = new short[SPECIES.length()];
         for (int i = 0, j = 0; i < SPECIES.length(); i++){
@@ -4932,13 +4964,35 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, b, origin, part, mask, Short512VectorTests::unslice);
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     static short BITWISE_BLEND(short a, short b, short c) {
         return (short)((a&~(c))|(b&c));
     }
-
     static short bitwiseBlend(short a, short b, short c) {
         return (short)((a&~(c))|(b&c));
     }
+
 
     @Test(dataProvider = "shortTernaryOpProvider")
     static void BITWISE_BLENDShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -4958,7 +5012,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, Short512VectorTests::BITWISE_BLEND);
     }
-
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort512VectorTests(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -4975,6 +5028,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, Short512VectorTests::bitwiseBlend);
     }
+
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
     static void BITWISE_BLENDShort512VectorTestsMasked(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -4997,6 +5051,9 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, b, c, mask, Short512VectorTests::BITWISE_BLEND);
     }
+
+
+
 
     @Test(dataProvider = "shortTernaryOpProvider")
     static void BITWISE_BLENDShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
@@ -5027,7 +5084,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
         assertAltBroadcastArraysEquals(r, a, b, c, Short512VectorTests::BITWISE_BLEND);
     }
-
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5057,6 +5113,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
         assertAltBroadcastArraysEquals(r, a, b, c, Short512VectorTests::bitwiseBlend);
     }
+
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
     static void BITWISE_BLENDShort512VectorTestsBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -5096,6 +5153,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertAltBroadcastArraysEquals(r, a, b, c, mask, Short512VectorTests::BITWISE_BLEND);
     }
 
+
+
+
     @Test(dataProvider = "shortTernaryOpProvider")
     static void BITWISE_BLENDShort512VectorTestsDoubleBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5110,7 +5170,6 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertDoubleBroadcastArraysEquals(r, a, b, c, Short512VectorTests::BITWISE_BLEND);
     }
-
     @Test(dataProvider = "shortTernaryOpProvider")
     static void bitwiseBlendShort512VectorTestsDoubleBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb, IntFunction<short[]> fc) {
         short[] a = fa.apply(SPECIES.length());
@@ -5125,6 +5184,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertDoubleBroadcastArraysEquals(r, a, b, c, Short512VectorTests::bitwiseBlend);
     }
+
 
     @Test(dataProvider = "shortTernaryOpMaskProvider")
     static void BITWISE_BLENDShort512VectorTestsDoubleBroadcastMaskedSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb,
@@ -5143,6 +5203,7 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertDoubleBroadcastArraysEquals(r, a, b, c, mask, Short512VectorTests::BITWISE_BLEND);
     }
+
 
     static short NEG(short a) {
         return (short)(-((short)a));
@@ -5256,6 +5317,7 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short512VectorTests::ABS);
     }
 
+
     static short NOT(short a) {
         return (short)(~((short)a));
     }
@@ -5263,6 +5325,8 @@ public class Short512VectorTests extends AbstractVectorTest {
     static short not(short a) {
         return (short)(~((short)a));
     }
+
+
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void NOTShort512VectorTests(IntFunction<short[]> fa) {
@@ -5294,6 +5358,8 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, Short512VectorTests::not);
     }
 
+
+
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void NOTMaskedShort512VectorTests(IntFunction<short[]> fa,
                                                 IntFunction<boolean[]> fm) {
@@ -5312,9 +5378,13 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short512VectorTests::NOT);
     }
 
+
+
     static short ZOMO(short a) {
         return (short)((a==0?0:-1));
     }
+
+
 
     @Test(dataProvider = "shortUnaryOpProvider")
     static void ZOMOShort512VectorTests(IntFunction<short[]> fa) {
@@ -5330,6 +5400,8 @@ public class Short512VectorTests extends AbstractVectorTest {
 
         assertArraysEquals(r, a, Short512VectorTests::ZOMO);
     }
+
+
 
     @Test(dataProvider = "shortUnaryOpMaskProvider")
     static void ZOMOMaskedShort512VectorTests(IntFunction<short[]> fa,
@@ -5349,190 +5421,9 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertArraysEquals(r, a, mask, Short512VectorTests::ZOMO);
     }
 
-    static short BIT_COUNT(short a) {
-        return (short)(Integer.bitCount((int)a & 0xFFFF));
-    }
 
-    @Test(dataProvider = "shortUnaryOpProvider")
-    static void BIT_COUNTShort512VectorTests(IntFunction<short[]> fa) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
 
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.BIT_COUNT).intoArray(r, i);
-            }
-        }
 
-        assertArraysEquals(r, a, Short512VectorTests::BIT_COUNT);
-    }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void BIT_COUNTMaskedShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.BIT_COUNT, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, mask, Short512VectorTests::BIT_COUNT);
-    }
-
-    static short TRAILING_ZEROS_COUNT(short a) {
-        return (short)(TRAILING_ZEROS_COUNT_scalar(a));
-    }
-
-    @Test(dataProvider = "shortUnaryOpProvider")
-    static void TRAILING_ZEROS_COUNTShort512VectorTests(IntFunction<short[]> fa) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, Short512VectorTests::TRAILING_ZEROS_COUNT);
-    }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void TRAILING_ZEROS_COUNTMaskedShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.TRAILING_ZEROS_COUNT, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, mask, Short512VectorTests::TRAILING_ZEROS_COUNT);
-    }
-
-    static short LEADING_ZEROS_COUNT(short a) {
-        return (short)(LEADING_ZEROS_COUNT_scalar(a));
-    }
-
-    @Test(dataProvider = "shortUnaryOpProvider")
-    static void LEADING_ZEROS_COUNTShort512VectorTests(IntFunction<short[]> fa) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, Short512VectorTests::LEADING_ZEROS_COUNT);
-    }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void LEADING_ZEROS_COUNTMaskedShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.LEADING_ZEROS_COUNT, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, mask, Short512VectorTests::LEADING_ZEROS_COUNT);
-    }
-
-    static short REVERSE(short a) {
-        return (short)(REVERSE_scalar(a));
-    }
-
-    @Test(dataProvider = "shortUnaryOpProvider")
-    static void REVERSEShort512VectorTests(IntFunction<short[]> fa) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.REVERSE).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, Short512VectorTests::REVERSE);
-    }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void REVERSEMaskedShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.REVERSE, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, mask, Short512VectorTests::REVERSE);
-    }
-
-    static short REVERSE_BYTES(short a) {
-        return (short)(Short.reverseBytes(a));
-    }
-
-    @Test(dataProvider = "shortUnaryOpProvider")
-    static void REVERSE_BYTESShort512VectorTests(IntFunction<short[]> fa) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.REVERSE_BYTES).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, Short512VectorTests::REVERSE_BYTES);
-    }
-
-    @Test(dataProvider = "shortUnaryOpMaskProvider")
-    static void REVERSE_BYTESMaskedShort512VectorTests(IntFunction<short[]> fa,
-                                                IntFunction<boolean[]> fm) {
-        short[] a = fa.apply(SPECIES.length());
-        short[] r = fr.apply(SPECIES.length());
-        boolean[] mask = fm.apply(SPECIES.length());
-        VectorMask<Short> vmask = VectorMask.fromArray(SPECIES, mask, 0);
-
-        for (int ic = 0; ic < INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                ShortVector av = ShortVector.fromArray(SPECIES, a, i);
-                av.lanewise(VectorOperators.REVERSE_BYTES, vmask).intoArray(r, i);
-            }
-        }
-
-        assertArraysEquals(r, a, mask, Short512VectorTests::REVERSE_BYTES);
-    }
 
     @Test(dataProvider = "shortCompareOpProvider")
     static void ltShort512VectorTestsBroadcastSmokeTest(IntFunction<short[]> fa, IntFunction<short[]> fb) {
@@ -5935,23 +5826,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         assertMaskReductionArraysEquals(r, a, Short512VectorTests::maskFirstTrue);
     }
 
-    @Test(dataProvider = "maskProvider")
-    static void maskCompressShort512VectorTestsSmokeTest(IntFunction<boolean[]> fa) {
-        int trueCount = 0;
-        boolean[] a = fa.apply(SPECIES.length());
-
-        for (int ic = 0; ic < INVOC_COUNT * INVOC_COUNT; ic++) {
-            for (int i = 0; i < a.length; i += SPECIES.length()) {
-                var vmask = SPECIES.loadMask(a, i);
-                trueCount = vmask.trueCount();
-                var rmask = vmask.compress();
-                for (int j = 0; j < SPECIES.length(); j++)  {
-                    Assert.assertEquals(rmask.laneIsSet(j), j < trueCount);
-                }
-            }
-        }
-    }
-
     @DataProvider
     public static Object[][] longMaskProvider() {
         return new Object[][]{
@@ -5994,20 +5868,6 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 
-    @Test(dataProvider = "offsetProvider")
-    static void indexInRangeLongShort512VectorTestsSmokeTest(int offset) {
-        long limit = SPECIES.length() * BUFFER_REPS;
-        for (long i = 0; i < limit; i += SPECIES.length()) {
-            var actualMask = SPECIES.indexInRange(i + offset, limit);
-            var expectedMask = SPECIES.maskAll(true).indexInRange(i + offset, limit);
-            assert(actualMask.equals(expectedMask));
-            for (int j = 0; j < SPECIES.length(); j++)  {
-                long index = i + j + offset;
-                Assert.assertEquals(actualMask.laneIsSet(j), index >= 0 && index < limit);
-            }
-        }
-    }
-
     @DataProvider
     public static Object[][] lengthProvider() {
         return new Object[][]{
@@ -6025,14 +5885,6 @@ public class Short512VectorTests extends AbstractVectorTest {
     static void loopBoundShort512VectorTestsSmokeTest(int length) {
         int actualLoopBound = SPECIES.loopBound(length);
         int expectedLoopBound = length - Math.floorMod(length, SPECIES.length());
-        Assert.assertEquals(actualLoopBound, expectedLoopBound);
-    }
-
-    @Test(dataProvider = "lengthProvider")
-    static void loopBoundLongShort512VectorTestsSmokeTest(int _length) {
-        long length = _length;
-        long actualLoopBound = SPECIES.loopBound(length);
-        long expectedLoopBound = length - Math.floorMod(length, SPECIES.length());
         Assert.assertEquals(actualLoopBound, expectedLoopBound);
     }
 
@@ -6098,3 +5950,4 @@ public class Short512VectorTests extends AbstractVectorTest {
         }
     }
 }
+

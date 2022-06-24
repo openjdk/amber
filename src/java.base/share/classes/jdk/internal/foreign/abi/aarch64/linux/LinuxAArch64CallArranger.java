@@ -38,9 +38,4 @@ public class LinuxAArch64CallArranger extends CallArranger {
         return false;
     }
 
-    @Override
-    protected boolean requiresSubSlotStackPacking() {
-        return false;
-    }
-
 }

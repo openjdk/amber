@@ -129,7 +129,7 @@ class KQueueSelectorImpl extends SelectorImpl {
                 if (numEntries == IOStatus.INTERRUPTED && timedPoll) {
                     // timed poll interrupted so need to adjust timeout
                     long adjust = System.nanoTime() - startTime;
-                    to -= TimeUnit.NANOSECONDS.toMillis(adjust);
+                    to -= TimeUnit.MILLISECONDS.convert(adjust, TimeUnit.NANOSECONDS);
                     if (to <= 0) {
                         // timeout expired so no retry
                         numEntries = 0;

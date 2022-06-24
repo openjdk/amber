@@ -24,7 +24,7 @@
  */
 package jdk.incubator.vector;
 
-import java.lang.foreign.MemorySegment;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -466,22 +466,6 @@ final class Long256Vector extends LongVector {
 
     @Override
     @ForceInline
-    public Long256Vector compress(VectorMask<Long> m) {
-        return (Long256Vector)
-            super.compressTemplate(Long256Mask.class,
-                                   (Long256Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Long256Vector expand(VectorMask<Long> m) {
-        return (Long256Vector)
-            super.expandTemplate(Long256Mask.class,
-                                   (Long256Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Long256Vector selectFrom(Vector<Long> v) {
         return (Long256Vector)
             super.selectFromTemplate((Long256Vector) v);  // specialize
@@ -659,15 +643,6 @@ final class Long256Vector extends LongVector {
             return xor(maskAll(true));
         }
 
-        @Override
-        @ForceInline
-        public Long256Mask compress() {
-            return (Long256Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Long256Vector.class, Long256Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
-        }
-
-
         // Binary operations
 
         @Override
@@ -844,8 +819,8 @@ final class Long256Vector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromArray0(long[] a, int offset, VectorMask<Long> m, int offsetInRange) {
-        return super.fromArray0Template(Long256Mask.class, a, offset, (Long256Mask) m, offsetInRange);  // specialize
+    LongVector fromArray0(long[] a, int offset, VectorMask<Long> m) {
+        return super.fromArray0Template(Long256Mask.class, a, offset, (Long256Mask) m);  // specialize
     }
 
     @ForceInline
@@ -860,15 +835,29 @@ final class Long256Vector extends LongVector {
     @ForceInline
     @Override
     final
-    LongVector fromMemorySegment0(MemorySegment ms, long offset) {
-        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    LongVector fromByteArray0(byte[] a, int offset) {
+        return super.fromByteArray0Template(a, offset);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    LongVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m, int offsetInRange) {
-        return super.fromMemorySegment0Template(Long256Mask.class, ms, offset, (Long256Mask) m, offsetInRange);  // specialize
+    LongVector fromByteArray0(byte[] a, int offset, VectorMask<Long> m) {
+        return super.fromByteArray0Template(Long256Mask.class, a, offset, (Long256Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    LongVector fromByteBuffer0(ByteBuffer bb, int offset) {
+        return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    LongVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
+        return super.fromByteBuffer0Template(Long256Mask.class, bb, offset, (Long256Mask) m);  // specialize
     }
 
     @ForceInline
@@ -896,8 +885,22 @@ final class Long256Vector extends LongVector {
     @ForceInline
     @Override
     final
-    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Long> m) {
-        super.intoMemorySegment0Template(Long256Mask.class, ms, offset, (Long256Mask) m);
+    void intoByteArray0(byte[] a, int offset) {
+        super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Long> m) {
+        super.intoByteArray0Template(Long256Mask.class, a, offset, (Long256Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Long> m) {
+        super.intoByteBuffer0Template(Long256Mask.class, bb, offset, (Long256Mask) m);
     }
 
 
@@ -906,4 +909,3 @@ final class Long256Vector extends LongVector {
     // ================================================
 
 }
-

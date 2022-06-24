@@ -30,32 +30,27 @@
 #include "runtime/continuation.hpp"
 #include "utilities/sizes.hpp"
 
+class nmethod;
 class RegisterMap;
 class OopMap;
 class JavaThread;
 
 // Metadata stored in the continuation entry frame
 class ContinuationEntry {
-#ifdef ASSERT
-private:
-  static const int COOKIE_VALUE = 0x1234;
-  int cookie;
-
 public:
-  static int cookie_value() { return COOKIE_VALUE; }
+#ifdef ASSERT
+  int cookie;
   static ByteSize cookie_offset() { return byte_offset_of(ContinuationEntry, cookie); }
-
-  void verify_cookie() {
-    assert(cookie == COOKIE_VALUE, "Bad cookie: %#x, expected: %#x", cookie, COOKIE_VALUE);
-  }
+  void verify_cookie() { assert(this->cookie == 0x1234, ""); }
 #endif
 
 public:
-  static int _return_pc_offset; // friend gen_continuation_enter
-  static void set_enter_code(CompiledMethod* nm); // friend SharedRuntime::generate_native_wrapper
+  static int return_pc_offset; // friend gen_continuation_enter
+  static void set_enter_nmethod(nmethod* nm); // friend SharedRuntime::generate_native_wrapper
 
 private:
-  static address _return_pc;
+  static nmethod* continuation_enter;
+  static address return_pc;
 
 private:
   ContinuationEntry* _parent;
@@ -85,7 +80,7 @@ public:
   ContinuationEntry* parent() const { return _parent; }
   int parent_held_monitor_count() const { return _parent_held_monitor_count; }
 
-  static address entry_pc() { return _return_pc; }
+  static address entry_pc() { return return_pc; }
   intptr_t* entry_sp() const { return (intptr_t*)this; }
   intptr_t* entry_fp() const;
 
@@ -121,10 +116,14 @@ public:
   }
 
   inline oop cont_oop() const;
-  inline oop scope() const;
-  inline static oop cont_oop_or_null(const ContinuationEntry* ce);
+
+  oop scope()     const { return Continuation::continuation_scope(cont_oop()); }
 
   bool is_virtual_thread() const { return _flags != 0; }
+
+  static oop cont_oop_or_null(const ContinuationEntry* ce) {
+    return ce == nullptr ? nullptr : ce->cont_oop();
+  }
 
 #ifndef PRODUCT
   void describe(FrameValues& values, int frame_no) const {

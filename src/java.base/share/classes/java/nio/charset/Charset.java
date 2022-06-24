@@ -576,7 +576,8 @@ public abstract class Charset
     private static void put(Iterator<Charset> i, Map<String,Charset> m) {
         while (i.hasNext()) {
             Charset cs = i.next();
-            m.putIfAbsent(cs.name(), cs);
+            if (!m.containsKey(cs.name()))
+                m.put(cs.name(), cs);
         }
     }
 
@@ -718,7 +719,7 @@ public abstract class Charset
         if (aliasSet != null)
             return aliasSet;
         int n = aliases.length;
-        HashSet<String> hs = HashSet.newHashSet(n);
+        HashSet<String> hs = new HashSet<>(n);
         for (int i = 0; i < n; i++)
             hs.add(aliases[i]);
         aliasSet = Collections.unmodifiableSet(hs);

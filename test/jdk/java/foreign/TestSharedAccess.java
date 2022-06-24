@@ -126,7 +126,7 @@ public class TestSharedAccess {
                 try {
                     ByteBuffer bb = s1.asByteBuffer();
 
-                    MemorySegment s2 = MemorySegment.ofBuffer(bb);
+                    MemorySegment s2 = MemorySegment.ofByteBuffer(bb);
                     a.countDown();
 
                     try {
@@ -136,7 +136,7 @@ public class TestSharedAccess {
 
                     setInt(s2.asSlice(4), -42);
                     fail();
-                } catch (WrongThreadException ex) {
+                } catch (IllegalStateException ex) {
                     assertTrue(ex.getMessage().contains("owning thread"));
                 }
             });

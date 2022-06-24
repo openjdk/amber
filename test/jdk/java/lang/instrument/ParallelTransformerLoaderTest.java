@@ -31,7 +31,6 @@
 /**
  * @test
  * @summary
- * @requires vm.continuations
  * @library /test/lib
  * @run build TestClass1 TestClass2 TestClass3
  * @compile --enable-preview -source ${jdk.version} ParallelTransformerLoaderTest.java

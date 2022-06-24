@@ -279,7 +279,7 @@ public class CommandProcessor {
     }
 
     void quote(String s) {
-        if (!s.contains(" ")) {
+        if (s.indexOf(" ") == -1) {
             out.print(s);
         } else {
             out.print("\"");
@@ -342,7 +342,7 @@ public class CommandProcessor {
 
 
     Address lookup(String symbol) {
-        if (symbol.contains("::")) {
+        if (symbol.indexOf("::") != -1) {
             String[] parts = symbol.split("::");
             StringBuilder mangled = new StringBuilder("__1c");
             for (int i = 0; i < parts.length; i++) {
@@ -688,7 +688,7 @@ public class CommandProcessor {
                 }
             }
         },
-        // "whatis" is just an alias for "findpc". It's kept around for compatibility reasons.
+        // "whatis" is just an alias for "findpc". It's kept around for compatiblity reasons.
         new Command("whatis", "whatis address", false) {
             public void doit(Tokens t) {
                 if (t.countTokens() != 1) {

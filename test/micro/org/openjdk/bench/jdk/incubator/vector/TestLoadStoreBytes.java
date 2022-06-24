@@ -23,11 +23,12 @@
  */
 package org.openjdk.bench.jdk.incubator.vector;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.concurrent.TimeUnit;
 import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySession;
-import java.nio.ByteOrder;
-import java.util.concurrent.TimeUnit;
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorOperators;
 import jdk.incubator.vector.VectorSpecies;
@@ -52,7 +53,7 @@ import static java.lang.foreign.ValueLayout.JAVA_BYTE;
 @OutputTimeUnit(TimeUnit.NANOSECONDS)
 @Fork(value = 1, jvmArgsAppend = {
     "--add-modules=jdk.incubator.vector",
-    "--enable-preview",
+    "-Dforeign.restricted=permit",
     "--enable-native-access", "ALL-UNNAMED",
     "-Djdk.incubator.vector.VECTOR_ACCESS_OOB_CHECK=1"})
 public class TestLoadStoreBytes {
@@ -66,23 +67,31 @@ public class TestLoadStoreBytes {
   private byte[] dstArray;
 
 
-  private MemorySegment srcSegmentHeap;
+  private ByteBuffer srcBufferHeap;
 
-  private MemorySegment dstSegmentHeap;
+  private ByteBuffer dstBufferHeap;
+
+  private ByteBuffer srcBufferNative;
+
+  private ByteBuffer dstBufferNative;
 
 
   private MemorySession implicitScope;
 
-  private MemorySegment srcSegment;
+  private MemorySegment srcSegmentImplicit;
 
-  private MemorySegment dstSegment;
+  private MemorySegment dstSegmentImplicit;
+
+  private ByteBuffer srcBufferSegmentImplicit;
+
+  private ByteBuffer dstBufferSegmentImplicit;
 
 
   private MemoryAddress srcAddress;
 
   private MemoryAddress dstAddress;
 
-  private byte[] a, b, c;
+  byte[] a, b, c;
 
   @Setup
   public void setup() {
@@ -92,15 +101,23 @@ public class TestLoadStoreBytes {
       srcArray[i] = (byte) i;
     }
 
-    srcSegmentHeap = MemorySegment.ofArray(new byte[size]);
-    dstSegmentHeap = MemorySegment.ofArray(new byte[size]);
+
+    srcBufferHeap = ByteBuffer.allocate(size);
+    dstBufferHeap = ByteBuffer.allocate(size);
+
+    srcBufferNative = ByteBuffer.allocateDirect(size);
+    dstBufferNative = ByteBuffer.allocateDirect(size);
+
 
     implicitScope = MemorySession.openImplicit();
-    srcSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
-    dstSegment = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
+    srcSegmentImplicit = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
+    srcBufferSegmentImplicit = srcSegmentImplicit.asByteBuffer();
+    dstSegmentImplicit = MemorySegment.allocateNative(size, SPECIES.vectorByteSize(), implicitScope);
+    dstBufferSegmentImplicit = dstSegmentImplicit.asByteBuffer();
 
-    srcAddress = srcSegment.address();
-    dstAddress = dstSegment.address();
+
+    srcAddress = MemorySegment.allocateNative(size, implicitScope).address();
+    dstAddress = MemorySegment.allocateNative(size, implicitScope).address();
 
     a = new byte[size];
     b = new byte[size];
@@ -110,9 +127,19 @@ public class TestLoadStoreBytes {
 
   @Benchmark
   public void array() {
+//    final var srcArray = this.srcArray;
     for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
       var v = ByteVector.fromArray(SPECIES, srcArray, i);
       v.intoArray(dstArray, i);
+    }
+  }
+
+  @Benchmark
+  public void array2() {
+//    final var srcArray = this.srcArray;
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ByteVector.fromByteArray(SPECIES, srcArray, i, ByteOrder.nativeOrder());
+      v.intoByteArray(dstArray, i, ByteOrder.nativeOrder());
     }
   }
 
@@ -160,30 +187,65 @@ public class TestLoadStoreBytes {
   }
 
   @Benchmark
-  public void segmentHeap() {
-    for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
-      var v = ByteVector.fromMemorySegment(SPECIES, srcSegmentHeap, i, ByteOrder.nativeOrder());
-      v.intoMemorySegment(dstSegmentHeap, i, ByteOrder.nativeOrder());
+  public void bufferHeap() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ByteVector.fromByteBuffer(SPECIES, srcBufferHeap, i, ByteOrder.nativeOrder());
+      v.intoByteBuffer(dstBufferHeap, i, ByteOrder.nativeOrder());
     }
   }
 
   @Benchmark
-  public void segmentNativeImplicit() {
-    for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
-      var v = ByteVector.fromMemorySegment(SPECIES, srcSegment, i, ByteOrder.nativeOrder());
-      v.intoMemorySegment(dstSegment, i, ByteOrder.nativeOrder());
+  public void bufferHeapScalar() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i++) {
+      var v = srcBufferHeap.get(i);
+      dstBufferHeap.put(i, v);
     }
   }
 
   @Benchmark
-  public void segmentNativeConfined() {
-    try (final var session = MemorySession.openConfined()) {
-      final var srcSegmentConfined = MemorySegment.ofAddress(srcAddress, size, session);
-      final var dstSegmentConfined = MemorySegment.ofAddress(dstAddress, size, session);
+  @CompilerControl(CompilerControl.Mode.PRINT)
+  public void bufferNative() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ByteVector.fromByteBuffer(SPECIES, srcBufferNative, i, ByteOrder.nativeOrder());
+      v.intoByteBuffer(dstBufferNative, i, ByteOrder.nativeOrder());
+    }
+  }
 
-      for (long i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
-        var v = ByteVector.fromMemorySegment(SPECIES, srcSegmentConfined, i, ByteOrder.nativeOrder());
-        v.intoMemorySegment(dstSegmentConfined, i, ByteOrder.nativeOrder());
+  @Benchmark
+  public void bufferNativeScalar() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i++) {
+      var v = srcBufferNative.get(i);
+      dstBufferNative.put(i, v);
+    }
+  }
+
+
+  @Benchmark
+  public void bufferSegmentImplicit() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+      var v = ByteVector.fromByteBuffer(SPECIES, srcBufferSegmentImplicit, i, ByteOrder.nativeOrder());
+      v.intoByteBuffer(dstBufferSegmentImplicit, i, ByteOrder.nativeOrder());
+    }
+  }
+
+  @Benchmark
+  @CompilerControl(CompilerControl.Mode.PRINT)
+  public void segmentImplicitScalar() {
+    for (int i = 0; i < SPECIES.loopBound(srcArray.length); i++) {
+      var v = srcSegmentImplicit.get(JAVA_BYTE, i);
+      dstSegmentImplicit.set(JAVA_BYTE, i, v);
+    }
+  }
+
+  @Benchmark
+  public void bufferSegmentConfined() {
+    try (final var scope = MemorySession.openConfined()) {
+      final var srcBufferSegmentConfined = MemorySegment.ofAddress(srcAddress, size, scope).asByteBuffer();
+      final var dstBufferSegmentConfined = MemorySegment.ofAddress(dstAddress, size, scope).asByteBuffer();
+
+      for (int i = 0; i < SPECIES.loopBound(srcArray.length); i += SPECIES.length()) {
+        var v = ByteVector.fromByteBuffer(SPECIES, srcBufferSegmentConfined, i, ByteOrder.nativeOrder());
+        v.intoByteBuffer(dstBufferSegmentConfined, i, ByteOrder.nativeOrder());
       }
     }
   }

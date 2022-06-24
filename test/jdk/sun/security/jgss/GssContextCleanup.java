@@ -26,8 +26,6 @@
  * @bug 8284490
  * @summary Remove finalizer method in java.security.jgss
  * @key intermittent
- * @library /test/lib/
- * @build jdk.test.lib.util.ForceGC
  * @run main/othervm GssContextCleanup
  */
 
@@ -35,11 +33,11 @@ import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSCredential;
 import org.ietf.jgss.GSSManager;
 
-import java.lang.ref.WeakReference;
-
-import jdk.test.lib.util.ForceGC;
+import java.util.WeakHashMap;
 
 public final class GssContextCleanup {
+    private final static WeakHashMap<GSSContext, ?> whm = new WeakHashMap<>();
+
     public static void main(String[] args) throws Exception {
         // Enable debug log so that the failure analysis could be easier.
         System.setProperty("sun.security.nativegss.debug", "true");
@@ -50,12 +48,17 @@ public final class GssContextCleanup {
         // Create an object
         GSSManager manager = GSSManager.getInstance();
         GSSContext context = manager.createContext((GSSCredential)null);
-        WeakReference<GSSContext> weakRef = new WeakReference<>(context);
+        whm.put(context, null);
         context = null;
 
+        // Wait to trigger the cleanup.
+        for (int i = 0; i < 10 && whm.size() > 0; i++) {
+            System.gc();
+            Thread.sleep(100);
+        }
+
         // Check if the object has been collected.
-        ForceGC gc = new ForceGC();
-        if (!gc.await(() -> weakRef.get() == null)) {
+        if (whm.size() > 0) {
             throw new RuntimeException("GSSContext object is not released");
         }
     }

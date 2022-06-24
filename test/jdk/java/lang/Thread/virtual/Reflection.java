@@ -39,7 +39,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.locks.LockSupport;
 
 import jdk.test.lib.thread.VThreadRunner;
-import org.testng.SkipException;
 import org.testng.annotations.Test;
 import static org.testng.Assert.*;
 
@@ -142,12 +141,10 @@ public class Reflection {
      */
     @Test
     public void testInvokeStatic6() throws Exception {
-        if (!ThreadBuilders.supportsCustomScheduler())
-            throw new SkipException("No support for custom schedulers");
         Method parkMethod = Parker.class.getDeclaredMethod("park");
         try (ExecutorService scheduler = Executors.newFixedThreadPool(1)) {
-            Thread.Builder builder = ThreadBuilders.virtualThreadBuilder(scheduler);
-            ThreadFactory factory = builder.factory();
+            ThreadFactory factory = ThreadBuilders.virtualThreadBuilder(scheduler).factory();
+
             Thread vthread = factory.newThread(() -> {
                 try {
                     parkMethod.invoke(null);   // blocks
@@ -318,12 +315,10 @@ public class Reflection {
      */
     @Test
     public void testNewInstance6() throws Exception {
-        if (!ThreadBuilders.supportsCustomScheduler())
-            throw new SkipException("No support for custom schedulers");
         Constructor<?> ctor = Parker.class.getDeclaredConstructor();
         try (ExecutorService scheduler = Executors.newFixedThreadPool(1)) {
-            Thread.Builder builder = ThreadBuilders.virtualThreadBuilder(scheduler);
-            ThreadFactory factory = builder.factory();
+            ThreadFactory factory = ThreadBuilders.virtualThreadBuilder(scheduler).factory();
+
             Thread vthread = factory.newThread(() -> {
                 try {
                     ctor.newInstance();

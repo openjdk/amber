@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,15 +30,14 @@
 
 package sun.security.krb5.internal.ccache;
 
-import sun.security.krb5.KrbException;
-import sun.security.krb5.PrincipalName;
-
-import java.io.File;
+import sun.security.krb5.*;
+import sun.security.krb5.internal.*;
 import java.io.IOException;
+import java.io.File;
 
 //Windows supports the "API: cache" type, which is a shared memory cache.  This is
 //implemented by krbcc32.dll as part of the MIT Kerberos for Win32 distribution.
-//MemoryCredentialsCache will provide future functions to access shared memory cache on
+//MemoryCredentialsCache will provide future functions to access shared memeory cache on
 //Windows platform. Native code implementation may be necessary.
 /**
  * This class extends CredentialsCache. It is used for accessing data in shared memory

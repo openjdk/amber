@@ -28,7 +28,6 @@ import javax.sound.sampled.Mixer;
 
 /**
  * @test
- * @key sound
  * @bug 4667064
  * @summary Java Sound provides bogus SourceDataLine and TargetDataLine
  */

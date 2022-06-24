@@ -28,7 +28,6 @@
 #include "jfr/utilities/jfrBlob.hpp"
 #include "jfr/utilities/jfrTypes.hpp"
 
-class Arena;
 class JavaThread;
 class JfrBuffer;
 class JfrStackFrame;
@@ -49,7 +48,6 @@ class JfrThreadLocal {
   JfrBuffer* _checkpoint_buffer_epoch_0;
   JfrBuffer* _checkpoint_buffer_epoch_1;
   mutable JfrStackFrame* _stackframes;
-  Arena* _dcmd_arena;
   JfrBlobHandle _thread;
   mutable traceid _vthread_id;
   mutable traceid _jvm_thread_id;
@@ -244,8 +242,6 @@ class JfrThreadLocal {
   bool is_included() const;
   static bool is_excluded(const Thread* thread);
   static bool is_included(const Thread* thread);
-
-  static Arena* dcmd_arena(JavaThread* jt);
 
   bool has_thread_blob() const;
   void set_thread_blob(const JfrBlobHandle& handle);

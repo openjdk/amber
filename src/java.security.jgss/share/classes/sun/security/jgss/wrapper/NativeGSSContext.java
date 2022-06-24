@@ -65,7 +65,7 @@ class NativeGSSContext implements GSSContextSpi {
     private long pContext = 0; // Pointer to the gss_ctx_id_t structure
     private GSSNameElement srcName;
     private GSSNameElement targetName;
-    private final boolean isInitiator;
+    private boolean isInitiator;
     private boolean isEstablished;
     private GSSCredElement delegatedCred;
     private int flags;
@@ -89,7 +89,7 @@ class NativeGSSContext implements GSSContextSpi {
         throws GSSException {
         Oid mech = null;
         if (isInitiator) {
-            GSSHeader header;
+            GSSHeader header = null;
             try {
                 header = new GSSHeader(new ByteArrayInputStream(token));
             } catch (IOException ioe) {
@@ -146,8 +146,10 @@ class NativeGSSContext implements GSSContextSpi {
         if (sm != null) {
             String targetStr = targetName.getKrbName();
             String tgsStr = Krb5Util.getTGSName(targetName);
-            String krbPrincPair = "\"" + targetStr + "\" \"" +
-                    tgsStr + '\"';
+            StringBuilder sb = new StringBuilder("\"");
+            sb.append(targetStr).append("\" \"");
+            sb.append(tgsStr).append('\"');
+            String krbPrincPair = sb.toString();
             SunNativeProvider.debug("Checking DelegationPermission (" +
                                     krbPrincPair + ")");
             DelegationPermission perm =
@@ -160,7 +162,7 @@ class NativeGSSContext implements GSSContextSpi {
     private byte[] retrieveToken(InputStream is, int mechTokenLen)
         throws GSSException {
         try {
-            byte[] result;
+            byte[] result = null;
             if (mechTokenLen != -1) {
                 // Need to add back the GSS header for a complete GSS token
                 SunNativeProvider.debug("Precomputed mechToken length: " +
@@ -459,7 +461,7 @@ class NativeGSSContext implements GSSContextSpi {
     public int unwrap(byte[] inBuf, int inOffset, int len,
                       byte[] outBuf, int outOffset,
                       MessageProp msgProp) throws GSSException {
-        byte[] result;
+        byte[] result = null;
         if ((inOffset != 0) || (len != inBuf.length)) {
             byte[] temp = new byte[len];
             System.arraycopy(inBuf, inOffset, temp, 0, len);
@@ -486,8 +488,8 @@ class NativeGSSContext implements GSSContextSpi {
     public int unwrap(InputStream inStream,
                       byte[] outBuf, int outOffset,
                       MessageProp msgProp) throws GSSException {
-        byte[] wrapped;
-        int wLength;
+        byte[] wrapped = null;
+        int wLength = 0;
         try {
             wrapped = new byte[inStream.available()];
             wLength = inStream.read(wrapped);
@@ -514,7 +516,7 @@ class NativeGSSContext implements GSSContextSpi {
     public void getMIC(InputStream inStream, OutputStream outStream,
                        MessageProp msgProp) throws GSSException {
         try {
-            int length;
+            int length = 0;
             byte[] msg = new byte[inStream.available()];
             length = inStream.read(msg);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -133,7 +133,7 @@ public class Arguments {
                 return value * 1000;
             } else {
                 throw new IllegalArgumentException(
-                        "Unknown time unit: " + unitString);
+                        "Unknow time unit: " + unitString);
             }
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException(
@@ -328,7 +328,7 @@ public class Arguments {
             }
         }
 
-        // verify that the vm identifier is valid
+        // verify that the vm identifier is valied
         try {
             vmId = new VmIdentifier(vmIdString);
         } catch (URISyntaxException e) {

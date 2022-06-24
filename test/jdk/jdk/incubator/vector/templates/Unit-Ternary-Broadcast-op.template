@@ -1,4 +1,3 @@
-
     @Test(dataProvider = "$type$TernaryOpProvider")
     static void [[TEST]]$vectorteststype$BroadcastSmokeTest(IntFunction<$type$[]> fa, IntFunction<$type$[]> fb, IntFunction<$type$[]> fc) {
         $type$[] a = fa.apply(SPECIES.length());

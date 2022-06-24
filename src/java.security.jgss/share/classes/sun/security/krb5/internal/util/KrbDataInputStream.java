@@ -36,7 +36,7 @@ import java.io.InputStream;
 import java.io.IOException;
 
 /**
- * This class implements a buffered input stream. It provides methods to read a chunk
+ * This class implements a buffered input stream. It provides methods to read a chunck
  * of data from underlying data stream.
  *
  * @author Yanni Zhang

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,6 +25,7 @@
 
 package javax.imageio.spi;
 
+import java.io.File;
 import java.security.AccessControlContext;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -227,7 +228,7 @@ public class ServiceRegistry {
     private Iterator<SubRegistry> getSubRegistries(Object provider) {
         List<SubRegistry> l = new ArrayList<>();
         for (Class<?> c : categoryMap.keySet()) {
-            if (c.isInstance(provider)) {
+            if (c.isAssignableFrom(provider.getClass())) {
                 l.add(categoryMap.get(c));
             }
         }
@@ -269,7 +270,7 @@ public class ServiceRegistry {
         if (reg == null) {
             throw new IllegalArgumentException("category unknown!");
         }
-        if (!category.isInstance(provider)) {
+        if (!category.isAssignableFrom(provider.getClass())) {
             throw new ClassCastException();
         }
 
@@ -372,7 +373,7 @@ public class ServiceRegistry {
         if (reg == null) {
             throw new IllegalArgumentException("category unknown!");
         }
-        if (!category.isInstance(provider)) {
+        if (!category.isAssignableFrom(provider.getClass())) {
             throw new ClassCastException();
         }
         return reg.deregisterServiceProvider(provider);

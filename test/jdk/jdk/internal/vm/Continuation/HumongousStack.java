@@ -24,7 +24,6 @@
 /**
 * @test
 * @summary Tests humongous stack-chunk handling
-* @requires vm.continuations
 * @modules java.base/jdk.internal.vm
 *
 * @requires vm.gc.G1

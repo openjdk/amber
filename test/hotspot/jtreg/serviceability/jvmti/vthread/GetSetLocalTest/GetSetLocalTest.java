@@ -24,7 +24,6 @@
 /**
  * @test
  * @summary Verifies JVMTI GetLocalXXX/SetLocalXXX support for virtual threads.
- * @requires vm.continuations
  * @library /test/lib
  * @compile --enable-preview -source ${jdk.version} GetSetLocalTest.java
  * @run main/othervm/native --enable-preview -agentlib:GetSetLocalTest GetSetLocalTest

@@ -130,7 +130,7 @@ final class SettingsManager {
 
    private Map<String, InternalSetting> availableSettings = new LinkedHashMap<>();
 
-    void setSettings(List<Map<String, String>> activeSettings, boolean writeSettingEvents) {
+    void setSettings(List<Map<String, String>> activeSettings) {
         // store settings so they are available if a new event class is loaded
         availableSettings = createSettingsMap(activeSettings);
         List<EventControl> eventControls = MetadataRepository.getInstance().getEventControls();
@@ -142,9 +142,8 @@ final class SettingsManager {
             if (Logger.shouldLog(LogTag.JFR_SETTING, LogLevel.INFO)) {
                 eventControls.sort(Comparator.comparing(x -> x.getEventType().getName()));
             }
-            long timestamp = JVM.counterTime();
             for (EventControl ec : eventControls) {
-                setEventControl(ec, writeSettingEvents, timestamp);
+                setEventControl(ec);
             }
         }
         if (JVM.getJVM().getAllowedToDoEventRetransforms()) {
@@ -212,7 +211,7 @@ final class SettingsManager {
       return internals.values();
     }
 
-    void setEventControl(EventControl ec, boolean writeSettingEvents, long timestamp) {
+    void setEventControl(EventControl ec) {
         InternalSetting is = getInternalSetting(ec);
         boolean shouldLog = Logger.shouldLog(LogTag.JFR_SETTING, LogLevel.INFO);
         if (shouldLog) {
@@ -220,11 +219,11 @@ final class SettingsManager {
         }
         for (NamedControl nc: ec.getNamedControls()) {
             Set<String> values = null;
-            String settingName = nc.name();
+            String settingName = nc.name;
             if (is != null) {
                 values = is.getValues(settingName);
             }
-            Control control = nc.control();
+            Control control = nc.control;
             if (values != null) {
                 control.apply(values);
                 String after = control.getLastValue();
@@ -251,9 +250,7 @@ final class SettingsManager {
                 }
             }
         }
-        if (writeSettingEvents) {
-            ec.writeActiveSettingEvent(timestamp);
-        }
+        ec.writeActiveSettingEvent();
         if (shouldLog) {
             Logger.log(LogTag.JFR_SETTING, LogLevel.INFO, "}");
         }

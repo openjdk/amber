@@ -34,39 +34,14 @@ import java.nio.file.StandardCopyOption;
 import jdk.test.lib.Utils;
 import jdk.test.lib.process.OutputAnalyzer;
 
-import static jdk.test.lib.Asserts.assertNotNull;
-
 
 public class Common {
-    // Create a unique name for docker image.
-    public static String imageName() {
-        // jtreg guarantees that test.name is unique among all concurrently executing
-        // tests. For example, if you have two test roots:
-        //
-        //     $ find test -type f
-        //     test/foo/TEST.ROOT
-        //     test/foo/my/TestCase.java
-        //     test/bar/TEST.ROOT
-        //     test/bar/my/TestCase.java
-        //     $ jtreg -concur:2 test/foo test/bar
-        //
-        // jtreg will first run all the tests under test/foo. When they are all finished, then
-        // jtreg will run all the tests under test/bar. So you will never have two concurrent
-        // test cases whose test.name is "my/TestCase.java"
-        String testname = System.getProperty("test.name");
-        assertNotNull(testname, "must be set by jtreg");
-        testname = testname.replace(".java", "");
-        testname = testname.replace('/', '-');
-        testname = testname.replace('\\', '-');
-
-        // Example: "jdk-internal:test-containers-docker-TestMemoryAwareness"
-        return "jdk-internal:test-" + testname;
-    }
+    public static final String imageNameAndTag = "jdk-internal:test";
 
     public static String imageName(String suffix) {
-        // Example: "jdk-internal:test-containers-docker-TestMemoryAwareness-memory"
-        return imageName() + '-' + suffix;
+        return imageNameAndTag + "-" + suffix;
     }
+
 
     public static void prepareWhiteBox() throws Exception {
         Files.copy(Paths.get(new File("whitebox.jar").getAbsolutePath()),
@@ -75,20 +50,20 @@ public class Common {
 
 
     // create simple commonly used options
-    public static DockerRunOptions newOpts(String imageName) {
-        return new DockerRunOptions(imageName, "/jdk/bin/java", "-version")
+    public static DockerRunOptions newOpts(String imageNameAndTag) {
+        return new DockerRunOptions(imageNameAndTag, "/jdk/bin/java", "-version")
             .addJavaOpts("-Xlog:os+container=trace");
     }
 
-    public static DockerRunOptions newOptsShowSettings(String imageName) {
-        return new DockerRunOptions(imageName, "/jdk/bin/java", "-version", "-XshowSettings:system");
+    public static DockerRunOptions newOptsShowSettings(String imageNameAndTag) {
+        return new DockerRunOptions(imageNameAndTag, "/jdk/bin/java", "-version", "-XshowSettings:system");
     }
 
 
     // create commonly used options with class to be launched inside container
-    public static DockerRunOptions newOpts(String imageName, String testClass) {
+    public static DockerRunOptions newOpts(String imageNameAndTag, String testClass) {
         DockerRunOptions opts =
-            new DockerRunOptions(imageName, "/jdk/bin/java", testClass);
+            new DockerRunOptions(imageNameAndTag, "/jdk/bin/java", testClass);
         opts.addDockerOpts("--volume", Utils.TEST_CLASSES + ":/test-classes/");
         opts.addJavaOpts("-Xlog:os+container=trace", "-cp", "/test-classes/");
         return opts;

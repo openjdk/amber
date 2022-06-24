@@ -793,8 +793,7 @@ void MemDetailDiffReporter::old_virtual_memory_site(const VirtualMemoryAllocatio
 
 void MemDetailDiffReporter::diff_virtual_memory_site(const VirtualMemoryAllocationSite* early,
   const VirtualMemoryAllocationSite* current) const {
-  assert(early->flag() == current->flag() || early->flag() == mtNone,
-    "Expect the same flag, but %s != %s", NMTUtil::flag_to_name(early->flag()),NMTUtil::flag_to_name(current->flag()));
+  assert(early->flag() == current->flag(), "Should be the same");
   diff_virtual_memory_site(current->call_stack(), current->reserved(), current->committed(),
     early->reserved(), early->committed(), current->flag());
 }

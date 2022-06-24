@@ -57,9 +57,8 @@ import jdk.jfr.internal.tool.PrettyWriter;
  *
  * @since 9
  */
-public sealed class RecordedObject
-   permits RecordedEvent, RecordedClassLoader, RecordedClass, RecordedMethod,
-           RecordedStackTrace, RecordedFrame, RecordedThread, RecordedThreadGroup {
+public class RecordedObject {
+
     static{
         JdkJfrConsumer access = new JdkJfrConsumer() {
             @Override

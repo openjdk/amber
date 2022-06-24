@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -95,7 +95,7 @@ class NameImpl {
         } else if (isA(name, i, syntaxSeparator2)) {
             i += syntaxSeparator2.length();
         }
-        return i;
+        return (i);
     }
 
     private final int extractComp(String name, int i, int len, Vector<String> comps)
@@ -337,16 +337,16 @@ class NameImpl {
         return (false);
     }
 */
-    private String stringifyComp(String comp) {
+    private final String stringifyComp(String comp) {
         int len = comp.length();
         boolean escapeSeparator = false, escapeSeparator2 = false;
         String beginQuote = null, endQuote = null;
-        StringBuilder strbuf = new StringBuilder(len);
+        StringBuffer strbuf = new StringBuffer(len);
 
         // determine whether there are any separators; if so escape
         // or quote them
         if (syntaxSeparator != null &&
-            comp.contains(syntaxSeparator)) {
+            comp.indexOf(syntaxSeparator) >= 0) {
             if (syntaxBeginQuote1 != null) {
                 beginQuote = syntaxBeginQuote1;
                 endQuote = syntaxEndQuote1;
@@ -357,7 +357,7 @@ class NameImpl {
                 escapeSeparator = true;
         }
         if (syntaxSeparator2 != null &&
-            comp.contains(syntaxSeparator2)) {
+            comp.indexOf(syntaxSeparator2) >= 0) {
             if (syntaxBeginQuote1 != null) {
                 if (beginQuote == null) {
                     beginQuote = syntaxBeginQuote1;
@@ -445,11 +445,11 @@ class NameImpl {
                 start = false;
             }
         }
-        return strbuf.toString();
+        return (strbuf.toString());
     }
 
     public String toString() {
-        StringBuilder answer = new StringBuilder();
+        StringBuffer answer = new StringBuffer();
         String comp;
         boolean compsAllEmpty = true;
         int size = components.size();
@@ -469,7 +469,7 @@ class NameImpl {
         }
         if (compsAllEmpty && (size >= 1) && (syntaxSeparator != null))
             answer = answer.append(syntaxSeparator);
-        return answer.toString();
+        return (answer.toString());
     }
 
     public boolean equals(Object obj) {
@@ -544,7 +544,7 @@ class NameImpl {
     }
 
     public int size() {
-        return components.size();
+        return (components.size());
     }
 
     public Enumeration<String> getAll() {

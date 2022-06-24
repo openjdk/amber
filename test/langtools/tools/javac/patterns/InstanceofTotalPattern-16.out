@@ -1,3 +1,0 @@
-InstanceofTotalPattern.java:18:19: compiler.err.instanceof.pattern.no.subtype: java.lang.String, java.lang.String
-InstanceofTotalPattern.java:22:17: compiler.err.instanceof.pattern.no.subtype: java.lang.String, java.lang.String
-2 errors

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -71,18 +71,6 @@ void launchApp() {
                     << _T("lib/runtime"));
     } else {
         ownerPackage.initAppLauncher(appLauncher);
-
-        tstring homeDir;
-        JP_TRY;
-        homeDir = SysInfo::getEnvVariable("HOME");
-        JP_CATCH_ALL;
-
-        if (!homeDir.empty()) {
-            appLauncher.addCfgFileLookupDir(FileUtils::mkpath()
-                    << homeDir << ".local" << ownerPackage.name());
-            appLauncher.addCfgFileLookupDir(FileUtils::mkpath()
-                    << homeDir << "." + ownerPackage.name());
-        }
     }
 
     const std::string _JPACKAGE_LAUNCHER = "_JPACKAGE_LAUNCHER";
@@ -109,7 +97,7 @@ void launchApp() {
 
         if (thisHash != hash) {
             // This launcher execution is the result of execve() call from
-            // within JVM.
+            // withing JVM.
             // This means all JVM arguments are already configured in launcher
             // process command line.
             // No need to construct command line for JVM.

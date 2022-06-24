@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -45,11 +45,6 @@ public:
         return *this;
     }
 
-    AppLauncher& addCfgFileLookupDir(const tstring& v) {
-        cfgFileLookupDirs.push_back(v);
-        return *this;
-    }
-
     AppLauncher& setAppDir(const tstring& v) {
         appDirPath = v;
         return *this;
@@ -77,9 +72,6 @@ public:
     void launch() const;
 
 private:
-  tstring getCfgFilePath() const;
-
-private:
     tstring_array args;
     tstring launcherPath;
     tstring defaultRuntimePath;
@@ -87,7 +79,6 @@ private:
     tstring libEnvVarName;
     tstring imageRoot;
     tstring_array jvmLibNames;
-    tstring_array cfgFileLookupDirs;
     bool initJvmFromCmdlineOnly;
 };
 

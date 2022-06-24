@@ -573,7 +573,7 @@ final class CertificateMessage {
                     if ((subAltDnsName != null) && !subAltDnsName.isEmpty()) {
                         if (subAltDnsNames == null) {
                             subAltDnsNames =
-                                    HashSet.newHashSet(subjectAltNames.size());
+                                    new HashSet<>(subjectAltNames.size());
                         }
                         subAltDnsNames.add(subAltDnsName);
                     }

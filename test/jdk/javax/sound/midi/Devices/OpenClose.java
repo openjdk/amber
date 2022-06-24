@@ -31,7 +31,6 @@ import javax.sound.midi.Transmitter;
 
 /**
  * @test
- * @key sound
  * @bug 4616517
  * @summary Receiver.send() does not work properly. Tests open/close behaviour
  *          of MidiDevices. For this test, it is essential that the MidiDevice

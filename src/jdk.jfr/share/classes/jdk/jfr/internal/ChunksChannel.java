@@ -96,13 +96,10 @@ final class ChunksChannel implements ReadableByteChannel {
                 assert current != null;
 
                 long rem = current.getSize();
+
                 while (rem > 0) {
                     long n = Math.min(rem, 1024 * 1024);
                     long w = out.transferFrom(channel, pos, n);
-                    // Prevent endless loop
-                    if (w == 0) {
-                        return out.size();
-                    }
                     pos += w;
                     rem -= w;
                 }
@@ -114,7 +111,7 @@ final class ChunksChannel implements ReadableByteChannel {
                 current = null;
             }
             if (!nextChannel()) {
-                return out.size();
+                return pos;
             }
         }
     }

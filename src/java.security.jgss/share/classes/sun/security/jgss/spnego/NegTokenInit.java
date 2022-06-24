@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2011, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,12 +25,11 @@
 
 package sun.security.jgss.spnego;
 
-import org.ietf.jgss.GSSException;
-import org.ietf.jgss.Oid;
-import sun.security.jgss.GSSUtil;
+import java.io.*;
+import java.util.*;
+import org.ietf.jgss.*;
+import sun.security.jgss.*;
 import sun.security.util.*;
-
-import java.io.IOException;
 
 /**
  * Implements the SPNEGO NegTokenInit token
@@ -166,7 +165,7 @@ public class NegTokenInit extends SpNegoToken {
                     // read all the mechTypes
                     DerValue[] mList = mValue.getSequence(0);
                     mechTypeList = new Oid[mList.length];
-                    ObjectIdentifier mech;
+                    ObjectIdentifier mech = null;
                     for (int i = 0; i < mList.length; i++) {
                         mech = mList[i].getOID();
                         if (DEBUG) {

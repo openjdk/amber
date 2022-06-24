@@ -32,6 +32,8 @@ import java.lang.annotation.Target;
 import java.lang.foreign.MemorySegment;
 import java.lang.ref.Reference;
 import java.io.FileDescriptor;
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
 
 import jdk.internal.access.JavaNioAccess;
 import jdk.internal.access.SharedSecrets;
@@ -311,25 +313,59 @@ public class ScopedMemoryAccess {
         }
     }
 
-    // MemorySegment vector access ops
+    // ByteBuffer vector access ops
+
+    // Buffer access constants, to be initialized when required.
+    // Avoids a null value for NIO_ACCESS, due to class initialization dependencies
+    static final class BufferAccess {
+        // Buffer.address
+        static final long BUFFER_ADDRESS
+                = UNSAFE.objectFieldOffset(Buffer.class, "address");
+
+        // ByteBuffer.hb
+        static final long BYTE_BUFFER_HB
+                = UNSAFE.objectFieldOffset(ByteBuffer.class, "hb");
+
+        static final long BYTE_BUFFER_IS_READ_ONLY
+                = UNSAFE.objectFieldOffset(ByteBuffer.class, "isReadOnly");
+
+        @ForceInline
+        static Object bufferBase(ByteBuffer bb) {
+            return UNSAFE.getReference(bb, BYTE_BUFFER_HB);
+        }
+
+        @ForceInline
+        static long bufferAddress(ByteBuffer bb, long offset) {
+            return UNSAFE.getLong(bb, BUFFER_ADDRESS) + offset;
+        }
+
+        static final JavaNioAccess NIO_ACCESS = SharedSecrets.getJavaNioAccess();
+
+        @ForceInline
+        static MemorySessionImpl session(ByteBuffer bb) {
+            MemorySegment segment = NIO_ACCESS.bufferSegment(bb);
+            return segment != null ?
+                    ((AbstractMemorySegmentImpl)segment).sessionImpl() : null;
+        }
+    }
+
+    @ForceInline
+    public static boolean isReadOnly(ByteBuffer bb) {
+        return UNSAFE.getBoolean(bb, BufferAccess.BYTE_BUFFER_IS_READ_ONLY);
+    }
 
     @ForceInline
     public static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
-    V loadFromMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
-                         AbstractMemorySegmentImpl msp, long offset,
-                         S s,
-                         VectorSupport.LoadOperation<AbstractMemorySegmentImpl, V, S> defaultImpl) {
-        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
-        if (msp.maxAlignMask() > 1) {
-            throw new IllegalArgumentException();
-        }
-
+    V loadFromByteBuffer(Class<? extends V> vmClass, Class<E> e, int length,
+                          ByteBuffer bb, int offset,
+                          S s,
+                          VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
         try {
-            return loadFromMemorySegmentScopedInternal(
-                    msp.sessionImpl(),
+            return loadFromByteBufferScoped(
+                    BufferAccess.session(bb),
                     vmClass, e, length,
-                    msp, offset,
+                    bb, offset,
                     s,
                     defaultImpl);
         } catch (ScopedAccessError ex) {
@@ -341,18 +377,22 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>>
-    V loadFromMemorySegmentScopedInternal(MemorySessionImpl session,
-                                          Class<? extends V> vmClass, Class<E> e, int length,
-                                          AbstractMemorySegmentImpl msp, long offset,
-                                          S s,
-                                          VectorSupport.LoadOperation<AbstractMemorySegmentImpl, V, S> defaultImpl) {
+    V loadFromByteBufferScoped(MemorySessionImpl session,
+                          Class<? extends V> vmClass, Class<E> e, int length,
+                          ByteBuffer bb, int offset,
+                          S s,
+                          VectorSupport.LoadOperation<ByteBuffer, V, S> defaultImpl) {
         try {
-            session.checkValidState();
+            if (session != null) {
+                session.checkValidState();
+            }
+
+            final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
 
             return VectorSupport.load(vmClass, e, length,
-                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
-                    msp, offset, s,
-                    defaultImpl);
+                      base, BufferAccess.bufferAddress(bb, offset),
+                      bb, offset, s,
+                      defaultImpl);
         } finally {
             Reference.reachabilityFence(session);
         }
@@ -362,22 +402,17 @@ public class ScopedMemoryAccess {
     public static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
      M extends VectorSupport.VectorMask<E>>
-    V loadFromMemorySegmentMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
-                                  int length, AbstractMemorySegmentImpl msp, long offset, M m, S s, int offsetInRange,
-                                  VectorSupport.LoadVectorMaskedOperation<AbstractMemorySegmentImpl, V, S, M> defaultImpl) {
-        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
-        if (msp.maxAlignMask() > 1) {
-            throw new IllegalArgumentException();
-        }
-
+    V loadFromByteBufferMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
+                               int length, ByteBuffer bb, int offset, M m, S s,
+                               VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
         try {
-            return loadFromMemorySegmentMaskedScopedInternal(
-                    msp.sessionImpl(),
+            return loadFromByteBufferMaskedScoped(
+                    BufferAccess.session(bb),
                     vmClass, maskClass, e, length,
-                    msp, offset, m,
-                    s, offsetInRange,
+                    bb, offset, m,
+                    s,
                     defaultImpl);
-        } catch (ScopedAccessError ex) {
+        } catch (ScopedMemoryAccess.ScopedAccessError ex) {
             throw new IllegalStateException("This segment is already closed");
         }
     }
@@ -387,17 +422,19 @@ public class ScopedMemoryAccess {
     private static
     <V extends VectorSupport.Vector<E>, E, S extends VectorSupport.VectorSpecies<E>,
      M extends VectorSupport.VectorMask<E>>
-    V loadFromMemorySegmentMaskedScopedInternal(MemorySessionImpl session, Class<? extends V> vmClass,
-                                                Class<M> maskClass, Class<E> e, int length,
-                                                AbstractMemorySegmentImpl msp, long offset, M m,
-                                                S s, int offsetInRange,
-                                                VectorSupport.LoadVectorMaskedOperation<AbstractMemorySegmentImpl, V, S, M> defaultImpl) {
+    V loadFromByteBufferMaskedScoped(MemorySessionImpl session, Class<? extends V> vmClass,
+                                     Class<M> maskClass, Class<E> e, int length,
+                                     ByteBuffer bb, int offset, M m,
+                                     S s,
+                                     VectorSupport.LoadVectorMaskedOperation<ByteBuffer, V, S, M> defaultImpl) {
         try {
-            session.checkValidState();
+            if (session != null) {
+                session.checkValidState();
+            }
 
             return VectorSupport.loadMasked(vmClass, maskClass, e, length,
-                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset, m, offsetInRange,
-                    msp, offset, s,
+                    BufferAccess.bufferBase(bb), BufferAccess.bufferAddress(bb, offset), m,
+                    bb, offset, s,
                     defaultImpl);
         } finally {
             Reference.reachabilityFence(session);
@@ -407,21 +444,16 @@ public class ScopedMemoryAccess {
     @ForceInline
     public static
     <V extends VectorSupport.Vector<E>, E>
-    void storeIntoMemorySegment(Class<? extends V> vmClass, Class<E> e, int length,
-                                V v,
-                                AbstractMemorySegmentImpl msp, long offset,
-                                VectorSupport.StoreVectorOperation<AbstractMemorySegmentImpl, V> defaultImpl) {
-        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
-        if (msp.maxAlignMask() > 1) {
-            throw new IllegalArgumentException();
-        }
-
+    void storeIntoByteBuffer(Class<? extends V> vmClass, Class<E> e, int length,
+                             V v,
+                             ByteBuffer bb, int offset,
+                             VectorSupport.StoreVectorOperation<ByteBuffer, V> defaultImpl) {
         try {
-            storeIntoMemorySegmentScopedInternal(
-                    msp.sessionImpl(),
+            storeIntoByteBufferScoped(
+                    BufferAccess.session(bb),
                     vmClass, e, length,
                     v,
-                    msp, offset,
+                    bb, offset,
                     defaultImpl);
         } catch (ScopedAccessError ex) {
             throw new IllegalStateException("This segment is already closed");
@@ -432,19 +464,23 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E>
-    void storeIntoMemorySegmentScopedInternal(MemorySessionImpl session,
-                                              Class<? extends V> vmClass, Class<E> e, int length,
-                                              V v,
-                                              AbstractMemorySegmentImpl msp, long offset,
-                                              VectorSupport.StoreVectorOperation<AbstractMemorySegmentImpl, V> defaultImpl) {
+    void storeIntoByteBufferScoped(MemorySessionImpl session,
+                                   Class<? extends V> vmClass, Class<E> e, int length,
+                                   V v,
+                                   ByteBuffer bb, int offset,
+                                   VectorSupport.StoreVectorOperation<ByteBuffer, V> defaultImpl) {
         try {
-            session.checkValidState();
+            if (session != null) {
+                session.checkValidState();
+            }
+
+            final byte[] base = (byte[]) BufferAccess.bufferBase(bb);
 
             VectorSupport.store(vmClass, e, length,
-                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
-                    v,
-                    msp, offset,
-                    defaultImpl);
+                                base, BufferAccess.bufferAddress(bb, offset),
+                                v,
+                                bb, offset,
+                                defaultImpl);
         } finally {
             Reference.reachabilityFence(session);
         }
@@ -453,23 +489,18 @@ public class ScopedMemoryAccess {
     @ForceInline
     public static
     <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
-    void storeIntoMemorySegmentMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
-                                      int length, V v, M m,
-                                      AbstractMemorySegmentImpl msp, long offset,
-                                      VectorSupport.StoreVectorMaskedOperation<AbstractMemorySegmentImpl, V, M> defaultImpl) {
-        // @@@ Smarter alignment checking if accessing heap segment backing non-byte[] array
-        if (msp.maxAlignMask() > 1) {
-            throw new IllegalArgumentException();
-        }
-
+    void storeIntoByteBufferMasked(Class<? extends V> vmClass, Class<M> maskClass, Class<E> e,
+                                   int length, V v, M m,
+                                   ByteBuffer bb, int offset,
+                                   VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
         try {
-            storeIntoMemorySegmentMaskedScopedInternal(
-                    msp.sessionImpl(),
+            storeIntoByteBufferMaskedScoped(
+                    BufferAccess.session(bb),
                     vmClass, maskClass, e, length,
                     v, m,
-                    msp, offset,
+                    bb, offset,
                     defaultImpl);
-        } catch (ScopedAccessError ex) {
+        } catch (ScopedMemoryAccess.ScopedAccessError ex) {
             throw new IllegalStateException("This segment is already closed");
         }
     }
@@ -478,18 +509,20 @@ public class ScopedMemoryAccess {
     @ForceInline
     private static
     <V extends VectorSupport.Vector<E>, E, M extends VectorSupport.VectorMask<E>>
-    void storeIntoMemorySegmentMaskedScopedInternal(MemorySessionImpl session,
-                                                    Class<? extends V> vmClass, Class<M> maskClass,
-                                                    Class<E> e, int length, V v, M m,
-                                                    AbstractMemorySegmentImpl msp, long offset,
-                                                    VectorSupport.StoreVectorMaskedOperation<AbstractMemorySegmentImpl, V, M> defaultImpl) {
+    void storeIntoByteBufferMaskedScoped(MemorySessionImpl session,
+                                         Class<? extends V> vmClass, Class<M> maskClass,
+                                         Class<E> e, int length, V v, M m,
+                                         ByteBuffer bb, int offset,
+                                         VectorSupport.StoreVectorMaskedOperation<ByteBuffer, V, M> defaultImpl) {
         try {
-            session.checkValidState();
+            if (session != null) {
+                session.checkValidState();
+            }
 
             VectorSupport.storeMasked(vmClass, maskClass, e, length,
-                    msp.unsafeGetBase(), msp.unsafeGetOffset() + offset,
+                    BufferAccess.bufferBase(bb), BufferAccess.bufferAddress(bb, offset),
                     v, m,
-                    msp, offset,
+                    bb, offset,
                     defaultImpl);
         } finally {
             Reference.reachabilityFence(session);

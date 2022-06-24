@@ -877,9 +877,7 @@ printUsage(void)
  "onthrow=<exception name>         debug on throw                    none\n"
  "onuncaught=y|n                   debug on any uncaught?            n\n"
  "timeout=<timeout value>          for listen/attach in milliseconds n\n"
- "includevirtualthreads=y|n        List of all threads includes virtual threads as well as platform threads.\n"
- "                                 Virtual threads are a preview feature of the Java platform.\n"
- "                                                                   n\n"
+ "enumeratevthreads=y|n            thread lists include all vthreads n\n"
  "mutf8=y|n                        output modified utf-8             n\n"
  "quiet=y|n                        control over terminal messages    n\n"));
 
@@ -1028,7 +1026,7 @@ parseOptions(char *options)
 
     /* Set vthread debugging level. */
     gdata->vthreadsSupported = JNI_TRUE;
-    gdata->includeVThreads = JNI_FALSE;
+    gdata->enumerateVThreads = JNI_FALSE;
 
     /* Options being NULL will end up being an error. */
     if (options == NULL) {
@@ -1132,14 +1130,14 @@ parseOptions(char *options)
             }
             currentTransport->timeout = atol(current);
             current += strlen(current) + 1;
-        } else if (strcmp(buf, "includevirtualthreads") == 0) {
+        } else if (strcmp(buf, "enumeratevthreads") == 0) {
             if (!get_tok(&str, current, (int)(end - current), ',')) {
                 goto syntax_error;
             }
             if (strcmp(current, "y") == 0) {
-                gdata->includeVThreads = JNI_TRUE;
+                gdata->enumerateVThreads = JNI_TRUE;
             } else if (strcmp(current, "n") == 0) {
-                gdata->includeVThreads = JNI_FALSE;
+                gdata->enumerateVThreads = JNI_FALSE;
             } else {
                 goto syntax_error;
             }
@@ -1375,7 +1373,7 @@ debugInit_exit(jvmtiError error, const char *msg)
         return;
     }
 
-    // No transport initialized.
+    // No transport initilized.
     // As we don't have any details here exiting with separate exit code
     if (error == AGENT_ERROR_TRANSPORT_INIT) {
         forceExit(EXIT_TRANSPORT_ERROR);

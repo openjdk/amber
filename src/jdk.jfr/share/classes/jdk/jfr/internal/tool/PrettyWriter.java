@@ -540,8 +540,7 @@ public final class PrettyWriter extends EventPrintWriter {
     private void printThread(RecordedThread thread, String postFix) {
         long javaThreadId = thread.getJavaThreadId();
         if (javaThreadId > 0) {
-            String virtualText = thread.isVirtual() ? ", virtual" : "";
-            println("\"" + thread.getJavaName() + "\" (javaThreadId = " + javaThreadId + virtualText + ")" + postFix);
+            println("\"" + thread.getJavaName() + "\" (javaThreadId = " + thread.getJavaThreadId() + ", virtual = " + thread.isVirtual() + ")" + postFix);
         } else {
             println("\"" + thread.getOSName() + "\" (osThreadId = " + thread.getOSThreadId() + ")" + postFix);
         }

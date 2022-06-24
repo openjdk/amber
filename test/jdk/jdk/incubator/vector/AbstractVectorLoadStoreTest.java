@@ -50,16 +50,4 @@ public class AbstractVectorLoadStoreTest extends AbstractVectorTest {
                         .order(ByteOrder.nativeOrder());
             })
     );
-
-    static final List<IntFunction<MemorySegment>> MEMORY_SEGMENT_GENERATORS = List.of(
-            withToString("HMS", (int s) -> {
-                return MemorySegment.allocateNative(s, MemorySession.openImplicit());
-            }),
-            withToString("DMS", (int s) -> {
-                byte[] b = new byte[s];
-                return MemorySegment.ofArray(b);
-            })
-    );
-
 }
-

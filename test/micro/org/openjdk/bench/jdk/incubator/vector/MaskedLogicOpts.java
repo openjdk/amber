@@ -32,7 +32,6 @@ import java.util.Random;
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
 @State(Scope.Thread)
-@Fork(jvmArgsPrepend = {"--add-modules=jdk.incubator.vector"})
 public class MaskedLogicOpts {
     @Param({"256","512","1024"})
     private int ARRAYLEN;

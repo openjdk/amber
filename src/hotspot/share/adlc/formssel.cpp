@@ -421,6 +421,8 @@ Form::CallType InstructForm::is_ideal_call() const {
   idx = 0;
   if(_matrule->find_type("CallLeafVector",idx))   return Form::JAVA_LEAF;
   idx = 0;
+  if(_matrule->find_type("CallNative",idx))       return Form::JAVA_NATIVE;
+  idx = 0;
 
   return Form::invalid_type;
 }
@@ -1140,6 +1142,9 @@ const char *InstructForm::mach_base_class(FormDict &globals)  const {
   }
   else if( is_ideal_call() == Form::JAVA_LEAF ) {
     return "MachCallLeafNode";
+  }
+  else if( is_ideal_call() == Form::JAVA_NATIVE ) {
+    return "MachCallNativeNode";
   }
   else if (is_ideal_return()) {
     return "MachReturnNode";
@@ -4212,7 +4217,6 @@ bool MatchRule::is_vector() const {
     "SqrtVD","SqrtVF",
     "AndV" ,"XorV" ,"OrV",
     "MaxV", "MinV",
-    "CompressV", "ExpandV", "CompressM",
     "AddReductionVI", "AddReductionVL",
     "AddReductionVF", "AddReductionVD",
     "MulReductionVI", "MulReductionVL",
@@ -4224,7 +4228,7 @@ bool MatchRule::is_vector() const {
     "LShiftVB","LShiftVS","LShiftVI","LShiftVL",
     "RShiftVB","RShiftVS","RShiftVI","RShiftVL",
     "URShiftVB","URShiftVS","URShiftVI","URShiftVL",
-    "ReplicateB","ReplicateS","ReplicateI","ReplicateL","ReplicateF","ReplicateD","ReverseV","ReverseBytesV",
+    "ReplicateB","ReplicateS","ReplicateI","ReplicateL","ReplicateF","ReplicateD","PopulateIndex",
     "RoundDoubleModeV","RotateLeftV" , "RotateRightV", "LoadVector","StoreVector",
     "LoadVectorGather", "StoreVectorScatter", "LoadVectorGatherMasked", "StoreVectorScatterMasked",
     "VectorTest", "VectorLoadMask", "VectorStoreMask", "VectorBlend", "VectorInsert",
@@ -4233,8 +4237,7 @@ bool MatchRule::is_vector() const {
     "VectorCastL2X", "VectorCastF2X", "VectorCastD2X",
     "VectorUCastB2X", "VectorUCastS2X", "VectorUCastI2X",
     "VectorMaskWrapper","VectorMaskCmp","VectorReinterpret","LoadVectorMasked","StoreVectorMasked",
-    "FmaVD","FmaVF","PopCountVI","PopCountVL","PopulateIndex","VectorLongToMask",
-    "CountLeadingZerosV", "CountTrailingZerosV", "SignumVF", "SignumVD",
+    "FmaVD","FmaVF","PopCountVI", "PopCountVL", "SignumVF", "SignumVD", "VectorLongToMask",
     // Next are vector mask ops.
     "MaskAll", "AndVMask", "OrVMask", "XorVMask", "VectorMaskCast",
     "RoundVF", "RoundVD",

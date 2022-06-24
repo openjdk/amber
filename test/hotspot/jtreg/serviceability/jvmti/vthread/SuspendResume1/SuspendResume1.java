@@ -25,7 +25,6 @@
  * @test
  * @summary Test SuspendThread/ResumeThread, SuspendThreadList/ResumeThreadList
  *          for virtual threads.
- * @requires vm.continuations
  * @library /test/lib
  * @compile --enable-preview -source ${jdk.version} SuspendResume1.java
  * @run driver jdk.test.lib.FileInstaller . .

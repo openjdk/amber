@@ -68,7 +68,6 @@ class outputStream;
   LOG_TAG(decoder) \
   LOG_TAG(defaultmethods) \
   LOG_TAG(director) \
-  NOT_PRODUCT(LOG_TAG(downcall)) \
   LOG_TAG(dump) \
   LOG_TAG(dynamic) \
   LOG_TAG(ergo) \
@@ -77,7 +76,7 @@ class outputStream;
   LOG_TAG(exit) \
   LOG_TAG(finalizer) \
   LOG_TAG(fingerprint) \
-  NOT_PRODUCT(LOG_TAG(foreign)) \
+  DEBUG_ONLY(LOG_TAG(foreign)) \
   LOG_TAG(free) \
   LOG_TAG(freelist) \
   LOG_TAG(gc) \
@@ -193,7 +192,6 @@ class outputStream;
   LOG_TAG(tracking) \
   LOG_TAG(unload) /* Trace unloading of classes */ \
   LOG_TAG(unshareable) \
-  NOT_PRODUCT(LOG_TAG(upcall)) \
   LOG_TAG(update) \
   LOG_TAG(valuebasedclasses) \
   LOG_TAG(verification) \

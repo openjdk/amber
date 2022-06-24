@@ -36,7 +36,6 @@ import java.lang.ref.WeakReference;
 import java.net.Authenticator;
 import java.net.ConnectException;
 import java.net.CookieHandler;
-import java.net.InetAddress;
 import java.net.ProxySelector;
 import java.net.http.HttpConnectTimeoutException;
 import java.net.http.HttpTimeoutException;
@@ -336,7 +335,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
     private final Http2ClientImpl client2;
     private final long id;
     private final String dbgTag;
-    private final InetAddress localAddr;
 
     // The SSL DirectBuffer Supplier provides the ability to recycle
     // buffers used between the socket reader and the SSLEngine, or
@@ -433,17 +431,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
                            SingleFacadeFactory facadeFactory) {
         id = CLIENT_IDS.incrementAndGet();
         dbgTag = "HttpClientImpl(" + id +")";
-        @SuppressWarnings("removal")
-        var sm = System.getSecurityManager();
-        if (sm != null && builder.localAddr != null) {
-            // when a specific local address is configured, it will eventually
-            // lead to the SocketChannel.bind(...) call with an InetSocketAddress
-            // whose InetAddress is the local address and the port is 0. That ultimately
-            // leads to a SecurityManager.checkListen permission check for that port.
-            // so we do that security manager check here with port 0.
-            sm.checkListen(0);
-        }
-        localAddr = builder.localAddr;
         if (builder.sslContext == null) {
             try {
                 sslContext = SSLContext.getDefault();
@@ -1036,21 +1023,18 @@ final class HttpClientImpl extends HttpClient implements Trackable {
 
         // This returns immediately. So caller not allowed to send/receive
         // on connection.
-        void register(AsyncEvent e) {
-            var closed = this.closed;
-            if (!closed) {
-                synchronized (this) {
-                    closed = this.closed;
-                    if (!closed) {
-                        registrations.add(e);
-                    }
-                }
+        synchronized void register(AsyncEvent e) {
+            if (closed) e.abort(selectorClosedException());
+            registrations.add(e);
+            selector.wakeup();
+        }
+
+        synchronized void cancel(SocketChannel e) {
+            SelectionKey key = e.keyFor(selector);
+            if (key != null) {
+                key.cancel();
             }
-            if (closed) {
-                e.abort(selectorClosedException());
-            } else {
-                selector.wakeup();
-            }
+            selector.wakeup();
         }
 
         void wakeupSelector() {
@@ -1099,15 +1083,12 @@ final class HttpClientImpl extends HttpClient implements Trackable {
             if (!inSelectorThread) selector.wakeup();
         }
 
-        // Only called by the selector manager thread
-        private void shutdown() {
+        synchronized void shutdown() {
+            Log.logTrace("{0}: shutting down", getName());
+            if (debug.on()) debug.log("SelectorManager shutting down");
+            closed = true;
             try {
-                synchronized (this) {
-                    Log.logTrace("{0}: shutting down", getName());
-                    if (debug.on()) debug.log("SelectorManager shutting down");
-                    closed = true;
-                    selector.close();
-                }
+                selector.close();
             } catch (IOException ignored) {
             } finally {
                 owner.stop();
@@ -1539,10 +1520,6 @@ final class HttpClientImpl extends HttpClient implements Trackable {
     @Override
     public Version version() {
         return version;
-    }
-
-    InetAddress localAddress() {
-        return localAddr;
     }
 
     String dbgString() {

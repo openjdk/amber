@@ -19,30 +19,29 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
+ *
  */
 
-/**
- * @test
- * @compile --enable-preview -source ${jdk.version} EmptyRecordClass.java
- */
+#include "precompiled.hpp"
 
-public class EmptyRecordClass {
-    record X() {}
+#ifdef COMPILER2
 
-    void test(X w) {
-        switch (w) {
-            case X(): break;
-        }
-    }
+#include "opto/parse.hpp"
+#include "interpreter/bytecodes.hpp"
 
-
-    sealed interface W permits W.X1 {
-        record X1() implements W {}
-    }
-
-    public int test2(W w) {
-        return switch (w) {
-            case W.X1() -> 1;
-        };
-    }
+bool Parse::do_one_bytecode_targeted() {
+  switch (bc()) {
+    case Bytecodes::_idiv: // fallthrough
+    case Bytecodes::_irem: // fallthrough
+#ifdef _LP64
+    case Bytecodes::_ldiv: // fallthrough
+    case Bytecodes::_lrem:
+#endif
+      do_divmod_fixup();
+      return true;
+    default:
+      return false;
+  }
 }
+
+#endif // COMPILER2

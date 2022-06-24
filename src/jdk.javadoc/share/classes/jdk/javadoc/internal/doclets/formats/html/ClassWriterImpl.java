@@ -77,7 +77,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
 
     protected final TypeElement typeElement;
 
-    protected final ClassTree classTree;
+    protected final ClassTree classtree;
 
     /**
      * @param configuration the configuration data for the doclet
@@ -89,7 +89,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
         super(configuration, configuration.docPaths.forClass(typeElement));
         this.typeElement = typeElement;
         configuration.currentTypeElement = typeElement;
-        this.classTree = classTree;
+        this.classtree = classTree;
     }
 
     @Override
@@ -285,7 +285,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                     return;    // Don't generate the list, too huge
                 }
             }
-            Set<TypeElement> subclasses = classTree.hierarchy(typeElement).subtypes(typeElement);
+            Set<TypeElement> subclasses = classtree.directSubClasses(typeElement, false);
             if (!subclasses.isEmpty()) {
                 var dl = HtmlTree.DL(HtmlStyle.notes);
                 dl.add(HtmlTree.DT(contents.subclassesLabel));
@@ -298,7 +298,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
     @Override
     public void addSubInterfacesInfo(Content target) {
         if (utils.isPlainInterface(typeElement)) {
-            Set<TypeElement> subInterfaces = classTree.hierarchy(typeElement).allSubtypes(typeElement);
+            Set<TypeElement> subInterfaces = classtree.allSubClasses(typeElement, false);
             if (!subInterfaces.isEmpty()) {
                 var dl = HtmlTree.DL(HtmlStyle.notes);
                 dl.add(HtmlTree.DT(contents.subinterfacesLabel));
@@ -318,7 +318,7 @@ public class ClassWriterImpl extends SubWriterHolderWriter implements ClassWrite
                 return;    // Don't generate the list, too huge
             }
         }
-        Set<TypeElement> implcl = classTree.implementingClasses(typeElement);
+        Set<TypeElement> implcl = classtree.implementingClasses(typeElement);
         if (!implcl.isEmpty()) {
             var dl = HtmlTree.DL(HtmlStyle.notes);
             dl.add(HtmlTree.DT(contents.implementingClassesLabel));

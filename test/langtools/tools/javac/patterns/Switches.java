@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -82,18 +82,12 @@ public class Switches {
         switchNestingTest(this::switchNestingExpressionStatement);
         switchNestingTest(this::switchNestingExpressionExpression);
         switchNestingTest(this::switchNestingIfSwitch);
-        npeTest(x -> switchOverNull1());
+        assertEquals(2, switchOverNull1());
         assertEquals(2, switchOverNull2());
         assertEquals(2, switchOverNull3());
         assertEquals(5, switchOverPrimitiveInt(0));
         assertEquals(7, switchOverPrimitiveInt(1));
         assertEquals(9, switchOverPrimitiveInt(2));
-        assertEquals("a", deconstructStatement(new R("a")));
-        assertEquals("1", deconstructStatement(new R(1)));
-        assertEquals("other", deconstructStatement(""));
-        assertEquals("a", deconstructExpression(new R("a")));
-        assertEquals("1", deconstructExpression(new R(1)));
-        assertEquals("other", deconstructExpression(""));
     }
 
     void run(Function<Object, Integer> mapper) {
@@ -275,7 +269,7 @@ public class Switches {
             case A: return "a";
             case B: return "b";
             case C: return String.valueOf(e);
-            case E x when "A".equals(x.name()): return "broken";
+            case E x && "A".equals(x.name()): return "broken";
             case null, E x: return String.valueOf(x);
         }
     }
@@ -285,7 +279,7 @@ public class Switches {
             case A -> "a";
             case B -> "b";
             case C -> String.valueOf(e);
-            case E x when "A".equals(x.name()) -> "broken";
+            case E x && "A".equals(x.name()) -> "broken";
             case null, E x -> String.valueOf(x);
         };
     }
@@ -294,7 +288,7 @@ public class Switches {
         switch (e) {
             case A: return "a";
             case B: return "b";
-            case E x when "C".equals(x.name()): return "C";
+            case E x && "C".equals(x.name()): return "C";
             case null, E x: return e == E.C ? "broken" : String.valueOf(x);
         }
     }
@@ -303,7 +297,7 @@ public class Switches {
         return switch (e) {
             case A -> "a";
             case B -> "b";
-            case E x when "C".equals(x.name()) -> "C";
+            case E x && "C".equals(x.name()) -> "C";
             case null, E x -> e == E.C ? "broken" : String.valueOf(x);
         };
     }
@@ -312,7 +306,7 @@ public class Switches {
         switch (e) {
             case A: return "a";
             case B: return "b";
-            case Object x when "C".equals(x.toString()): return "C";
+            case Object x && "C".equals(x.toString()): return "C";
             case null, E x: return e == E.C ? "broken" : String.valueOf(x);
         }
     }
@@ -321,7 +315,7 @@ public class Switches {
         return switch (e) {
             case A -> "a";
             case B -> "b";
-            case Object x when "C".equals(x.toString()) -> "C";
+            case Object x && "C".equals(x.toString()) -> "C";
             case null, E x -> e == E.C ? "broken" : String.valueOf(x);
         };
     }
@@ -330,7 +324,7 @@ public class Switches {
         switch (e) {
             case A: return "a";
             case B: return "b";
-            case Runnable x when "C".equals(x.toString()): return "C";
+            case Runnable x && "C".equals(x.toString()): return "C";
             case null, E x: return e == E.C ? "broken" : String.valueOf(x);
         }
     }
@@ -339,7 +333,7 @@ public class Switches {
         return switch (e) {
             case A -> "a";
             case B -> "b";
-            case Runnable x when "C".equals(x.toString()) -> "C";
+            case Runnable x && "C".equals(x.toString()) -> "C";
             case null, E x -> e == E.C ? "broken" : String.valueOf(x);
         };
     }
@@ -348,7 +342,7 @@ public class Switches {
         switch (e != null ? e.name() : null) {
             case "A": return "a";
             case Switches.ConstantClassClash: return "b";
-            case String x when "C".equals(x): return "C";
+            case String x && "C".equals(x): return "C";
             case null, String x: return "C".equals(x) ? "broken" : String.valueOf(x);
         }
     }
@@ -357,7 +351,7 @@ public class Switches {
         return switch (e != null ? e.name() : null) {
             case "A" -> "a";
             case ConstantClassClash -> "b";
-            case String x when "C".equals(x) -> "C";
+            case String x && "C".equals(x) -> "C";
             case null, String x -> e == E.C ? "broken" : String.valueOf(x);
         };
     }
@@ -366,7 +360,7 @@ public class Switches {
         switch (e != null ? e.ordinal() : null) {
             case 0: return "a";
             case 1: return "b";
-            case Integer x when x.equals(2): return "C";
+            case Integer x && x.equals(2): return "C";
             case null, Integer x: return Objects.equals(x, 2) ? "broken" : String.valueOf(x);
         }
     }
@@ -375,7 +369,7 @@ public class Switches {
         return switch (e != null ? e.ordinal() : null) {
             case 0 -> "a";
             case 1 -> "b";
-            case Integer x when x.equals(2) -> "C";
+            case Integer x && x.equals(2) -> "C";
             case null, Integer x -> Objects.equals(x, 2) ? "broken" : String.valueOf(x);
         };
     }
@@ -384,7 +378,7 @@ public class Switches {
         int r = 0;
 
         switch (i) {
-            case Integer o when o != null:
+            case Integer o && o != null:
                 r = 1;
             default:
                 r = 2;
@@ -395,7 +389,7 @@ public class Switches {
 
     Integer testFallThroughExpression(Integer i) {
         int r = switch (i) {
-            case Integer o when o != null:
+            case Integer o && o != null:
                 r = 1;
             default:
                 r = 2;
@@ -409,7 +403,7 @@ public class Switches {
         int r = 0;
 
         switch (i) {
-            case Integer o when o != null:
+            case Integer o && o != null:
                 r = 1;
             case null, default:
                 r = 2;
@@ -420,7 +414,7 @@ public class Switches {
 
     Integer testFallThrough2Expression(Integer i) {
         int r = switch (i) {
-            case Integer o when o != null:
+            case Integer o && o != null:
                 r = 1;
             case null, default:
                 r = 2;
@@ -445,17 +439,8 @@ public class Switches {
     }
 
     void exhaustiveStatementSane(Object o) {
-        try {
-            switch (o) {
-                case Object obj:; //no break intentionally - should not fall through to any possible default
-            }
-            if (o == null) {
-                throw new AssertionError();
-            }
-        } catch (NullPointerException ex) {
-            if (o != null) {
-                throw new AssertionError();
-            }
+        switch (o) {
+            case Object obj:; //no break intentionally - should not fall through to any possible default
         }
         switch (o) {
             case null, Object obj:; //no break intentionally - should not fall through to any possible default
@@ -612,24 +597,8 @@ public class Switches {
     private int switchOverPrimitiveInt(Integer i) {
         return switch (i) {
             case 0 -> 5 + 0;
-            case Integer j when j == 1 -> 6 + j;
+            case Integer j && j == 1 -> 6 + j;
             case Integer j -> 7 + j;
-        };
-    }
-
-    String deconstructStatement(Object o) {
-        switch (o) {
-            case R(String s) -> {return s;}
-            case R(Integer i) r -> {return r.o().toString();}
-            case Object x -> {return "other";}
-        }
-    }
-
-    String deconstructExpression(Object o) {
-        return switch (o) {
-            case R(String s) -> s;
-            case R(Integer i) r -> r.o().toString();
-            case Object x -> "other";
         };
     }
 
@@ -672,6 +641,4 @@ public class Switches {
 
         @Override public void run() {}
     }
-
-    record R(Object o) {}
 }

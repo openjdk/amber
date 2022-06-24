@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,39 +24,38 @@
  */
 package jdk.internal.foreign.abi.x64.windows;
 
-import jdk.internal.foreign.Utils;
-import jdk.internal.foreign.abi.ABIDescriptor;
-import jdk.internal.foreign.abi.Binding;
-import jdk.internal.foreign.abi.CallingSequence;
-import jdk.internal.foreign.abi.CallingSequenceBuilder;
-import jdk.internal.foreign.abi.DowncallLinker;
-import jdk.internal.foreign.abi.SharedUtils;
-import jdk.internal.foreign.abi.UpcallLinker;
-import jdk.internal.foreign.abi.VMStorage;
-import jdk.internal.foreign.abi.x64.X86_64Architecture;
-
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.GroupLayout;
 import java.lang.foreign.MemoryAddress;
 import java.lang.foreign.MemoryLayout;
 import java.lang.foreign.MemorySegment;
 import java.lang.foreign.MemorySession;
+import jdk.internal.foreign.Utils;
+import jdk.internal.foreign.abi.CallingSequenceBuilder;
+import jdk.internal.foreign.abi.ABIDescriptor;
+import jdk.internal.foreign.abi.Binding;
+import jdk.internal.foreign.abi.CallingSequence;
+import jdk.internal.foreign.abi.ProgrammableInvoker;
+import jdk.internal.foreign.abi.ProgrammableUpcallHandler;
+import jdk.internal.foreign.abi.VMStorage;
+import jdk.internal.foreign.abi.x64.X86_64Architecture;
+import jdk.internal.foreign.abi.SharedUtils;
+
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.util.List;
 import java.util.Optional;
 
-import static jdk.internal.foreign.PlatformLayouts.Win64;
+import static jdk.internal.foreign.PlatformLayouts.*;
 import static jdk.internal.foreign.abi.x64.X86_64Architecture.*;
 
 /**
- * For the Windowx x64 C ABI specifically, this class uses CallingSequenceBuilder
- * to translate a C FunctionDescriptor into a CallingSequence, which can then be turned into a MethodHandle.
+ * For the Windowx x64 C ABI specifically, this class uses the ProgrammableInvoker API, namely CallingSequenceBuilder2
+ * to translate a C FunctionDescriptor into a CallingSequence2, which can then be turned into a MethodHandle.
  *
  * This includes taking care of synthetic arguments like pointers to return buffers for 'in-memory' returns.
  */
 public class CallArranger {
-    public static final int MAX_REGISTER_ARGUMENTS = 4;
     private static final int STACK_SLOT_SIZE = 8;
 
     private static final ABIDescriptor CWindows = X86_64Architecture.abiFor(
@@ -68,9 +67,7 @@ public class CallArranger {
         new VMStorage[] { rax, r10, r11 },
         new VMStorage[] { xmm4, xmm5 },
         16,
-        32,
-        r10, // target addr reg
-        r11  // ret buf addr reg
+        32
     );
 
     // record
@@ -86,7 +83,7 @@ public class CallArranger {
 
     public static Bindings getBindings(MethodType mt, FunctionDescriptor cDesc, boolean forUpcall) {
         class CallingSequenceBuilderHelper {
-            final CallingSequenceBuilder csb = new CallingSequenceBuilder(CWindows, forUpcall);
+            final CallingSequenceBuilder csb = new CallingSequenceBuilder(forUpcall);
             final BindingCalculator argCalc =
                 forUpcall ? new BoxBindingCalculator(true) : new UnboxBindingCalculator(true);
             final BindingCalculator retCalc =
@@ -118,13 +115,15 @@ public class CallArranger {
             csb.addArgumentBindings(mt.parameterType(i), cDesc.argumentLayouts().get(i), SharedUtils.isVarargsIndex(cDesc, i));
         }
 
+        csb.csb.setTrivial(SharedUtils.isTrivial(cDesc));
+
         return new Bindings(csb.csb.build(), returnInMemory);
     }
 
     public static MethodHandle arrangeDowncall(MethodType mt, FunctionDescriptor cDesc) {
         Bindings bindings = getBindings(mt, cDesc, false);
 
-        MethodHandle handle = new DowncallLinker(CWindows, bindings.callingSequence).getBoundMethodHandle();
+        MethodHandle handle = new ProgrammableInvoker(CWindows, bindings.callingSequence).getBoundMethodHandle();
 
         if (bindings.isInMemoryReturn) {
             handle = SharedUtils.adaptDowncallForIMR(handle, cDesc);
@@ -140,7 +139,7 @@ public class CallArranger {
             target = SharedUtils.adaptUpcallForIMR(target, false /* need the return value as well */);
         }
 
-        return UpcallLinker.make(CWindows, target, bindings.callingSequence, session);
+        return ProgrammableUpcallHandler.make(CWindows, target, bindings.callingSequence, session);
     }
 
     private static boolean isInMemoryReturn(Optional<MemoryLayout> returnLayout) {
@@ -161,7 +160,7 @@ public class CallArranger {
         }
 
         VMStorage nextStorage(int type, MemoryLayout layout) {
-            if (nRegs >= MAX_REGISTER_ARGUMENTS) {
+            if (nRegs >= Windowsx64Linker.MAX_REGISTER_ARGUMENTS) {
                 assert forArguments : "no stack returns";
                 // stack
                 long alignment = Math.max(SharedUtils.alignment(layout, true), STACK_SLOT_SIZE);

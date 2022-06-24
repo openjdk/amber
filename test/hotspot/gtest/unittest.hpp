@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2016, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -68,9 +68,6 @@
   #endif
 #endif
 
-// Wrapper around os::exit so we don't need to include os.hpp here.
-extern void gtest_exit_from_child_vm(int num);
-
 #define CONCAT(a, b) a ## b
 
 #define TEST(category, name) GTEST_TEST(category, name)
@@ -97,7 +94,7 @@ extern void gtest_exit_from_child_vm(int num);
       }                                                             \
     }                                                               \
     fprintf(stderr, "OKIDOKI");                                     \
-    gtest_exit_from_child_vm(0);                                    \
+    exit(0);                                                        \
   }                                                                 \
                                                                     \
   TEST(category, CONCAT(name, _other_vm)) {                         \
@@ -115,7 +112,7 @@ extern void gtest_exit_from_child_vm(int num);
   static void child_ ## category ## _ ## name ## _() {              \
     ::testing::GTEST_FLAG(throw_on_failure) = true;                 \
     test_ ## category ## _ ## name ## _();                          \
-    gtest_exit_from_child_vm(0);                                    \
+    exit(0);                                                        \
   }                                                                 \
                                                                     \
   TEST(category, CONCAT(name, _vm_assert)) {                        \
@@ -137,7 +134,7 @@ extern void gtest_exit_from_child_vm(int num);
   static void child_ ## category ## _ ## name ## _() {              \
     ::testing::GTEST_FLAG(throw_on_failure) = true;                 \
     test_ ## category ## _ ## name ## _();                          \
-    gtest_exit_from_child_vm(0);                                    \
+    exit(0);                                                        \
   }                                                                 \
                                                                     \
   TEST(category, CONCAT(name, _vm_assert)) {                        \
@@ -158,13 +155,13 @@ extern void gtest_exit_from_child_vm(int num);
   static void child_ ## category ## _ ## name ## _() {              \
     ::testing::GTEST_FLAG(throw_on_failure) = true;                 \
     test_ ## category ## _ ## name ## _();                          \
-    gtest_exit_from_child_vm(0);                                    \
+    exit(0);                                                        \
   }                                                                 \
                                                                     \
   TEST(category, CONCAT(name, _vm_assert)) {                        \
     ASSERT_EXIT(child_ ## category ## _ ## name ## _(),             \
                 ::testing::ExitedWithCode(1),                       \
-                msg);                                               \
+                msg);                            \
   }                                                                 \
                                                                     \
   void test_ ## category ## _ ## name ## _()

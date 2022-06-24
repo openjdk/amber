@@ -107,6 +107,8 @@ class LogTargetImpl;
 template <LogTagType T0, LogTagType T1 = LogTag::__NO_TAG, LogTagType T2 = LogTag::__NO_TAG, LogTagType T3 = LogTag::__NO_TAG,
           LogTagType T4 = LogTag::__NO_TAG, LogTagType GuardTag = LogTag::__NO_TAG>
 class LogImpl {
+ private:
+  static const size_t LogBufferSize = 512;
  public:
   // Make sure no more than the maximum number of tags have been given.
   // The GuardTag allows this to be detected if/when it happens. If the GuardTag
@@ -181,7 +183,7 @@ public:
   }
 
   static bool is_enabled() {
-    return LogTagSetMapping<T0, T1, T2, T3, T4, GuardTag>::tagset().is_level(level);
+    return LogImpl<T0, T1, T2, T3, T4, GuardTag>::is_level(level);
   }
 
   static bool develop_is_enabled() {
@@ -192,7 +194,7 @@ public:
   static void print(const char* fmt, ...) ATTRIBUTE_PRINTF(1, 2) {
     va_list args;
     va_start(args, fmt);
-    LogTagSetMapping<T0, T1, T2, T3, T4, GuardTag>::tagset().vwrite(level, fmt, args);
+    LogImpl<T0, T1, T2, T3, T4, GuardTag>::vwrite(level, fmt, args);
     va_end(args);
   }
 

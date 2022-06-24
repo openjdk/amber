@@ -33,7 +33,6 @@ import javax.sound.sampled.Mixer;
 
 /**
  * @test
- * @key sound
  * @bug 4237703
  * @summary Check that Clip.getMicrosecondLength() returns correct value.
  */

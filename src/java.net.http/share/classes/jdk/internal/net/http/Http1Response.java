@@ -66,7 +66,6 @@ class Http1Response<T> {
     private final Http1AsyncReceiver asyncReceiver;
     private volatile EOFException eof;
     private volatile BodyParser bodyParser;
-    private volatile boolean closeWhenFinished;
     // max number of bytes of (fixed length) body to ignore on redirect
     private static final int MAX_IGNORE = 1024;
 
@@ -405,11 +404,7 @@ class Http1Response<T> {
 
     private void onFinished() {
         asyncReceiver.clear();
-        if (closeWhenFinished) {
-            if (debug.on())
-                debug.log("Closing Connection when finished");
-            connection.close();
-        } else if (return2Cache) {
+        if (return2Cache) {
             Log.logTrace("Attempting to return connection to the pool: {0}", connection);
             // TODO: need to do something here?
             // connection.setAsyncCallbacks(null, null, null);
@@ -419,10 +414,6 @@ class Http1Response<T> {
                 debug.log(connection.getConnectionFlow() + ": return to HTTP/1.1 pool");
             connection.closeOrReturnToCache(eof == null ? headers : null);
         }
-    }
-
-    void closeWhenFinished() {
-        closeWhenFinished = true;
     }
 
     HttpHeaders responseHeaders() {

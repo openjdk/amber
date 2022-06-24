@@ -1,4 +1,3 @@
-
     @Test(dataProvider = "boolUnaryOpProvider")
     static void [[TEST]]$vectorteststype$(IntFunction<boolean[]> fm) {
 [[KERNEL]]

@@ -1601,7 +1601,7 @@ public class JmodTask {
         return System.getProperty("java.version");
     }
 
-    static String getMessage(String key, Object... args) {
+    private static String getMessage(String key, Object... args) {
         try {
             return MessageFormat.format(ResourceBundleHelper.bundle.getString(key), args);
         } catch (MissingResourceException e) {

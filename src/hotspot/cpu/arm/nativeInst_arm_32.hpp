@@ -434,40 +434,33 @@ inline NativeCall* nativeCall_before(address return_address) {
 
 class NativePostCallNop: public NativeInstruction {
 public:
-  bool check() const { return is_nop(); }
-  int displacement() const { return 0; }
-  void patch(jint diff);
-  void make_deopt();
+  bool check() const { Unimplemented(); return false; }
+  int displacement() const { Unimplemented(); return 0; }
+  void patch(jint diff) { Unimplemented(); }
+  void make_deopt() { Unimplemented(); }
 };
 
 inline NativePostCallNop* nativePostCallNop_at(address address) {
-  NativePostCallNop* nop = (NativePostCallNop*) address;
-  if (nop->check()) {
-    return nop;
-  }
+  Unimplemented();
   return NULL;
 }
 
 class NativeDeoptInstruction: public NativeInstruction {
 public:
-  enum {
-    instruction_size            =    4,
-    instruction_offset          =    0,
-  };
+  address instruction_address() const       { Unimplemented(); return NULL; }
+  address next_instruction_address() const  { Unimplemented(); return NULL; }
 
-  address instruction_address() const       { return addr_at(instruction_offset); }
-  address next_instruction_address() const  { return addr_at(instruction_size); }
-
-  void  verify();
+  void  verify() { Unimplemented(); }
 
   static bool is_deopt_at(address instr) {
-    assert(instr != NULL, "");
-    uint32_t value = *(uint32_t *) instr;
-    return value == 0xe7fdecfa;
+    Unimplemented();
+    return false;
   }
 
   // MT-safe patching
-  static void insert(address code_pos);
+  static void insert(address code_pos) {
+    Unimplemented();
+  }
 };
 
 #endif // CPU_ARM_NATIVEINST_ARM_32_HPP

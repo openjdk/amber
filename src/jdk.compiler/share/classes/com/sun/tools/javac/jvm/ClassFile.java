@@ -120,8 +120,7 @@ public class ClassFile {
         V60(60, 0),   // JDK 16
         V61(61, 0),   // JDK 17
         V62(62, 0),   // JDK 18
-        V63(63, 0),   // JDK 19
-        V64(64, 0);   // JDK 20
+        V63(63, 0);   // JDK 19
         Version(int major, int minor) {
             this.major = major;
             this.minor = minor;

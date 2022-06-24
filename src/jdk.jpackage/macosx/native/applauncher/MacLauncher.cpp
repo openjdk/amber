@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,10 +26,8 @@
 #include "AppLauncher.h"
 #include "app.h"
 #include "FileUtils.h"
-#include "PackageFile.h"
 #include "UnixSysInfo.h"
 #include "JvmLauncher.h"
-#include "ErrorHandling.h"
 
 
 namespace {
@@ -51,36 +49,17 @@ void initJvmLauncher() {
     const tstring appImageRoot = FileUtils::dirname(FileUtils::dirname(
             FileUtils::dirname(launcherPath)));
 
-    const tstring appDirPath = FileUtils::mkpath() << appImageRoot
-            << _T("Contents/app");
-
-    const PackageFile pkgFile = PackageFile::loadFromAppDir(appDirPath);
-
     // Create JVM launcher and save in global variable.
-    AppLauncher appLauncher = AppLauncher()
+    jvmLauncher = AppLauncher()
         .setImageRoot(appImageRoot)
         .addJvmLibName(_T("Contents/Home/lib/libjli.dylib"))
         // add backup - older version such as JDK11 have it in jli sub-dir
         .addJvmLibName(_T("Contents/Home/lib/jli/libjli.dylib"))
-        .setAppDir(appDirPath)
+        .setAppDir(FileUtils::mkpath() << appImageRoot << _T("Contents/app"))
         .setLibEnvVariableName(_T("DYLD_LIBRARY_PATH"))
         .setDefaultRuntimePath(FileUtils::mkpath() << appImageRoot
-                << _T("Contents/runtime"));
-
-    if (!pkgFile.getPackageName().empty()) {
-        tstring homeDir;
-        JP_TRY;
-        homeDir = SysInfo::getEnvVariable("HOME");
-        JP_CATCH_ALL;
-
-        if (!homeDir.empty()) {
-            appLauncher.addCfgFileLookupDir(FileUtils::mkpath()
-                    << homeDir << "Library/Application Support"
-                    << pkgFile.getPackageName());
-        }
-    }
-
-    jvmLauncher = appLauncher.createJvmLauncher();
+                << _T("Contents/runtime"))
+        .createJvmLauncher();
 
     // Kick start JVM launching. The function wouldn't return!
     launchJvm();

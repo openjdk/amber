@@ -347,7 +347,7 @@ public class DebugeeBinder extends Log.Logger implements Finalizable {
                         + "server=" + server
                         + ",transport=" + argumentHandler.getTransportName()
                         + ",address=" + transportAddress
-                        + ",includevirtualthreads=y";
+                        + ",enumeratevthreads=y";
 
         if (! argumentHandler.isDefaultJVMDIStrictMode()) {
             if (argumentHandler.isJVMDIStrictMode())

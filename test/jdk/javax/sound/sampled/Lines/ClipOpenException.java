@@ -33,7 +33,6 @@ import javax.sound.sampled.TargetDataLine;
 
 /**
  * @test
- * @key sound
  * @bug 4679187
  * @summary Clip.open() throws unexpected Exceptions. verifies that clip,
  *          sourcedataline and targetdataline throw IllegalArgumentExcepotion if

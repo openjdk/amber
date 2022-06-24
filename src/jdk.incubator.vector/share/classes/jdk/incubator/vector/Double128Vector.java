@@ -24,7 +24,7 @@
  */
 package jdk.incubator.vector;
 
-import java.lang.foreign.MemorySegment;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
@@ -463,22 +463,6 @@ final class Double128Vector extends DoubleVector {
 
     @Override
     @ForceInline
-    public Double128Vector compress(VectorMask<Double> m) {
-        return (Double128Vector)
-            super.compressTemplate(Double128Mask.class,
-                                   (Double128Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
-    public Double128Vector expand(VectorMask<Double> m) {
-        return (Double128Vector)
-            super.expandTemplate(Double128Mask.class,
-                                   (Double128Mask) m);  // specialize
-    }
-
-    @Override
-    @ForceInline
     public Double128Vector selectFrom(Vector<Double> v) {
         return (Double128Vector)
             super.selectFromTemplate((Double128Vector) v);  // specialize
@@ -653,15 +637,6 @@ final class Double128Vector extends DoubleVector {
         public Double128Mask not() {
             return xor(maskAll(true));
         }
-
-        @Override
-        @ForceInline
-        public Double128Mask compress() {
-            return (Double128Mask)VectorSupport.compressExpandOp(VectorSupport.VECTOR_OP_MASK_COMPRESS,
-                Double128Vector.class, Double128Mask.class, ETYPE, VLENGTH, null, this,
-                (v1, m1) -> VSPECIES.iota().compare(VectorOperators.LT, m1.trueCount()));
-        }
-
 
         // Binary operations
 
@@ -839,8 +814,8 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m, int offsetInRange) {
-        return super.fromArray0Template(Double128Mask.class, a, offset, (Double128Mask) m, offsetInRange);  // specialize
+    DoubleVector fromArray0(double[] a, int offset, VectorMask<Double> m) {
+        return super.fromArray0Template(Double128Mask.class, a, offset, (Double128Mask) m);  // specialize
     }
 
     @ForceInline
@@ -855,15 +830,29 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    DoubleVector fromMemorySegment0(MemorySegment ms, long offset) {
-        return super.fromMemorySegment0Template(ms, offset);  // specialize
+    DoubleVector fromByteArray0(byte[] a, int offset) {
+        return super.fromByteArray0Template(a, offset);  // specialize
     }
 
     @ForceInline
     @Override
     final
-    DoubleVector fromMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m, int offsetInRange) {
-        return super.fromMemorySegment0Template(Double128Mask.class, ms, offset, (Double128Mask) m, offsetInRange);  // specialize
+    DoubleVector fromByteArray0(byte[] a, int offset, VectorMask<Double> m) {
+        return super.fromByteArray0Template(Double128Mask.class, a, offset, (Double128Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset) {
+        return super.fromByteBuffer0Template(bb, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    DoubleVector fromByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
+        return super.fromByteBuffer0Template(Double128Mask.class, bb, offset, (Double128Mask) m);  // specialize
     }
 
     @ForceInline
@@ -891,8 +880,22 @@ final class Double128Vector extends DoubleVector {
     @ForceInline
     @Override
     final
-    void intoMemorySegment0(MemorySegment ms, long offset, VectorMask<Double> m) {
-        super.intoMemorySegment0Template(Double128Mask.class, ms, offset, (Double128Mask) m);
+    void intoByteArray0(byte[] a, int offset) {
+        super.intoByteArray0Template(a, offset);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteArray0(byte[] a, int offset, VectorMask<Double> m) {
+        super.intoByteArray0Template(Double128Mask.class, a, offset, (Double128Mask) m);  // specialize
+    }
+
+    @ForceInline
+    @Override
+    final
+    void intoByteBuffer0(ByteBuffer bb, int offset, VectorMask<Double> m) {
+        super.intoByteBuffer0Template(Double128Mask.class, bb, offset, (Double128Mask) m);
     }
 
 
@@ -901,4 +904,3 @@ final class Double128Vector extends DoubleVector {
     // ================================================
 
 }
-

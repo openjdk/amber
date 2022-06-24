@@ -24,7 +24,6 @@
 /**
  * @test
  * @summary Verifies JVMTI hadles pinned virtual threads correctly.
- * @requires vm.continuations
  * @compile --enable-preview -source ${jdk.version} PinnedTaskTest.java
  * @run main/othervm/native --enable-preview -agentlib:PinnedTaskTest PinnedTaskTest
  */

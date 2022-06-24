@@ -860,10 +860,6 @@ public class Gen extends JCTree.Visitor {
      *  @param pt      The expression's expected type (proto-type).
      */
     public Item genExpr(JCTree tree, Type pt) {
-        if (!code.isAlive()) {
-            return items.makeStackItem(pt);
-        }
-
         Type prevPt = this.pt;
         try {
             if (tree.type.constValue() != null) {
@@ -1303,9 +1299,9 @@ public class Gen extends JCTree.Visitor {
 
             List<JCCase> l = cases;
             for (int i = 0; i < labels.length; i++) {
-                if (l.head.labels.head instanceof JCConstantCaseLabel constLabel) {
+                if (l.head.labels.head.isExpression()) {
                     Assert.check(l.head.labels.size() == 1);
-                    int val = ((Number) constLabel.expr.type.constValue()).intValue();
+                    int val = ((Number)((JCExpression) l.head.labels.head).type.constValue()).intValue();
                     labels[i] = val;
                     if (val < lo) lo = val;
                     if (hi < val) hi = val;

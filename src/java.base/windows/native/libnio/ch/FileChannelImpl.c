@@ -36,16 +36,20 @@
 #include <Mswsock.h>
 #pragma comment(lib, "Mswsock.lib")
 
+static jfieldID chan_fd; /* id for jobject 'fd' in java.io.FileChannel */
+
 /**************************************************************
- * static method to retrieve the allocation granularity
+ * static method to store field ID's in initializers
+ * and retrieve the allocation granularity
  */
 JNIEXPORT jlong JNICALL
-Java_sun_nio_ch_FileChannelImpl_allocationGranularity0(JNIEnv *env, jclass clazz)
+Java_sun_nio_ch_FileChannelImpl_initIDs(JNIEnv *env, jclass clazz)
 {
     SYSTEM_INFO si;
     jint align;
     GetSystemInfo(&si);
     align = si.dwAllocationGranularity;
+    chan_fd = (*env)->GetFieldID(env, clazz, "fd", "Ljava/io/FileDescriptor;");
     return align;
 }
 
@@ -55,7 +59,7 @@ Java_sun_nio_ch_FileChannelImpl_allocationGranularity0(JNIEnv *env, jclass clazz
  */
 
 JNIEXPORT jlong JNICALL
-Java_sun_nio_ch_FileChannelImpl_map0(JNIEnv *env, jobject this, jobject fdo,
+Java_sun_nio_ch_FileChannelImpl_map0(JNIEnv *env, jobject this,
                                      jint prot, jlong off, jlong len, jboolean map_sync)
 {
     void *mapAddress = 0;
@@ -64,6 +68,7 @@ Java_sun_nio_ch_FileChannelImpl_map0(JNIEnv *env, jobject this, jobject fdo,
     jlong maxSize = off + len;
     jint lowLen = (jint)(maxSize);
     jint highLen = (jint)(maxSize >> 32);
+    jobject fdo = (*env)->GetObjectField(env, this, chan_fd);
     HANDLE fileHandle = (HANDLE)(handleval(env, fdo));
     HANDLE mapping;
     DWORD mapAccess = FILE_MAP_READ;
@@ -105,7 +110,7 @@ Java_sun_nio_ch_FileChannelImpl_map0(JNIEnv *env, jobject this, jobject fdo,
         mapAccess,           /* Read and write access */
         highOffset,          /* High word of offset */
         lowOffset,           /* Low word of offset */
-        (SIZE_T)len);        /* Number of bytes to map */
+        (DWORD)len);         /* Number of bytes to map */
     mapError = GetLastError();
 
     result = CloseHandle(mapping);

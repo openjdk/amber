@@ -295,13 +295,13 @@ public class PipedInputStream extends InputStream {
      * This method blocks until input data is available, the end of the
      * stream is detected, or an exception is thrown.
      *
-     * @return   {@inheritDoc}
+     * @return   the next byte of data, or {@code -1} if the end of the
+     *           stream is reached.
      * @throws   IOException  if the pipe is
      *           {@link #connect(java.io.PipedOutputStream) unconnected},
      *           <a href="#BROKEN"> {@code broken}</a>, closed,
      *           or if an I/O error occurs.
      */
-    @Override
     public synchronized int read()  throws IOException {
         if (!connected) {
             throw new IOException("Pipe not connected");
@@ -352,17 +352,20 @@ public class PipedInputStream extends InputStream {
      * available, end of the stream has been detected, or an exception is
      * thrown.
      *
-     * @param      b     {@inheritDoc}
-     * @param      off   {@inheritDoc}
-     * @param      len   {@inheritDoc}
-     * @return     {@inheritDoc}
-     * @throws     NullPointerException {@inheritDoc}
-     * @throws     IndexOutOfBoundsException {@inheritDoc}
+     * @param      b     the buffer into which the data is read.
+     * @param      off   the start offset in the destination array {@code b}
+     * @param      len   the maximum number of bytes read.
+     * @return     the total number of bytes read into the buffer, or
+     *             {@code -1} if there is no more data because the end of
+     *             the stream has been reached.
+     * @throws     NullPointerException If {@code b} is {@code null}.
+     * @throws     IndexOutOfBoundsException If {@code off} is negative,
+     *             {@code len} is negative, or {@code len} is greater than
+     *             {@code b.length - off}
      * @throws     IOException if the pipe is <a href="#BROKEN"> {@code broken}</a>,
      *           {@link #connect(java.io.PipedOutputStream) unconnected},
      *           closed, or if an I/O error occurs.
      */
-    @Override
     public synchronized int read(byte[] b, int off, int len)  throws IOException {
         if (b == null) {
             throw new NullPointerException();
@@ -419,10 +422,9 @@ public class PipedInputStream extends InputStream {
      *         is {@link #connect(java.io.PipedOutputStream) unconnected}, or
      *         <a href="#BROKEN"> {@code broken}</a>.
      *
-     * @throws IOException  {@inheritDoc}
+     * @throws IOException  if an I/O error occurs.
      * @since  1.0.2
      */
-    @Override
     public synchronized int available() throws IOException {
         if(in < 0)
             return 0;
@@ -435,11 +437,11 @@ public class PipedInputStream extends InputStream {
     }
 
     /**
-     * {@inheritDoc}
+     * Closes this piped input stream and releases any system resources
+     * associated with the stream.
      *
-     * @throws     IOException  {@inheritDoc}
+     * @throws     IOException  if an I/O error occurs.
      */
-    @Override
     public void close()  throws IOException {
         closedByReader = true;
         synchronized (this) {

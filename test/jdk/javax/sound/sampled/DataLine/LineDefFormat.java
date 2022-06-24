@@ -31,7 +31,6 @@ import javax.sound.sampled.TargetDataLine;
 
 /**
  * @test
- * @key sound
  * @bug 5053380
  * @summary Verify that getting a line initializes it with the format in
  *          DataLine.Info

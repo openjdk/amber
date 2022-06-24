@@ -38,6 +38,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import jdk.jfr.AnnotationElement;
 import jdk.jfr.Event;
@@ -85,7 +86,7 @@ public final class MetadataRepository {
                 // annotations, such as Period and Threshold.
                 if (pEventType.hasPeriod()) {
                     pEventType.setEventHook(true);
-                    if (!pEventType.isMethodSampling()) {
+                    if (!(Type.EVENT_NAME_PREFIX + "ExecutionSample").equals(type.getName())) {
                         requestHooks.add(new RequestHook(pEventType));
                     }
                 }
@@ -158,7 +159,7 @@ public final class MetadataRepository {
         configuration.getPlatformEventType().setRegistered(true);
         typeLibrary.addType(configuration.getPlatformEventType());
         if (jvm.isRecording()) {
-            settingsManager.setEventControl(configuration.getEventControl(), true, JVM.counterTime());
+            settingsManager.setEventControl(configuration.getEventControl());
             settingsManager.updateRetransform(Collections.singletonList((eventClass)));
        }
        setStaleMetadata();
@@ -225,8 +226,8 @@ public final class MetadataRepository {
         return configuration;
     }
 
-    public synchronized void setSettings(List<Map<String, String>> list, boolean writeSettingEvents) {
-        settingsManager.setSettings(list, writeSettingEvents);
+    public synchronized void setSettings(List<Map<String, String>> list) {
+        settingsManager.setSettings(list);
     }
 
     synchronized void disableEvents() {

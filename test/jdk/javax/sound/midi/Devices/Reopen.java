@@ -28,7 +28,6 @@ import javax.sound.midi.Synthesizer;
 
 /**
  * @test
- * @key sound
  * @bug 4914667
  * @summary Closing and reopening MIDI IN device on Linux throws
  *          MidiUnavailableException

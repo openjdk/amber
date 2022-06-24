@@ -3600,7 +3600,7 @@ public class Check {
     }
 
     void checkPreview(DiagnosticPosition pos, Symbol other, Symbol s) {
-        if ((s.flags() & PREVIEW_API) != 0 && !preview.participatesInPreview(other, s)) {
+        if ((s.flags() & PREVIEW_API) != 0 && s.packge().modle != other.packge().modle) {
             if ((s.flags() & PREVIEW_REFLECTIVE) == 0) {
                 if (!preview.isEnabled()) {
                     log.error(pos, Errors.IsPreview(s));
@@ -4101,34 +4101,6 @@ public class Check {
         }
     }
 
-    public Type checkPolicyType(JCExpression policy, Type resultType, Env<AttrContext> env) {
-        Type policyType = policy.type;
-        Type interfaceType = types.asSuper(policyType, syms.templatePolicyType.tsym);
-
-        if (interfaceType != null) {
-            List<Type> typeArguments = interfaceType.getTypeArguments();
-
-            if (typeArguments.size() == 2) {
-                resultType = typeArguments.head;
-
-                if (!resultType.isPrimitiveOrVoid()) {
-                    return resultType;
-                } else {
-                    log.error(DiagnosticFlag.RESOLVE_ERROR, policy.pos,
-                            Errors.InvalidTemplatePolicyParameterTypes(policyType.tsym));
-                }
-            } else {
-                log.error(DiagnosticFlag.RESOLVE_ERROR, policy.pos,
-                        Errors.RawTemplatePolicyType(policyType.tsym));
-            }
-        } else {
-            log.error(DiagnosticFlag.RESOLVE_ERROR, policy.pos,
-                    Errors.NotTemplatePolicyType(policyType.tsym));
-        }
-
-        return resultType;
-    }
-
     public void checkLeaksNotAccessible(Env<AttrContext> env, JCClassDecl check) {
         JCCompilationUnit toplevel = env.toplevel;
 
@@ -4355,31 +4327,30 @@ public class Check {
         boolean wasNonEmptyFallThrough = false;
         for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
             JCCase c = l.head;
-            for (JCCaseLabel label : c.labels) {
-                if (label.hasTag(CONSTANTCASELABEL)) {
-                    JCExpression expr = ((JCConstantCaseLabel) label).expr;
+            for (JCCaseLabel pat : c.labels) {
+                if (pat.isExpression()) {
+                    JCExpression expr = (JCExpression) pat;
                     if (TreeInfo.isNull(expr)) {
                         if (wasPattern && !wasTypePattern && !wasNonEmptyFallThrough) {
-                            log.error(label.pos(), Errors.FlowsThroughFromPattern);
+                            log.error(pat.pos(), Errors.FlowsThroughFromPattern);
                         }
                         wasNullPattern = true;
                     } else {
                         if (wasPattern && !wasNonEmptyFallThrough) {
-                            log.error(label.pos(), Errors.FlowsThroughFromPattern);
+                            log.error(pat.pos(), Errors.FlowsThroughFromPattern);
                         }
                         wasConstant = true;
                     }
-                } else if (label.hasTag(DEFAULTCASELABEL)) {
+                } else if (pat.hasTag(DEFAULTCASELABEL)) {
                     if (wasPattern && !wasNonEmptyFallThrough) {
-                        log.error(label.pos(), Errors.FlowsThroughFromPattern);
+                        log.error(pat.pos(), Errors.FlowsThroughFromPattern);
                     }
                     wasDefault = true;
                 } else {
-                    JCPattern pat = ((JCPatternCaseLabel) label).pat;
                     boolean isTypePattern = pat.hasTag(BINDINGPATTERN);
                     if (wasPattern || wasConstant || wasDefault ||
                         (wasNullPattern && (!isTypePattern || wasNonEmptyFallThrough))) {
-                        log.error(label.pos(), Errors.FlowsThroughToPattern);
+                        log.error(pat.pos(), Errors.FlowsThroughToPattern);
                     }
                     wasPattern = true;
                     wasTypePattern = isTypePattern;
@@ -4635,7 +4606,7 @@ public class Check {
                         return ; // Don't try to recover
                     }
                 }
-                // Non-Serializable superclass
+                // Non-Serializable super class
                 try {
                     ClassSymbol supertype = ((ClassSymbol)(((DeclaredType)superClass).asElement()));
                     for(var sym : supertype.getEnclosedElements()) {

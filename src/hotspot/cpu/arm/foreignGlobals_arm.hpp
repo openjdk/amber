@@ -24,6 +24,7 @@
 #ifndef CPU_ARM_VM_FOREIGN_GLOBALS_ARM_HPP
 #define CPU_ARM_VM_FOREIGN_GLOBALS_ARM_HPP
 
+class BufferLayout {};
 class ABIDescriptor {};
 
 #endif // CPU_ARM_VM_FOREIGN_GLOBALS_ARM_HPP

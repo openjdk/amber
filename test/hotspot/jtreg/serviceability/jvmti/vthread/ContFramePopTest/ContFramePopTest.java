@@ -24,7 +24,6 @@
 /**
  * @test
  * @summary Verifies JVMTI support for Continuations
- * @requires vm.continuations
  * @compile ContFramePopTest.java
  * @modules java.base/jdk.internal.vm
  * @run main/othervm/native --enable-preview -agentlib:ContFramePopTest ContFramePopTest

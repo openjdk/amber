@@ -106,8 +106,6 @@ private:
   void op_final_roots();
   void op_cleanup_complete();
 
-  void start_mark();
-
   // Messages for GC trace events, they have to be immortal for
   // passing around the logging/tracing systems
   const char* init_mark_event_message() const;

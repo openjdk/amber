@@ -22,35 +22,20 @@
  */
 
 #include "precompiled.hpp"
-#include "code/vmreg.hpp"
-#include "prims/foreignGlobals.hpp"
+#include "prims/foreign_globals.hpp"
 #include "utilities/debug.hpp"
 
-class MacroAssembler;
-
-const ABIDescriptor ForeignGlobals::parse_abi_descriptor(jobject jabi) {
+const ABIDescriptor ForeignGlobals::parse_abi_descriptor_impl(jobject jabi) const {
   Unimplemented();
   return {};
 }
 
-VMReg ForeignGlobals::vmstorage_to_vmreg(int type, int index) {
+const BufferLayout ForeignGlobals::parse_buffer_layout_impl(jobject jlayout) const {
   Unimplemented();
-  return VMRegImpl::Bad();
+  return {};
 }
 
-int RegSpiller::pd_reg_size(VMReg reg) {
+const CallRegs ForeignGlobals::parse_call_regs_impl(jobject jconv) const {
   Unimplemented();
-  return -1;
-}
-
-void RegSpiller::pd_store_reg(MacroAssembler* masm, int offset, VMReg reg) {
-  Unimplemented();
-}
-
-void RegSpiller::pd_load_reg(MacroAssembler* masm, int offset, VMReg reg) {
-  Unimplemented();
-}
-
-void ArgumentShuffle::pd_generate(MacroAssembler* masm, VMReg tmp, int in_stk_bias, int out_stk_bias) const {
-  Unimplemented();
+  return {};
 }

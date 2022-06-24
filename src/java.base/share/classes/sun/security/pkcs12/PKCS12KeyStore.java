@@ -316,7 +316,7 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
 
         byte[] encryptedKey;
         AlgorithmParameters algParams;
-        AlgorithmId aid;
+        ObjectIdentifier algOid;
 
         try {
             // get the encrypted private key
@@ -327,8 +327,8 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
             // parse Algorithm parameters
             DerValue val = new DerValue(encrInfo.getAlgorithm().encode());
             DerInputStream in = val.toDerInputStream();
-            aid = AlgorithmId.parse(val);
-            algParams = aid.getParameters();
+            algOid = in.getOID();
+            algParams = parseAlgParameters(algOid, in);
 
         } catch (IOException ioe) {
             UnrecoverableKeyException uke =
@@ -360,7 +360,8 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
 
             key = RetryWithZero.run(pass -> {
                 // Use JCE
-                Cipher cipher = Cipher.getInstance(aid.getName());
+                Cipher cipher = Cipher.getInstance(
+                        mapPBEParamsToAlgorithm(algOid, algParams));
                 SecretKey skey = getPBEKey(pass);
                 try {
                     cipher.init(Cipher.DECRYPT_MODE, skey, algParams);
@@ -393,7 +394,7 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
                             if (debug != null) {
                                 debug.println("Retrieved a protected private key at alias" +
                                         " '" + alias + "' (" +
-                                        aid.getName() +
+                                        mapPBEParamsToAlgorithm(algOid, algParams) +
                                         " iterations: " + ic + ")");
                             }
                             return tmp;
@@ -434,7 +435,7 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
                             if (debug != null) {
                                 debug.println("Retrieved a protected secret key at alias " +
                                         "'" + alias + "' (" +
-                                        aid.getName() +
+                                        mapPBEParamsToAlgorithm(algOid, algParams) +
                                         " iterations: " + ic + ")");
                             }
                             return tmp;
@@ -976,6 +977,18 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
             return pbes2_OID;
         }
         return AlgorithmId.get(algorithm).getOID();
+    }
+
+    /*
+     * Map a PBE algorithm parameters onto its algorithm name
+     */
+    private static String mapPBEParamsToAlgorithm(ObjectIdentifier algorithm,
+        AlgorithmParameters algParams) throws NoSuchAlgorithmException {
+        // Check for PBES2 algorithms
+        if (algorithm.equals(pbes2_OID) && algParams != null) {
+            return algParams.toString();
+        }
+        return new AlgorithmId(algorithm).getName();
     }
 
     /**
@@ -2099,8 +2112,9 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
                 byte[] rawData = seq[2].getOctetString();
 
                 // parse Algorithm parameters
-                AlgorithmId aid = AlgorithmId.parse(seq[1]);
-                AlgorithmParameters algParams = aid.getParameters();
+                DerInputStream in = seq[1].toDerInputStream();
+                ObjectIdentifier algOid = in.getOID();
+                AlgorithmParameters algParams = parseAlgParameters(algOid, in);
 
                 PBEParameterSpec pbeSpec;
                 int ic = 0;
@@ -2119,21 +2133,23 @@ public final class PKCS12KeyStore extends KeyStoreSpi {
                         throw new IOException("cert PBE iteration count too large");
                     }
 
-                    certProtectionAlgorithm = aid.getName();
+                    certProtectionAlgorithm
+                            = mapPBEParamsToAlgorithm(algOid, algParams);
                     certPbeIterationCount = ic;
                     seeEncBag = true;
                 }
 
                 if (debug != null) {
                     debug.println("Loading PKCS#7 encryptedData " +
-                        "(" + certProtectionAlgorithm +
+                        "(" + mapPBEParamsToAlgorithm(algOid, algParams) +
                         " iterations: " + ic + ")");
                 }
 
                 try {
                     RetryWithZero.run(pass -> {
                         // Use JCE
-                        Cipher cipher = Cipher.getInstance(certProtectionAlgorithm);
+                        Cipher cipher = Cipher.getInstance(
+                                mapPBEParamsToAlgorithm(algOid, algParams));
                         SecretKey skey = getPBEKey(pass);
                         try {
                             cipher.init(Cipher.DECRYPT_MODE, skey, algParams);

@@ -41,7 +41,6 @@
 #include "gc/shenandoah/shenandoahUtils.hpp"
 #include "memory/iterator.inline.hpp"
 #include "memory/resourceArea.hpp"
-#include "runtime/continuation.hpp"
 
 class ShenandoahConcurrentMarkingTask : public WorkerTask {
 private:
@@ -239,8 +238,6 @@ void ShenandoahConcurrentMark::finish_mark() {
   ShenandoahHeap* const heap = ShenandoahHeap::heap();
   heap->set_concurrent_mark_in_progress(false);
   heap->mark_complete_marking_context();
-
-  end_mark();
 }
 
 void ShenandoahConcurrentMark::finish_mark_work() {

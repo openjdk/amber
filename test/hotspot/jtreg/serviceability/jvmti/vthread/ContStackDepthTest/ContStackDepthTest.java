@@ -24,7 +24,6 @@
 /**
  * @test
  * @summary Verifies JVMTI support for Continuations
- * @requires vm.continuations
  * @compile ContStackDepthTest.java
  * @modules java.base/jdk.internal.vm
  * @run main/othervm/native --enable-preview -agentlib:ContStackDepthTest ContStackDepthTest

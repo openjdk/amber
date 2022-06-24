@@ -56,12 +56,17 @@ public class VMDeprecatedOptions {
             {"InitialRAMFraction",        "64"},
             {"TLABStats",                 "false"},
             {"AllowRedefinitionToAddDeleteMethods", "true"},
+            {"AliasLevel", "3"},
 
             // deprecated alias flags (see also aliased_jvm_flags):
             {"DefaultMaxRAMFraction", "4"},
             {"CreateMinidumpOnCrash", "false"}
           }
         ));
+        if (Platform.isLinux()) {
+            deprecated.add(new String[] {"UseContainerCpuShares",           "false"});
+            deprecated.add(new String[] {"PreferContainerQuotaForCPUCount", "true"});
+        }
         DEPRECATED_OPTIONS = deprecated.toArray(new String[][]{});
     };
 

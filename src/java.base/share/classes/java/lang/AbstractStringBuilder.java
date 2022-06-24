@@ -25,11 +25,10 @@
 
 package java.lang;
 
-import jdk.internal.math.DoubleToDecimal;
-import jdk.internal.math.FloatToDecimal;
+import jdk.internal.math.FloatingDecimal;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Spliterator;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
@@ -876,13 +875,8 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(float f) {
-        try {
-            FloatToDecimal.appendTo(f, this);
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
+        FloatingDecimal.appendTo(f,this);
         return this;
-
     }
 
     /**
@@ -898,11 +892,7 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(double d) {
-        try {
-            DoubleToDecimal.appendTo(d, this);
-        } catch (IOException e) {
-            throw new AssertionError(e);
-        }
+        FloatingDecimal.appendTo(d,this);
         return this;
     }
 
@@ -1819,25 +1809,5 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
             StringUTF16.putCharsSB(this.value, count, s, off, end);
         }
         count += end - off;
-    }
-
-    // Used by StringConcatHelper via JLA.
-    long mix(long lengthCoder) {
-        return (lengthCoder + count) | ((long)coder << 32);
-    }
-
-    // Used by StringConcatHelper via JLA.
-    long prepend(long lengthCoder, byte[] buffer) {
-        lengthCoder -= count;
-
-        if (lengthCoder < ((long)UTF16 << 32)) {
-            System.arraycopy(value, 0, buffer, (int)lengthCoder, count);
-        } else if (coder == LATIN1) {
-            StringUTF16.inflate(value, 0, buffer, (int)lengthCoder, count);
-        } else {
-            System.arraycopy(value, 0, buffer, (int)lengthCoder << 1, count << 1);
-        }
-
-        return lengthCoder;
     }
 }

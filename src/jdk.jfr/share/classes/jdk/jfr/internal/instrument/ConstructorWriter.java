@@ -34,9 +34,9 @@ import jdk.internal.org.objectweb.asm.Opcodes;
 
 final class ConstructorWriter extends MethodVisitor {
 
-    private final boolean useInputParameter;
-    private final String shortClassName;
-    private final String fullClassName;
+    private boolean useInputParameter;
+    private String shortClassName;
+    private String fullClassName;
 
     ConstructorWriter(Class<?> classToChange, boolean useInputParameter) {
         super(Opcodes.ASM7);

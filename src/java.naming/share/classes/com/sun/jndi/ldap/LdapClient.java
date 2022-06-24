@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@
 package com.sun.jndi.ldap;
 
 import java.io.*;
-import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Vector;
 import java.util.Hashtable;
@@ -760,9 +759,9 @@ public final class LdapClient implements PooledConnection {
                                    Hashtable<String, Boolean> binaryAttrs) {
         String id = attrid.toLowerCase(Locale.ENGLISH);
 
-        return id.contains(";binary") ||
+        return ((id.indexOf(";binary") != -1) ||
             defaultBinaryAttrs.containsKey(id) ||
-            ((binaryAttrs != null) && (binaryAttrs.containsKey(id)));
+            ((binaryAttrs != null) && (binaryAttrs.containsKey(id))));
     }
 
     // package entry point; used by Connection
@@ -1578,15 +1577,15 @@ public final class LdapClient implements PooledConnection {
 
 
     private void notifyUnsolicited(Object e) {
-        ArrayList<LdapCtx> unsolicitedCopy;
+        Vector<LdapCtx> unsolicitedCopy;
         synchronized (unsolicited) {
-            unsolicitedCopy = new ArrayList<>(unsolicited);
+            unsolicitedCopy = new Vector<>(unsolicited);
             if (e instanceof NamingException) {
                 unsolicited.setSize(0);  // no more listeners after exception
             }
         }
         for (int i = 0; i < unsolicitedCopy.size(); i++) {
-            unsolicitedCopy.get(i).fireUnsolicited(e);
+            unsolicitedCopy.elementAt(i).fireUnsolicited(e);
         }
     }
 

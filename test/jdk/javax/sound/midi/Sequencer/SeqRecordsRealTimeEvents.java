@@ -33,7 +33,6 @@ import javax.sound.midi.Track;
 
 /**
  * @test
- * @key sound
  * @bug 5048381
  * @summary Sequencer records real time messages into the sequence
  */

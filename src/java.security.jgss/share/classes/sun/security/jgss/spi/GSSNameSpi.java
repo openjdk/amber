@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2005, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -38,7 +38,7 @@ import java.security.Provider;
 
 public interface GSSNameSpi {
 
-    Provider getProvider();
+    public Provider getProvider();
 
     /**
      * Equals method for the GSSNameSpi objects.
@@ -50,7 +50,7 @@ public interface GSSNameSpi {
      * @exception GSSException with major codes of BAD_NAMETYPE,
      *    BAD_NAME, FAILURE
      */
-    boolean equals(GSSNameSpi name) throws GSSException;
+    public boolean equals(GSSNameSpi name) throws GSSException;
 
     /**
      * Compares this <code>GSSNameSpi</code> object to another Object
@@ -63,14 +63,14 @@ public interface GSSNameSpi {
      * @return true if they both refer to the same entity, else false
      * @see #equals(GSSNameSpi)
      */
-    boolean equals(Object another);
+    public boolean equals(Object another);
 
     /**
      * Returns a hashcode value for this GSSNameSpi.
      *
      * @return a hashCode value
      */
-    int hashCode();
+    public int hashCode();
 
     /**
      * Returns a flat name representation for this object. The name
@@ -80,7 +80,7 @@ public interface GSSNameSpi {
      * @exception GSSException with major codes NAME_NOT_MN, BAD_NAME,
      *    BAD_NAME, FAILURE.
      */
-    byte[] export() throws GSSException;
+    public byte[] export() throws GSSException;
 
 
     /**
@@ -88,7 +88,7 @@ public interface GSSNameSpi {
      *
      * @return the Oid of the mechanism type
      */
-    Oid getMechanism();
+    public Oid getMechanism();
 
     /**
      * Returns a string representation for this name. The printed
@@ -98,7 +98,7 @@ public interface GSSNameSpi {
      * @see #getStringNameType()
      * @overrides Object#toString
      */
-    String toString();
+    public String toString();
 
 
     /**
@@ -106,10 +106,10 @@ public interface GSSNameSpi {
      *
      * @return the Oid for the format of the printed name
      */
-    Oid getStringNameType();
+    public Oid getStringNameType();
 
     /**
      * Indicates if this name object represents an Anonymous name.
      */
-    boolean isAnonymousName();
+    public boolean isAnonymousName();
 }

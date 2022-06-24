@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,16 +25,6 @@
 
 package sun.security.ssl;
 
-import sun.security.ssl.Authenticator.MAC;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
-import javax.crypto.SecretKey;
-import javax.crypto.ShortBufferException;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.IvParameterSpec;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.GeneralSecurityException;
@@ -51,17 +41,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import static sun.security.ssl.CipherType.AEAD_CIPHER;
-import static sun.security.ssl.CipherType.BLOCK_CIPHER;
-import static sun.security.ssl.CipherType.NULL_CIPHER;
-import static sun.security.ssl.CipherType.STREAM_CIPHER;
-import static sun.security.ssl.JsseJce.CIPHER_3DES;
-import static sun.security.ssl.JsseJce.CIPHER_AES;
-import static sun.security.ssl.JsseJce.CIPHER_AES_GCM;
-import static sun.security.ssl.JsseJce.CIPHER_CHACHA20_POLY1305;
-import static sun.security.ssl.JsseJce.CIPHER_DES;
-import static sun.security.ssl.JsseJce.CIPHER_RC4;
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.ShortBufferException;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.IvParameterSpec;
+import sun.security.ssl.Authenticator.MAC;
+import static sun.security.ssl.CipherType.*;
+import static sun.security.ssl.JsseJce.*;
 
 enum SSLCipher {
     // exportable ciphers
@@ -891,45 +881,39 @@ enum SSLCipher {
             public Plaintext decrypt(byte contentType, ByteBuffer bb,
                     byte[] sequence) throws GeneralSecurityException {
                 int len = bb.remaining();
-                int pos;
-                ByteBuffer pt;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(bb.remaining());
-                    pos = 0;
-                }
-
+                int pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    if (len != cipher.update(bb, pt)) {
+                    if (len != cipher.update(dup, bb)) {
                         // catch BouncyCastle buffering error
                         throw new RuntimeException(
                                 "Unexpected number of plaintext bytes");
+                    }
+                    if (bb.position() != dup.position()) {
+                        throw new RuntimeException(
+                                "Unexpected ByteBuffer position");
                     }
                 } catch (ShortBufferException sbe) {
                     // catch BouncyCastle buffering error
                     throw new RuntimeException("Cipher buffering error in " +
                         "JCE provider " + cipher.getProvider().getName(), sbe);
                 }
-                pt.position(pos);
+                bb.position(pos);
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
                     SSLLogger.fine(
-                            "Plaintext after DECRYPTION", pt.duplicate());
+                            "Plaintext after DECRYPTION", bb.duplicate());
                 }
 
                 MAC signer = (MAC)authenticator;
                 if (signer.macAlg().size != 0) {
-                    checkStreamMac(signer, pt, contentType, sequence);
+                    checkStreamMac(signer, bb, contentType, sequence);
                 } else {
                     authenticator.increaseSequenceNumber();
                 }
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override
@@ -1075,29 +1059,25 @@ enum SSLCipher {
                 int cipheredLength = bb.remaining();
                 int tagLen = signer.macAlg().size;
                 if (tagLen != 0) {
-                    if (!sanityCheck(tagLen, cipheredLength)) {
+                    if (!sanityCheck(tagLen, bb.remaining())) {
                         reservedBPE = new BadPaddingException(
                                 "ciphertext sanity check failed");
                     }
                 }
                 // decryption
-                ByteBuffer pt;
-                int pos;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(cipheredLength);
-                    pos = 0;
-                }
-
+                int len = bb.remaining();
+                int pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    if (cipheredLength != cipher.update(bb, pt)) {
+                    if (len != cipher.update(dup, bb)) {
                         // catch BouncyCastle buffering error
                         throw new RuntimeException(
                                 "Unexpected number of plaintext bytes");
+                    }
+
+                    if (bb.position() != dup.position()) {
+                        throw new RuntimeException(
+                                "Unexpected ByteBuffer position");
                     }
                 } catch (ShortBufferException sbe) {
                     // catch BouncyCastle buffering error
@@ -1108,14 +1088,14 @@ enum SSLCipher {
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
                     SSLLogger.fine(
                             "Padded plaintext after DECRYPTION",
-                            pt.duplicate().position(pos));
+                            bb.duplicate().position(pos));
                 }
 
                 // remove the block padding
-                pt.position(pos);
+                int blockSize = cipher.getBlockSize();
+                bb.position(pos);
                 try {
-                    removePadding(pt, tagLen, cipher.getBlockSize(),
-                        protocolVersion);
+                    removePadding(bb, tagLen, blockSize, protocolVersion);
                 } catch (BadPaddingException bpe) {
                     if (reservedBPE == null) {
                         reservedBPE = bpe;
@@ -1126,7 +1106,7 @@ enum SSLCipher {
                 // block cipher suites.
                 try {
                     if (tagLen != 0) {
-                        checkCBCMac(signer, pt,
+                        checkCBCMac(signer, bb,
                                 contentType, cipheredLength, sequence);
                     } else {
                         authenticator.increaseSequenceNumber();
@@ -1144,7 +1124,7 @@ enum SSLCipher {
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override
@@ -1350,30 +1330,26 @@ enum SSLCipher {
                 int cipheredLength = bb.remaining();
                 int tagLen = signer.macAlg().size;
                 if (tagLen != 0) {
-                    if (!sanityCheck(tagLen, cipheredLength)) {
+                    if (!sanityCheck(tagLen, bb.remaining())) {
                         reservedBPE = new BadPaddingException(
                                 "ciphertext sanity check failed");
                     }
                 }
 
                 // decryption
-                ByteBuffer pt;
-                int pos;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(cipheredLength);
-                    pos = 0;
-                }
-
+                int len = bb.remaining();
+                int pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    if (cipheredLength != cipher.update(bb, pt)) {
+                    if (len != cipher.update(dup, bb)) {
                         // catch BouncyCastle buffering error
                         throw new RuntimeException(
                                 "Unexpected number of plaintext bytes");
+                    }
+
+                    if (bb.position() != dup.position()) {
+                        throw new RuntimeException(
+                                "Unexpected ByteBuffer position");
                     }
                 } catch (ShortBufferException sbe) {
                     // catch BouncyCastle buffering error
@@ -1382,18 +1358,20 @@ enum SSLCipher {
                 }
 
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
-                    SSLLogger.fine("Padded plaintext after DECRYPTION",
-                        pt.duplicate().position(pos));
+                    SSLLogger.fine(
+                            "Padded plaintext after DECRYPTION",
+                            bb.duplicate().position(pos));
                 }
 
                 // Ignore the explicit nonce.
-                int blockSize = cipher.getBlockSize();
-                pos += blockSize;
-                pt.position(pos);
+                bb.position(pos + cipher.getBlockSize());
+                pos = bb.position();
 
                 // remove the block padding
+                int blockSize = cipher.getBlockSize();
+                bb.position(pos);
                 try {
-                    removePadding(pt, tagLen, blockSize, protocolVersion);
+                    removePadding(bb, tagLen, blockSize, protocolVersion);
                 } catch (BadPaddingException bpe) {
                     if (reservedBPE == null) {
                         reservedBPE = bpe;
@@ -1404,7 +1382,7 @@ enum SSLCipher {
                 // block cipher suites.
                 try {
                     if (tagLen != 0) {
-                        checkCBCMac(signer, pt,
+                        checkCBCMac(signer, bb,
                                 contentType, cipheredLength, sequence);
                     } else {
                         authenticator.increaseSequenceNumber();
@@ -1422,7 +1400,7 @@ enum SSLCipher {
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override
@@ -1677,20 +1655,10 @@ enum SSLCipher {
 
                 // DON'T decrypt the nonce_explicit for AEAD mode. The buffer
                 // position has moved out of the nonce_explicit range.
-                ByteBuffer pt;
-                int len, pos;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(bb.remaining());
-                    pos = 0;
-                }
-
+                int len, pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    len = cipher.doFinal(bb, pt);
+                    len = cipher.doFinal(dup, bb);
                 } catch (IllegalBlockSizeException ibse) {
                     // unlikely to happen
                     throw new RuntimeException(
@@ -1702,17 +1670,17 @@ enum SSLCipher {
                         "JCE provider " + cipher.getProvider().getName(), sbe);
                 }
                 // reset the limit to the end of the decrypted data
-                pt.position(pos);
-                pt.limit(pos + len);
+                bb.position(pos);
+                bb.limit(pos + len);
 
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
                     SSLLogger.fine(
-                            "Plaintext after DECRYPTION", pt.duplicate());
+                            "Plaintext after DECRYPTION", bb.duplicate());
                 }
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override
@@ -1954,26 +1922,17 @@ enum SSLCipher {
                     throw new RuntimeException(
                                 "invalid key or spec in GCM mode", ikae);
                 }
+
                 // Update the additional authentication data, using the
                 // implicit sequence number of the authenticator.
                 byte[] aad = authenticator.acquireAuthenticationBytes(
                                         contentType, bb.remaining(), sn);
                 cipher.updateAAD(aad);
 
-                ByteBuffer pt;
-                int len, pos;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(bb.remaining());
-                    pos = 0;
-                }
-
+                int len, pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    len = cipher.doFinal(bb, pt);
+                    len = cipher.doFinal(dup, bb);
                 } catch (IllegalBlockSizeException ibse) {
                     // unlikely to happen
                     throw new RuntimeException(
@@ -1985,23 +1944,24 @@ enum SSLCipher {
                         "JCE provider " + cipher.getProvider().getName(), sbe);
                 }
                 // reset the limit to the end of the decrypted data
-                pt.position(pos);
-                pt.limit(pos + len);
+                bb.position(pos);
+                bb.limit(pos + len);
 
                 // remove inner plaintext padding
-                int i = pt.limit() - 1;
-                for (; i > 0 && pt.get(i) == 0; i--);
-
+                int i = bb.limit() - 1;
+                for (; i > 0 && bb.get(i) == 0; i--) {
+                    // blank
+                }
                 if (i < (pos + 1)) {
                     throw new BadPaddingException(
                             "Incorrect inner plaintext: no content type");
                 }
-                contentType = pt.get(i);
-                pt.limit(i);
+                contentType = bb.get(i);
+                bb.limit(i);
 
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
                     SSLLogger.fine(
-                            "Plaintext after DECRYPTION", pt.duplicate());
+                            "Plaintext after DECRYPTION", bb.duplicate());
                 }
                 if (keyLimitEnabled) {
                     keyLimitCountdown -= len;
@@ -2009,7 +1969,7 @@ enum SSLCipher {
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override
@@ -2243,20 +2203,11 @@ enum SSLCipher {
 
                 // DON'T decrypt the nonce_explicit for AEAD mode. The buffer
                 // position has moved out of the nonce_explicit range.
-                ByteBuffer pt;
-                int len, pos;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(bb.remaining());
-                    pos = 0;
-                }
-
+                int len;
+                int pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    len = cipher.doFinal(bb, pt);
+                    len = cipher.doFinal(dup, bb);
                 } catch (IllegalBlockSizeException ibse) {
                     // unlikely to happen
                     throw new RuntimeException(
@@ -2268,17 +2219,17 @@ enum SSLCipher {
                         "JCE provider " + cipher.getProvider().getName(), sbe);
                 }
                 // reset the limit to the end of the decrypted data
-                pt.position(pos);
-                pt.limit(pos + len);
+                bb.position(pos);
+                bb.limit(pos + len);
 
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
                     SSLLogger.fine(
-                            "Plaintext after DECRYPTION", pt.duplicate());
+                            "Plaintext after DECRYPTION", bb.duplicate());
                 }
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override
@@ -2522,20 +2473,11 @@ enum SSLCipher {
                                         contentType, bb.remaining(), sn);
                 cipher.updateAAD(aad);
 
-                ByteBuffer pt;
-                int len, pos;
-
-                // Do in-place with the bb buffer if it's not read-only
-                if (!bb.isReadOnly()) {
-                    pt = bb.duplicate();
-                    pos = bb.position();
-                } else {
-                    pt = ByteBuffer.allocate(bb.remaining());
-                    pos = 0;
-                }
-
+                int len;
+                int pos = bb.position();
+                ByteBuffer dup = bb.duplicate();
                 try {
-                    len = cipher.doFinal(bb, pt);
+                    len = cipher.doFinal(dup, bb);
                 } catch (IllegalBlockSizeException ibse) {
                     // unlikely to happen
                     throw new RuntimeException(
@@ -2547,29 +2489,29 @@ enum SSLCipher {
                         "JCE provider " + cipher.getProvider().getName(), sbe);
                 }
                 // reset the limit to the end of the decrypted data
-                pt.position(pos);
-                pt.limit(pos + len);
+                bb.position(pos);
+                bb.limit(pos + len);
 
                 // remove inner plaintext padding
-                int i = pt.limit() - 1;
-                for (; i > 0 && pt.get(i) == 0; i--) {
+                int i = bb.limit() - 1;
+                for (; i > 0 && bb.get(i) == 0; i--) {
                     // blank
                 }
                 if (i < (pos + 1)) {
                     throw new BadPaddingException(
                             "Incorrect inner plaintext: no content type");
                 }
-                contentType = pt.get(i);
-                pt.limit(i);
+                contentType = bb.get(i);
+                bb.limit(i);
 
                 if (SSLLogger.isOn && SSLLogger.isOn("plaintext")) {
                     SSLLogger.fine(
-                            "Plaintext after DECRYPTION", pt.duplicate());
+                            "Plaintext after DECRYPTION", bb.duplicate());
                 }
 
                 return new Plaintext(contentType,
                         ProtocolVersion.NONE.major, ProtocolVersion.NONE.minor,
-                        -1, -1L, pt.slice());
+                        -1, -1L, bb.slice());
             }
 
             @Override

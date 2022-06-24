@@ -103,7 +103,7 @@ class LogInputStream extends InputStream {
             return 0;
         n = (length < n) ? length : n;
         n = in.skip(n);
-        length -= (int) n;
+        length -= n;
         return n;
     }
 

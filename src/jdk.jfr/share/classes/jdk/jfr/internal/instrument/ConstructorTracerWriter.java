@@ -38,8 +38,7 @@ import jdk.internal.org.objectweb.asm.Type;
 
 final class ConstructorTracerWriter extends ClassVisitor {
 
-    private final ConstructorWriter useInputParameter;
-    private final ConstructorWriter noUseInputParameter;
+    private ConstructorWriter useInputParameter, noUseInputParameter;
 
     static byte[] generateBytes(Class<?> clz, byte[] oldBytes) throws IOException {
         InputStream in = new ByteArrayInputStream(oldBytes);

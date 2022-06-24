@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1994, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1994, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -107,7 +107,6 @@ public class ByteArrayOutputStream extends OutputStream {
      *
      * @param   b   the byte to be written.
      */
-    @Override
     public synchronized void write(int b) {
         ensureCapacity(count + 1);
         buf[count] = (byte) b;
@@ -118,15 +117,14 @@ public class ByteArrayOutputStream extends OutputStream {
      * Writes {@code len} bytes from the specified byte array
      * starting at offset {@code off} to this {@code ByteArrayOutputStream}.
      *
-     * @param   b     {@inheritDoc}
-     * @param   off   {@inheritDoc}
-     * @param   len   {@inheritDoc}
+     * @param   b     the data.
+     * @param   off   the start offset in the data.
+     * @param   len   the number of bytes to write.
      * @throws  NullPointerException if {@code b} is {@code null}.
      * @throws  IndexOutOfBoundsException if {@code off} is negative,
      * {@code len} is negative, or {@code len} is greater than
      * {@code b.length - off}
      */
-    @Override
     public synchronized void write(byte[] b, int off, int len) {
         Objects.checkFromIndexSize(off, len, b.length);
         ensureCapacity(count + len);
@@ -214,7 +212,6 @@ public class ByteArrayOutputStream extends OutputStream {
      * @return String decoded from the buffer's contents.
      * @since  1.1
      */
-    @Override
     public synchronized String toString() {
         return new String(buf, 0, count);
     }
@@ -309,7 +306,6 @@ public class ByteArrayOutputStream extends OutputStream {
      * this class can be called after the stream has been closed without
      * generating an {@code IOException}.
      */
-    @Override
     public void close() throws IOException {
     }
 

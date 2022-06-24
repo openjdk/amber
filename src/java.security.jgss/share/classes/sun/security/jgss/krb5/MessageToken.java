@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -65,7 +65,7 @@ import java.security.MessageDigest;
  * </pre>
  * Where "s" indicates the size of the checksum.
  * <p>
- * As always, this is preceded by a GSSHeader.
+ * As always, this is preceeded by a GSSHeader.
  *
  * @author Mayank Upadhyay
  * @author Ram Marti
@@ -141,7 +141,7 @@ abstract class MessageToken extends Krb5Token {
 
     /**
      * Constructs a MessageToken from a byte array. If there are more bytes
-     * in the array than needed, the extra bytes are simply ignored.
+     * in the array than needed, the extra bytes are simply ignroed.
      *
      * @param tokenId the token id that should be contained in this token as
      * it is read.
@@ -394,10 +394,11 @@ abstract class MessageToken extends Krb5Token {
             if (initiator)
                 directionByte = (byte) 0xff; // Received token from acceptor
 
-            return (seqNumberData[4] == directionByte) &&
-                    (seqNumberData[5] == directionByte) &&
-                    (seqNumberData[6] == directionByte) &&
-                    (seqNumberData[7] == directionByte);
+            if ((seqNumberData[4] == directionByte) &&
+                  (seqNumberData[5] == directionByte) &&
+                  (seqNumberData[6] == directionByte) &&
+                  (seqNumberData[7] == directionByte))
+                return true;
         }
 
         return false;
@@ -405,7 +406,7 @@ abstract class MessageToken extends Krb5Token {
     }
 
     public final int getSequenceNumber() {
-        int sequenceNum;
+        int sequenceNum = 0;
         if (cipherHelper.isArcFour()) {
             sequenceNum = readBigEndian(seqNumberData, 0, 4);
         } else {
@@ -535,7 +536,7 @@ abstract class MessageToken extends Krb5Token {
     }
 
     /**
-     * Obtains the context key associated with this token.
+     * Obtains the conext key that is associated with this token.
      * @return the context key
      */
     /*
@@ -585,18 +586,18 @@ abstract class MessageToken extends Krb5Token {
      */
     class MessageTokenHeader {
 
-         private final int tokenId;
-         private final int signAlg;
-         private final int sealAlg;
+         private int tokenId;
+         private int signAlg;
+         private int sealAlg;
 
-         private final byte[] bytes = new byte[8];
+         private byte[] bytes = new byte[8];
 
         /**
          * Constructs a MessageTokenHeader for the specified token type with
          * appropriate checksum and encryption algorithms fields.
          *
          * @param tokenId the token id for this message token
-         * @param conf true if confidentiality will be requested with this
+         * @param conf true if confidentiality will be resuested with this
          * message token, false otherwise.
          * @param qop the value of the quality of protection that will be
          * desired.

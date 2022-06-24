@@ -68,17 +68,17 @@ public interface JavaNioAccess {
     /**
      * Used by {@code jdk.internal.foreign.Utils}.
      */
-    Object getBufferBase(Buffer bb);
+    Object getBufferBase(ByteBuffer bb);
 
     /**
      * Used by {@code jdk.internal.foreign.Utils}.
      */
-    long getBufferAddress(Buffer buffer);
+    long getBufferAddress(ByteBuffer bb);
 
     /**
      * Used by {@code jdk.internal.foreign.Utils}.
      */
-    UnmapperProxy unmapper(Buffer buffer);
+    UnmapperProxy unmapper(ByteBuffer bb);
 
     /**
      * Used by {@code jdk.internal.foreign.AbstractMemorySegmentImpl} and byte buffer var handle views.

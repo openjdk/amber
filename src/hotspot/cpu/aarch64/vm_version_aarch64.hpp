@@ -31,7 +31,6 @@
 #include "utilities/sizes.hpp"
 
 class VM_Version : public Abstract_VM_Version {
-  friend class VMStructs;
   friend class JVMCIVMStructs;
 
 protected:
@@ -47,7 +46,6 @@ protected:
   static int _icache_line_size;
   static int _initial_sve_vector_length;
   static bool _rop_protection;
-  static uintptr_t _pac_mask;
 
   static SpinWait _spin_wait;
 

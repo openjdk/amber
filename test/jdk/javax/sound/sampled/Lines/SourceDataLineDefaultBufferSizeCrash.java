@@ -30,7 +30,6 @@ import javax.sound.sampled.SourceDataLine;
 
 /**
  * @test
- * @key sound
  * @bug 4681384
  * @summary SourceDataLine.write() causes Unexpected Signal 11 in native code
  *          outside the VM

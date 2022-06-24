@@ -50,17 +50,30 @@ import jdk.jfr.internal.consumer.filter.ChunkWriter;
  */
 public final class ChunkParser {
 
-    public record ParserConfiguration(long filterStart, long filterEnd, boolean reuse,  boolean ordered, ParserFilter filter, ChunkWriter chunkWriter) {
+    public static final class ParserConfiguration {
+        private final boolean reuse;
+        private final boolean ordered;
+        private final ParserFilter eventFilter;
+        private final ChunkWriter chunkWriter;
+
+        long filterStart;
+        long filterEnd;
+
+        public ParserConfiguration(long filterStart, long filterEnd, boolean reuse, boolean ordered, ParserFilter filter, ChunkWriter chunkWriter) {
+            this.filterStart = filterStart;
+            this.filterEnd = filterEnd;
+            this.reuse = reuse;
+            this.ordered = ordered;
+            this.eventFilter = filter;
+            this.chunkWriter = chunkWriter;
+        }
 
         public ParserConfiguration() {
             this(0, Long.MAX_VALUE, false, false, ParserFilter.ACCEPT_ALL, null);
         }
 
-        ParserConfiguration withRange(long filterStart, long filterEnd) {
-            if (filterStart == this.filterStart && filterEnd == this.filterEnd) {
-                return this;
-            }
-            return new ParserConfiguration(filterStart, filterEnd, reuse, ordered, filter, chunkWriter);
+        public boolean isOrdered() {
+            return ordered;
         }
     }
 
@@ -165,7 +178,7 @@ public final class ChunkParser {
                 ep.setReuse(configuration.reuse);
                 ep.setFilterStart(configuration.filterStart);
                 ep.setFilterEnd(configuration.filterEnd);
-                long threshold = configuration.filter().getThreshold(name);
+                long threshold = configuration.eventFilter.getThreshold(name);
                 if (threshold >= 0) {
                     ep.setEnabled(true);
                     ep.setThresholdNanos(threshold);

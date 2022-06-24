@@ -75,7 +75,7 @@ public class Signatures {
                 ? "open module" : "module";
         signature.add(label);
         signature.add(" ");
-        var nameSpan = HtmlTree.SPAN(HtmlStyle.elementName);
+        var nameSpan = new HtmlTree(TagName.SPAN).setStyle(HtmlStyle.elementName);
         nameSpan.add(mdle.getQualifiedName().toString());
         signature.add(nameSpan);
         return signature;
@@ -91,7 +91,7 @@ public class Signatures {
             signature.add(HtmlTree.SPAN(HtmlStyle.annotations, annotations));
         }
         signature.add("package ");
-        var nameSpan = HtmlTree.SPAN(HtmlStyle.elementName);
+        var nameSpan = new HtmlTree(TagName.SPAN).setStyle(HtmlStyle.elementName);
         nameSpan.add(pkg.getQualifiedName().toString());
         signature.add(nameSpan);
         return signature;
@@ -128,7 +128,7 @@ public class Signatures {
             }
             content.add(HtmlTree.SPAN(HtmlStyle.modifiers, modifiers));
 
-            var nameSpan = HtmlTree.SPAN(HtmlStyle.elementName);
+            var nameSpan = new HtmlTree(TagName.SPAN).setStyle(HtmlStyle.elementName);
             Content className = Text.of(utils.getSimpleName(typeElement));
             if (configuration.getOptions().linkSource()) {
                 writer.addSrcLink(typeElement, className, nameSpan);
@@ -146,7 +146,8 @@ public class Signatures {
                 content.add(getRecordComponents());
             }
             if (!utils.isAnnotationInterface(typeElement)) {
-                var extendsImplements = HtmlTree.SPAN(HtmlStyle.extendsImplements);
+                var extendsImplements = new HtmlTree(TagName.SPAN)
+                        .setStyle(HtmlStyle.extendsImplements);
                 if (!utils.isPlainInterface(typeElement)) {
                     TypeMirror superclass = utils.getFirstVisibleSuperClass(typeElement);
                     if (superclass != null) {
@@ -188,7 +189,7 @@ public class Signatures {
                     .filter(t -> utils.isLinkable(utils.asTypeElement(t)))
                     .toList();
             if (!linkablePermits.isEmpty()) {
-                var permitsSpan = HtmlTree.SPAN(HtmlStyle.permits);
+                var permitsSpan = new HtmlTree(TagName.SPAN).setStyle(HtmlStyle.permits);
                 boolean isFirst = true;
                 for (TypeMirror type : linkablePermits) {
                     if (isFirst) {
@@ -471,7 +472,7 @@ public class Signatures {
             }
 
             // Name
-            var nameSpan = HtmlTree.SPAN(HtmlStyle.elementName);
+            var nameSpan = new HtmlTree(TagName.SPAN).setStyle(HtmlStyle.elementName);
             if (memberWriter.options.linkSource()) {
                 Content name = Text.of(memberWriter.name(element));
                 memberWriter.writer.addSrcLink(element, name, nameSpan);

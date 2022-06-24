@@ -483,10 +483,10 @@ public class ElementsTable {
 
     /**
      * Returns the aggregate set of included packages and specified
-     * subpackages.
+     * sub packages.
      *
      * @return the aggregate set of included packages and specified
-     * subpackages
+     * sub packages
      */
     Iterable<ModulePackage> getPackagesToParse() throws IOException {
         List<ModulePackage> result = new ArrayList<>();
@@ -806,7 +806,7 @@ public class ElementsTable {
     /**
      * Returns an aggregated list of java file objects from the items
      * specified on the command line. The packages specified should not
-     * recurse, however subpackages should recurse into the subdirectories.
+     * recurse, however sub-packages should recurse into the sub directories.
      * @return a list of java file objects
      * @throws IOException if an error occurs
      */

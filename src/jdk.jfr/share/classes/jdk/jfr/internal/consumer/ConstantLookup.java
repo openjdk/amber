@@ -28,7 +28,7 @@ package jdk.jfr.internal.consumer;
 import jdk.jfr.internal.Type;
 
 final class ConstantLookup {
-    private final Type type;
+    final Type type;
     private ConstantMap current;
     private ConstantMap previous = ConstantMap.EMPTY;
 

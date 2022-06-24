@@ -224,8 +224,6 @@ public class AMD64 extends Architecture {
         RDTSCP,
         RDPID,
         FSRM,
-        GFNI,
-        AVX512_BITALG,
     }
 
     private final EnumSet<CPUFeature> features;

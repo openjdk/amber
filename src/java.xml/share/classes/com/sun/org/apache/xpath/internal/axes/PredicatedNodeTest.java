@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2020, Oracle and/or its affiliates. All rights reserved.
  */
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,7 +24,6 @@ import com.sun.org.apache.xml.internal.dtm.DTM;
 import com.sun.org.apache.xml.internal.dtm.DTMIterator;
 import com.sun.org.apache.xml.internal.utils.PrefixResolver;
 import com.sun.org.apache.xml.internal.utils.QName;
-import com.sun.org.apache.xml.internal.utils.WrappedRuntimeException;
 import com.sun.org.apache.xpath.internal.Expression;
 import com.sun.org.apache.xpath.internal.ExpressionOwner;
 import com.sun.org.apache.xpath.internal.XPathContext;
@@ -35,7 +34,7 @@ import com.sun.org.apache.xpath.internal.patterns.NodeTest;
 import java.util.List;
 
 /**
- * @LastModified: May 2022
+ * @LastModified: May 2020
  */
 public abstract class PredicatedNodeTest extends NodeTest implements SubContextList
 {
@@ -492,8 +491,9 @@ public abstract class PredicatedNodeTest extends NodeTest implements SubContextL
     }
     catch (javax.xml.transform.TransformerException se)
     {
-      // the Xalan/XPath impl use WrappedRuntimeException to carry errors over
-      throw new WrappedRuntimeException(se);
+
+      // TODO: Fix this.
+      throw new RuntimeException(se.getMessage());
     }
     finally
     {

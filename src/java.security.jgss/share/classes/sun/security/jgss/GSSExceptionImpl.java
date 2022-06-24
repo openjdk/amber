@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2006, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -27,8 +27,6 @@ package sun.security.jgss;
 
 import org.ietf.jgss.*;
 
-import java.io.Serial;
-
 /**
  * This class helps overcome a limitation of the org.ietf.jgss.GSSException
  * class that does not allow the thrower to set a string corresponding to
@@ -36,7 +34,6 @@ import java.io.Serial;
  */
 public class GSSExceptionImpl extends GSSException {
 
-    @Serial
     private static final long serialVersionUID = 4251197939069005575L;
 
     private String majorMessage;

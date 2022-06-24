@@ -25,7 +25,6 @@
  * @test
  * @bug 8272944
  * @summary Use snippets in jdk.javadoc documentation
- * @key needs-src needs-src-jdk_javadoc
  * @library /tools/lib ../../lib
  * @modules jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.main
@@ -54,12 +53,11 @@ public class TestDocletExample extends TestRunner {
         t.runTests(m -> new Object[] { Path.of(m.getName()) });
     }
 
-    SnippetUtils snippets;
+    SnippetUtils snippets = new SnippetUtils("jdk.javadoc");
     ToolBox tb = new ToolBox();
 
-    TestDocletExample() throws SnippetUtils.ConfigurationException {
+    TestDocletExample() {
         super(System.out);
-        snippets = new SnippetUtils("jdk.javadoc");
     }
 
     @Test

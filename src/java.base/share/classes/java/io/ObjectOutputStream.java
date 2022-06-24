@@ -689,7 +689,6 @@ public class ObjectOutputStream
      * @param   val the byte to be written to the stream
      * @throws  IOException If an I/O error has occurred.
      */
-    @Override
     public void write(int val) throws IOException {
         bout.write(val);
     }
@@ -701,7 +700,6 @@ public class ObjectOutputStream
      * @param   buf the data to be written
      * @throws  IOException If an I/O error has occurred.
      */
-    @Override
     public void write(byte[] buf) throws IOException {
         bout.write(buf, 0, buf.length, false);
     }
@@ -712,9 +710,8 @@ public class ObjectOutputStream
      * @param   buf the data to be written
      * @param   off the start offset in the data
      * @param   len the number of bytes that are written
-     * @throws  IOException {@inheritDoc}
+     * @throws  IOException If an I/O error has occurred.
      */
-    @Override
     public void write(byte[] buf, int off, int len) throws IOException {
         if (buf == null) {
             throw new NullPointerException();
@@ -727,9 +724,8 @@ public class ObjectOutputStream
      * Flushes the stream. This will write any buffered output bytes and flush
      * through to the underlying stream.
      *
-     * @throws  IOException {@inheritDoc}
+     * @throws  IOException If an I/O error has occurred.
      */
-    @Override
     public void flush() throws IOException {
         bout.flush();
     }
@@ -751,7 +747,6 @@ public class ObjectOutputStream
      *
      * @throws  IOException If an I/O error has occurred.
      */
-    @Override
     public void close() throws IOException {
         flush();
         clear();

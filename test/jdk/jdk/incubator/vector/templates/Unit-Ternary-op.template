@@ -1,4 +1,3 @@
-
     @Test(dataProvider = "$type$TernaryOpProvider")
     static void [[TEST]]$vectorteststype$(IntFunction<$type$[]> fa, IntFunction<$type$[]> fb, IntFunction<$type$[]> fc) {
 #if[double]

@@ -626,13 +626,11 @@ class Http2Connection  {
 
     void close() {
         Log.logTrace("Closing HTTP/2 connection: to {0}", connection.address());
-        if (connection.channel().isOpen()) {
-            GoAwayFrame f = new GoAwayFrame(0,
-                    ErrorFrame.NO_ERROR,
-                    "Requested by user".getBytes(UTF_8));
-            // TODO: set last stream. For now zero ok.
-            sendFrame(f);
-        }
+        GoAwayFrame f = new GoAwayFrame(0,
+                                        ErrorFrame.NO_ERROR,
+                                        "Requested by user".getBytes(UTF_8));
+        // TODO: set last stream. For now zero ok.
+        sendFrame(f);
     }
 
     long count;
@@ -763,7 +761,7 @@ class Http2Connection  {
             }
 
             Stream<?> stream = getStream(streamid);
-            if (stream == null && pushContinuationState == null) {
+            if (stream == null) {
                 // Should never receive a frame with unknown stream id
 
                 if (frame instanceof HeaderFrame) {
@@ -803,11 +801,7 @@ class Http2Connection  {
             if (pushContinuationState != null) {
                 if (frame instanceof ContinuationFrame cf) {
                     try {
-                        if (streamid == pushContinuationState.pushContFrame.streamid())
-                            handlePushContinuation(stream, cf);
-                        else
-                            protocolError(ErrorFrame.PROTOCOL_ERROR, "Received a Continuation Frame with an " +
-                                    "unexpected stream id");
+                        handlePushContinuation(stream, cf);
                     } catch (UncheckedIOException e) {
                         debug.log("Error handling Push Promise with Continuation: " + e.getMessage(), e);
                         protocolError(ErrorFrame.PROTOCOL_ERROR, e.getMessage());
@@ -894,6 +888,8 @@ class Http2Connection  {
 
     private <T> void completePushPromise(int promisedStreamid, Stream<T> parent, HttpHeaders headers)
             throws IOException {
+        // Perhaps the following checks could be moved to handlePushPromise()
+        // to reset the PushPromise stream earlier?
         HttpRequestImpl parentReq = parent.request;
         if (promisedStreamid != nextPushStream) {
             resetStream(promisedStreamid, ResetFrame.PROTOCOL_ERROR);

@@ -327,8 +327,4 @@ public final class PlatformEventType extends Type {
     public void setLargeSize() {
         largeSize = true;
     }
-
-    public boolean isMethodSampling() {
-        return isMethodSampling;
-    }
 }

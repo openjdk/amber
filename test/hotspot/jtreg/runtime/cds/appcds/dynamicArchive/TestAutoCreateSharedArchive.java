@@ -151,10 +151,6 @@ public class TestAutoCreateSharedArchive extends DynamicArchiveTestBase {
         System.out.println(message);
     }
 
-    private static String hex(int version) {
-        return String.format("0x%x", version);
-    }
-
     private static void testAutoCreateSharedArchive() throws Exception {
         String appJar = ClassFileInstaller.getJarPath("hello.jar");
         boolean fileModified = false;
@@ -307,7 +303,7 @@ public class TestAutoCreateSharedArchive extends DynamicArchiveTestBase {
             .assertNormalExit(output -> {
                 output.shouldHaveExitValue(0)
                       .shouldContain(HELLO_WORLD)
-                      .shouldContain("Cannot handle shared archive file version " + hex(version1) + ". Must be at least " + hex(genericHeaderMinVersion))
+                      .shouldContain("Cannot handle shared archive file version " + version1 + ". Must be at least " + genericHeaderMinVersion)
                       .shouldContain("Unable to use shared archive: invalid archive")
                       .shouldNotContain("Dumping shared data to file");
             });
@@ -335,7 +331,7 @@ public class TestAutoCreateSharedArchive extends DynamicArchiveTestBase {
             .assertNormalExit(output -> {
                 output.shouldHaveExitValue(0)
                       .shouldContain(HELLO_WORLD)
-                      .shouldContain("The shared archive file version " + hex(version2) + " does not match the required version " + hex(currentCDSVersion))
+                      .shouldContain("The shared archive file version " + version2 + " does not match the required version " + currentCDSVersion)
                       .shouldContain("UseSharedSpaces: The shared archive file has the wrong version")
                       .shouldContain("UseSharedSpaces: Initialize dynamic archive failed")
                       .shouldContain("Dumping shared data to file");
@@ -527,7 +523,7 @@ public class TestAutoCreateSharedArchive extends DynamicArchiveTestBase {
              .assertNormalExit(output -> {
                  output.shouldHaveExitValue(0)
                        .shouldContain(HELLO_WORLD)
-                       .shouldContain("Cannot handle shared archive file version " + hex(version1))
+                       .shouldContain("Cannot handle shared archive file version " + version1)
                        .shouldContain(versionB)
                        .shouldContain("Dumping shared data to file:");
              });
@@ -552,7 +548,7 @@ public class TestAutoCreateSharedArchive extends DynamicArchiveTestBase {
              "-cp", appJar,
              mainAppClass)
              .assertNormalExit(output -> {
-                 output.shouldContain("The shared archive file version " + hex(version2) + " does not match the required version " + hex(currentCDSVersion))
+                 output.shouldContain("The shared archive file version " + version2 + " does not match the required version " + currentCDSVersion)
                        .shouldContain(HELLO_WORLD)
                        .shouldContain("Dumping shared data to file:");
              });

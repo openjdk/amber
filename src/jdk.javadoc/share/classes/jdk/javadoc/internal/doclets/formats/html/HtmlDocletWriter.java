@@ -1054,12 +1054,10 @@ public class HtmlDocletWriter {
                             (labelContent.isEmpty() ? text : labelContent));
                 } else {
                     // No cross link found so print warning
-                    if (!configuration.isDocLintReferenceGroupEnabled()) {
-                        messages.warning(ch.getDocTreePath(see),
-                                "doclet.see.class_or_package_not_found",
-                                "@" + tagName,
-                                seeText);
-                    }
+                    messages.warning(ch.getDocTreePath(see),
+                            "doclet.see.class_or_package_not_found",
+                            "@" + tagName,
+                            seeText);
                     return invalidTagOutput(resources.getText("doclet.tag.invalid", tagName),
                             Optional.of(labelContent.isEmpty() ? text: labelContent));
                 }
@@ -1109,11 +1107,9 @@ public class HtmlDocletWriter {
                         ch.getDocTreePath(see), "doclet.see.class_or_package_not_accessible",
                         tagName, utils.getFullyQualifiedName(containing));
                 } else {
-                    if (!configuration.isDocLintReferenceGroupEnabled()) {
-                        messages.warning(
-                                ch.getDocTreePath(see), "doclet.see.class_or_package_not_found",
-                                tagName, seeText);
-                    }
+                    messages.warning(
+                        ch.getDocTreePath(see), "doclet.see.class_or_package_not_found",
+                        tagName, seeText);
                 }
             }
             if (configuration.currentTypeElement != containing) {
@@ -1375,14 +1371,12 @@ public class HtmlDocletWriter {
         }
         Content div;
         Content result = commentTagsToContent(element, tags, first, inSummary);
-        if (!result.isEmpty()) {
-            if (depr) {
-                div = HtmlTree.DIV(HtmlStyle.deprecationComment, result);
-                target.add(div);
-            } else {
-                div = HtmlTree.DIV(HtmlStyle.block, result);
-                target.add(div);
-            }
+        if (depr) {
+            div = HtmlTree.DIV(HtmlStyle.deprecationComment, result);
+            target.add(div);
+        } else {
+            div = HtmlTree.DIV(HtmlStyle.block, result);
+            target.add(div);
         }
         if (tags.isEmpty()) {
             target.add(Entity.NO_BREAK_SPACE);
@@ -1603,9 +1597,7 @@ public class HtmlDocletWriter {
                         Matcher m = Pattern.compile("(?i)\\{@([a-z]+).*").matcher(body);
                         String tagName = m.matches() ? m.group(1) : null;
                         if (tagName == null) {
-                            if (!configuration.isDocLintSyntaxGroupEnabled()) {
-                                messages.warning(dtp, "doclet.tag.invalid_input", body);
-                            }
+                            messages.warning(dtp, "doclet.tag.invalid_input", body);
                             result.add(invalidTagOutput(resources.getText("doclet.tag.invalid_input", body),
                                     Optional.empty()));
                         } else {

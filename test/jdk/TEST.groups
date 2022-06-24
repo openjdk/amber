@@ -110,8 +110,7 @@ jdk_lang = \
     jdk/internal/jimage \
     jdk/internal/math \
     jdk/internal/vm \
-    jdk/modules \
-    jni/nullCaller
+    jdk/modules
 
 # All of the java.util package
 jdk_util = \
@@ -266,19 +265,6 @@ jdk_launcher = \
     tools/launcher \
     sun/tools
 
-jdk_loom = \
-    com/sun/management/HotSpotDiagnosticMXBean/ \
-    java/lang/Thread \
-    java/lang/ThreadGroup \
-    java/lang/management/ThreadMXBean \
-    java/util/concurrent \
-    java/net/vthread \
-    java/nio/channels/vthread \
-    jdk/incubator/concurrent \
-    jdk/internal/misc/ThreadFlock \
-    jdk/internal/vm/Continuation \
-    jdk/jfr/threading
-
 #
 # Tool (and tool API) tests are split into core and svc groups
 #
@@ -314,7 +300,6 @@ jdk_other = \
     javax/xml \
     -javax/xml/crypto \
     jdk/dynalink \
-    jdk/incubator/concurrent \
     jdk/internal/jline \
     com/sun/jndi \
     lib/testlibrary

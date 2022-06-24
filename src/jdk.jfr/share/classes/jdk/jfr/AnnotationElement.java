@@ -385,4 +385,5 @@ public final class AnnotationElement {
     boolean isInBoot() {
         return inBootClassLoader;
     }
+
 }

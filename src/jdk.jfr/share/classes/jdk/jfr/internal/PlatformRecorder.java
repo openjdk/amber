@@ -254,7 +254,7 @@ public final class PlatformRecorder {
                 currentChunk.setStartTime(startTime);
             }
             recording.setState(RecordingState.RUNNING);
-            updateSettings(false);
+            updateSettings();
             recording.setStartTime(startTime);
             writeMetaEvents();
         } else {
@@ -273,7 +273,7 @@ public final class PlatformRecorder {
             startTime = Utils.epochNanosToInstant(startNanos);
             recording.setStartTime(startTime);
             recording.setState(RecordingState.RUNNING);
-            updateSettings(false);
+            updateSettings();
             writeMetaEvents();
             if (currentChunk != null) {
                 finishChunk(currentChunk, startTime, recording);
@@ -337,7 +337,7 @@ public final class PlatformRecorder {
         } else {
             RepositoryChunk newChunk = null;
             RequestEngine.doChunkEnd();
-            updateSettingsButIgnoreRecording(recording, false);
+            updateSettingsButIgnoreRecording(recording);
 
             String path = null;
             if (toDisk) {
@@ -381,11 +381,11 @@ public final class PlatformRecorder {
         MetadataRepository.getInstance().disableEvents();
     }
 
-    void updateSettings(boolean writeSettingEvents) {
-        updateSettingsButIgnoreRecording(null, writeSettingEvents);
+    void updateSettings() {
+        updateSettingsButIgnoreRecording(null);
     }
 
-    void updateSettingsButIgnoreRecording(PlatformRecording ignoreMe, boolean writeSettingEvents) {
+    void updateSettingsButIgnoreRecording(PlatformRecording ignoreMe) {
         List<PlatformRecording> recordings = getRunningRecordings();
         List<Map<String, String>> list = new ArrayList<>(recordings.size());
         for (PlatformRecording r : recordings) {
@@ -393,7 +393,7 @@ public final class PlatformRecorder {
                 list.add(r.getSettings());
             }
         }
-        MetadataRepository.getInstance().setSettings(list, writeSettingEvents);
+        MetadataRepository.getInstance().setSettings(list);
     }
 
 
@@ -483,9 +483,8 @@ public final class PlatformRecorder {
             }
         }
         if (activeSettingEvent.isEnabled()) {
-            long timestamp = JVM.counterTime();
             for (EventControl ec : MetadataRepository.getInstance().getEventControls()) {
-                ec.writeActiveSettingEvent(timestamp);
+                ec.writeActiveSettingEvent();
             }
         }
     }

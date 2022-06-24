@@ -25,23 +25,21 @@
 
 package jdk.javadoc.internal.doclets.formats.html;
 
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
-import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
-import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
-import jdk.javadoc.internal.doclets.toolkit.Content;
-import jdk.javadoc.internal.doclets.toolkit.util.ClassTree;
-import jdk.javadoc.internal.doclets.toolkit.util.ClassTree.Hierarchy;
-import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
+import java.util.*;
 
 import javax.lang.model.element.TypeElement;
-import java.util.Collection;
-import java.util.SortedSet;
-import java.util.TreeSet;
+
+import jdk.javadoc.internal.doclets.formats.html.markup.HtmlStyle;
+import jdk.javadoc.internal.doclets.formats.html.markup.TagName;
+import jdk.javadoc.internal.doclets.formats.html.markup.HtmlTree;
+import jdk.javadoc.internal.doclets.toolkit.Content;
+import jdk.javadoc.internal.doclets.toolkit.util.ClassTree;
+import jdk.javadoc.internal.doclets.toolkit.util.DocPath;
 
 
 /**
  * Abstract class to print the class hierarchy page for all the Classes. This
- * is subclassed by {@link PackageTreeWriter} and {@link TreeWriter} to
+ * is sub-classed by {@link PackageTreeWriter} and {@link TreeWriter} to
  * generate the Package Tree and global Tree(for all the classes and packages)
  * pages.
  */
@@ -50,33 +48,34 @@ public abstract class AbstractTreeWriter extends HtmlDocletWriter {
     /**
      * The class and interface tree built by using {@link ClassTree}
      */
-    protected final ClassTree classTree;
+    protected final ClassTree classtree;
 
     /**
-     * Constructor. This constructor will be used while generating global tree file "overview-tree.html".
+     * Constructor initializes classtree variable. This constructor will be used
+     * while generating global tree file "overview-tree.html".
      *
      * @param configuration  The current configuration
      * @param filename   File to be generated.
-     * @param classTree  Tree built by {@link ClassTree}.
+     * @param classtree  Tree built by {@link ClassTree}.
      */
     protected AbstractTreeWriter(HtmlConfiguration configuration,
-                                 DocPath filename, ClassTree classTree) {
+                                 DocPath filename, ClassTree classtree) {
         super(configuration, filename);
-        this.classTree = classTree;
+        this.classtree = classtree;
     }
 
     /**
-     * Add each level of the class tree. For each subclass or
-     * subinterface indents the next level information.
-     * Recurses itself to add subclasses info.
+     * Add each level of the class tree. For each sub-class or
+     * sub-interface indents the next level information.
+     * Recurses itself to add sub-classes info.
      *
      * @param parent the superclass or superinterface of the sset
-     * @param collection  a collection of the subclasses at this level
-     * @param hierarchy the hierarchy for which we are generating a tree
+     * @param collection  a collection of the sub-classes at this level
+     * @param isEnum true if we are generating a tree for enums
      * @param content the content to which the level information will be added
      */
     protected void addLevelInfo(TypeElement parent, Collection<TypeElement> collection,
-                                Hierarchy hierarchy, Content content) {
+            boolean isEnum, Content content) {
         if (!collection.isEmpty()) {
             var ul = new HtmlTree(TagName.UL);
             for (TypeElement local : collection) {
@@ -84,7 +83,8 @@ public abstract class AbstractTreeWriter extends HtmlDocletWriter {
                 li.setStyle(HtmlStyle.circle);
                 addPartialInfo(local, li);
                 addExtendsImplements(parent, local, li);
-                addLevelInfo(local, hierarchy.subtypes(local), hierarchy, li);   // Recurse
+                addLevelInfo(local, classtree.directSubClasses(local, isEnum),
+                             isEnum, li);   // Recurse
                 ul.add(li);
             }
             content.add(ul);
@@ -92,28 +92,35 @@ public abstract class AbstractTreeWriter extends HtmlDocletWriter {
     }
 
     /**
-     * Adds a class or interface hierarchy with a given heading to given content.
+     * Add the heading for the tree depending upon tree type if it's a
+     * Class Tree or Interface tree.
      *
-     * @param hierarchy the hierarchy to add
-     * @param heading   the heading
-     * @param content   the content to which to add the hierarchy
+     * @param sset classes which are at the most base level, all the
+     * other classes in this run will derive from these classes
+     * @param heading heading for the tree
+     * @param content the content to which the tree will be added
      */
-    protected void addTree(Hierarchy hierarchy, String heading, Content content) {
-        SortedSet<TypeElement> roots = hierarchy.roots();
-        if (!roots.isEmpty()) {
-            TypeElement firstTypeElement = roots.first();
+    protected void addTree(SortedSet<TypeElement> sset, String heading, Content content) {
+        addTree(sset, heading, content, false);
+    }
+
+    protected void addTree(SortedSet<TypeElement> sset, String heading,
+                           Content content, boolean isEnums) {
+        if (!sset.isEmpty()) {
+            TypeElement firstTypeElement = sset.first();
             Content headingContent = contents.getContent(heading);
             var sectionHeading = HtmlTree.HEADING_TITLE(Headings.CONTENT_HEADING,
                     headingContent);
             var section = HtmlTree.SECTION(HtmlStyle.hierarchy, sectionHeading);
             addLevelInfo(!utils.isPlainInterface(firstTypeElement) ? firstTypeElement : null,
-                    roots, hierarchy, section);
+                    sset, isEnums, section);
             content.add(section);
         }
     }
 
     /**
-     * Add information regarding the classes which this class extends or implements.
+     * Add information regarding the classes which this class extends or
+     * implements.
      *
      * @param parent the parent class of the class being documented
      * @param typeElement the TypeElement under consideration

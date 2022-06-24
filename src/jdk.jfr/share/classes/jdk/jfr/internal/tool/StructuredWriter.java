@@ -31,7 +31,7 @@ abstract class StructuredWriter {
     private final PrintWriter out;
     private final StringBuilder builder = new StringBuilder(4000);
 
-    private String indention = "";
+    private char[] indentionArray = new char[0];
     private int indent = 0;
     private int column;
     // print first event immediately so tool feels responsive
@@ -65,7 +65,7 @@ abstract class StructuredWriter {
     }
 
     public final void printIndent() {
-        builder.append(indention, 0, indent);
+        builder.append(indentionArray, 0, indent);
         column += indent;
     }
 
@@ -114,8 +114,11 @@ abstract class StructuredWriter {
     }
 
     private void updateIndent() {
-        if (indent > indention.length()) {
-            indention = " ".repeat(2 * indent);
+        if (indent > indentionArray.length) {
+            indentionArray = new char[indent];
+            for (int i = 0; i < indentionArray.length; i++) {
+                indentionArray[i] = ' ';
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2021, Red Hat, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@
 
 #include "gc/shared/barrierSetNMethod.hpp"
 #include "gc/shared/collectorCounters.hpp"
-#include "gc/shared/continuationGCSupport.inline.hpp"
 #include "gc/shenandoah/shenandoahBreakpoint.hpp"
 #include "gc/shenandoah/shenandoahCollectorPolicy.hpp"
 #include "gc/shenandoah/shenandoahConcurrentGC.hpp"
@@ -507,10 +506,6 @@ public:
   bool is_thread_safe() { return true; }
 };
 
-void ShenandoahConcurrentGC::start_mark() {
-  _mark.start_mark();
-}
-
 void ShenandoahConcurrentGC::op_init_mark() {
   ShenandoahHeap* const heap = ShenandoahHeap::heap();
   assert(ShenandoahSafepoint::is_at_shenandoah_safepoint(), "Should be at safepoint");
@@ -529,8 +524,6 @@ void ShenandoahConcurrentGC::op_init_mark() {
   }
 
   heap->set_concurrent_mark_in_progress(true);
-
-  start_mark();
 
   {
     ShenandoahGCPhase phase(ShenandoahPhaseTimings::init_update_region_states);

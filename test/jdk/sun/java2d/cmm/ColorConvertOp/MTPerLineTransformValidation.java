@@ -29,7 +29,7 @@ import java.awt.image.ColorConvertOp;
  * @test
  * @bug 8273972
  * @summary Verifies that ColorConvertOp works fine if shared between threads
- * @run main/othervm/timeout=600 MTPerLineTransformValidation
+ * @run main/othervm/timeout=600 MTTransformValidation
  */
 public final class MTPerLineTransformValidation {
 

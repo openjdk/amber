@@ -343,7 +343,7 @@ void BitMap::at_put(idx_t offset, bool value) {
 // if no other thread is executing an action to
 // change the requested bit to a state other than
 // the one that this thread is trying to set it to,
-// then the bit is in the expected state
+// then the the bit is in the expected state
 // at exit from this method. However, rather than
 // make such a strong assertion here, based on
 // assuming such constrained use (which though true
@@ -691,18 +691,11 @@ void BitMap::write_to(bm_word_t* buffer, size_t buffer_size_in_bytes) const {
 #ifndef PRODUCT
 
 void BitMap::print_on(outputStream* st) const {
-  st->print("Bitmap (" SIZE_FORMAT " bits):", size());
+  tty->print("Bitmap(" SIZE_FORMAT "):", size());
   for (idx_t index = 0; index < size(); index++) {
-    if ((index % 64) == 0) {
-      st->cr();
-      st->print(SIZE_FORMAT_W(5) ":", index);
-    }
-    if ((index % 8) == 0) {
-      st->print(" ");
-    }
-    st->print("%c", at(index) ? 'S' : '.');
+    tty->print("%c", at(index) ? '1' : '0');
   }
-  st->cr();
+  tty->cr();
 }
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -546,10 +546,7 @@ public final class IsoFields {
                 if (isSupportedBy(temporal) == false) {
                     throw new UnsupportedTemporalTypeException("Unsupported field: WeekBasedYear");
                 }
-                var range = super.rangeRefinedBy(temporal);
-                var chronoRange = Chronology.from(temporal).range(YEAR);
-                return ValueRange.of(Math.max(range.getMinimum(), chronoRange.getMinimum()),
-                        Math.min(range.getMaximum(), chronoRange.getMaximum()));
+                return super.rangeRefinedBy(temporal);
             }
             @SuppressWarnings("unchecked")
             @Override
@@ -593,6 +590,12 @@ public final class IsoFields {
         //-------------------------------------------------------------------------
         private static final int[] QUARTER_DAYS = {0, 90, 181, 273, 0, 91, 182, 274};
 
+
+        private static void ensureIso(TemporalAccessor temporal) {
+            if (isIso(temporal) == false) {
+                throw new DateTimeException("Resolve requires IsoChronology");
+            }
+        }
 
         private static ValueRange getWeekRange(LocalDate date) {
             int wby = getWeekBasedYear(date);
@@ -728,14 +731,7 @@ public final class IsoFields {
         }
     }
 
-    private static void ensureIso(TemporalAccessor temporal) {
-        if (!isIso(temporal)) {
-            throw new DateTimeException("Resolve requires ISO based chronology: " +
-                    Chronology.from(temporal));
-        }
-    }
-
-    private static boolean isIso(TemporalAccessor temporal) {
-        return Chronology.from(temporal).isIsoBased();
+    static boolean isIso(TemporalAccessor temporal) {
+        return Chronology.from(temporal).equals(IsoChronology.INSTANCE);
     }
 }

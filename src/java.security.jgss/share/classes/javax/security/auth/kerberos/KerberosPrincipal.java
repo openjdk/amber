@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -41,7 +41,6 @@ import sun.security.util.*;
 public final class KerberosPrincipal
     implements java.security.Principal, java.io.Serializable {
 
-    @Serial
     private static final long serialVersionUID = -7374788026156829911L;
 
     //name types
@@ -191,7 +190,7 @@ public final class KerberosPrincipal
 
     public KerberosPrincipal(String name, int nameType) {
 
-        PrincipalName krb5Principal;
+        PrincipalName krb5Principal = null;
 
         try {
             // Appends the default realm if it is missing
@@ -275,7 +274,6 @@ public final class KerberosPrincipal
      *          Realm in their DER-encoded form as specified in Section 5.2.2 of
      *          <a href=http://www.ietf.org/rfc/rfc4120.txt> RFC4120</a>.
      */
-    @Serial
     private void writeObject(ObjectOutputStream oos)
             throws IOException {
 
@@ -296,7 +294,6 @@ public final class KerberosPrincipal
      * @throws IOException if an I/O error occurs
      * @throws ClassNotFoundException if a serialized class cannot be loaded
      */
-    @Serial
     private void readObject(ObjectInputStream ois)
             throws IOException, ClassNotFoundException {
         byte[] asn1EncPrincipal = (byte [])ois.readObject();

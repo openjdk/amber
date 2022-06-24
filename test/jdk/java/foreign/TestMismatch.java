@@ -181,7 +181,7 @@ public class TestMismatch {
                 thread.join();
 
                 RuntimeException e = exception.get();
-                if (!(e instanceof WrongThreadException)) {
+                if (!(e instanceof IllegalStateException)) {
                     throw e;
                 }
             }
@@ -199,7 +199,7 @@ public class TestMismatch {
                 thread.join();
 
                 RuntimeException e = exception.get();
-                if (!(e instanceof WrongThreadException)) {
+                if (!(e instanceof IllegalStateException)) {
                     throw e;
                 }
             }

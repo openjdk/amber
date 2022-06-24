@@ -110,7 +110,7 @@ public class JdkXmlUtils {
     }
 
     /**
-     * Sets the XMLReader instance with the specified property if the
+     * Sets the XMLReader instance with the specified property if the the
      * property is supported, ignores error if not, issues a warning if so
      * requested.
      *

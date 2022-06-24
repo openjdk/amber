@@ -75,11 +75,10 @@ import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.SharedSecrets;
-import jdk.internal.javac.PreviewFeature;
+import jdk.internal.misc.VM;
 import jdk.internal.logger.LoggerFinderLoader;
 import jdk.internal.logger.LazyLoggers;
 import jdk.internal.logger.LocalizedLoggerWrapper;
-import jdk.internal.misc.VM;
 import jdk.internal.util.SystemProps;
 import jdk.internal.vm.Continuation;
 import jdk.internal.vm.ContinuationScope;
@@ -2497,28 +2496,6 @@ public final class System {
                 return StringConcatHelper.mix(lengthCoder, constant);
             }
 
-            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-            public long stringConcatCoder(char value) {
-                return StringConcatHelper.coder(value);
-            }
-
-            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-            public long stringBuilderConcatMix(long lengthCoder,
-                                               StringBuilder sb) {
-                return sb.mix(lengthCoder);
-            }
-
-            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-            public long stringBuilderConcatPrepend(long lengthCoder, byte[] buf,
-                                                   StringBuilder sb) {
-                return sb.prepend(lengthCoder, buf);
-            }
-
-            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-            public TemplatedString newTemplatedString(List<String> fragments, List<Object> values) {
-                return new SimpleTemplatedString(fragments, values);
-            }
-
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }
@@ -2614,28 +2591,18 @@ public final class System {
             }
 
             public void parkVirtualThread() {
-                Thread thread = Thread.currentThread();
-                if (thread instanceof BaseVirtualThread vthread) {
-                    vthread.park();
-                } else {
-                    throw new WrongThreadException();
-                }
+                VirtualThread.park();
             }
 
             public void parkVirtualThread(long nanos) {
-                Thread thread = Thread.currentThread();
-                if (thread instanceof BaseVirtualThread vthread) {
-                    vthread.parkNanos(nanos);
-                } else {
-                    throw new WrongThreadException();
-                }
+                VirtualThread.parkNanos(nanos);
             }
 
             public void unparkVirtualThread(Thread thread) {
-                if (thread instanceof BaseVirtualThread vthread) {
+                if (thread instanceof VirtualThread vthread) {
                     vthread.unpark();
                 } else {
-                    throw new WrongThreadException();
+                    throw new IllegalArgumentException("Not a virtual thread");
                 }
             }
 

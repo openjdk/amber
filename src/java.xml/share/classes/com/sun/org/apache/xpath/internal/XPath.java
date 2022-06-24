@@ -42,7 +42,7 @@ import jdk.xml.internal.XMLSecurityManager;
  * The XPath class wraps an expression object and provides general services
  * for execution of that expression.
  * @xsl.usage advanced
- * @LastModified: May 2022
+ * @LastModified: Jan 2022
  */
 public class XPath implements Serializable, ExpressionOwner
 {
@@ -208,16 +208,22 @@ public class XPath implements Serializable, ExpressionOwner
     else if (MATCH == type)
       parser.initMatchPattern(compiler, exprString, prefixResolver);
     else
-      throw new TransformerException(XSLMessages.createXPATHMessage(
+      throw new RuntimeException(XSLMessages.createXPATHMessage(
             XPATHErrorResources.ER_CANNOT_DEAL_XPATH_TYPE,
             new Object[]{Integer.toString(type)}));
+            //"Can not deal with XPath type: " + type);
 
-    m_mainExp = compiler.compileExpression(0);
+    // System.out.println("----------------");
+    Expression expr = compiler.compileExpression(0);
+
+    // System.out.println("expr: "+expr);
+    this.setExpression(expr);
 
     if((null != locator) && locator instanceof ExpressionNode)
     {
-        m_mainExp.exprSetParent((ExpressionNode)locator);
+        expr.exprSetParent((ExpressionNode)locator);
     }
+
   }
 
   /**
@@ -268,7 +274,7 @@ public class XPath implements Serializable, ExpressionOwner
    */
   public XPath(Expression expr)
   {
-    m_mainExp = expr;
+    this.setExpression(expr);
     initFunctionTable();
   }
 

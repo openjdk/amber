@@ -24,24 +24,16 @@
 /*
  * @test
  * @summary Verify nextDouble stays within range
- * @bug 8280550 8280950 8281183 8202449
- *
- * @key randomness
- * @library /test/lib
- * @build jdk.test.lib.RandomFactory
- * @run main RandomNextDoubleBoundary
-
+ * @bug 8280550 8280950 8281183
  */
 
 import java.util.SplittableRandom;
 import java.util.random.RandomGenerator;
-import jdk.test.lib.RandomFactory;
 
 public class RandomNextDoubleBoundary {
     public static void main(String... args) {
         negativeBounds();
         positiveBounds();
-        nextDoubleHugeRange();
     }
 
     private static void negativeBounds() {
@@ -94,31 +86,9 @@ public class RandomNextDoubleBoundary {
         }
     }
 
-    public static void nextDoubleHugeRange() {
-        var random = RandomFactory.getRandom();
-        var n = 100_000;
-
-        var origin = -(3.0 / 4.0) * Double.MAX_VALUE;
-        var bound = (3.0 / 4.0) * Double.MAX_VALUE;
-        assertTrue(bound - origin == Double.POSITIVE_INFINITY);
-
-        /* all are within [origin, bound) */
-        assertTrue(random.doubles(n, origin, bound)
-                .allMatch(d -> origin <= d && d < bound));
-
-        /* some are near the origin */
-        assertTrue(random.doubles(n, origin, bound)
-                .anyMatch(d -> d < (15.0 / 16.0) * origin));
-
-        /* some are near the bound */
-        assertTrue(random.doubles(n, origin, bound)
-                .anyMatch(d -> d > (15.0 / 16.0) * bound));
-    }
-
     public static void assertTrue(boolean condition) {
         if (!condition) {
             throw new AssertionError();
         }
     }
-
 }

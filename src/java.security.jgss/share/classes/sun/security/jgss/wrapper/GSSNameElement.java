@@ -25,21 +25,21 @@
 
 package sun.security.jgss.wrapper;
 
-import org.ietf.jgss.GSSException;
-import org.ietf.jgss.GSSName;
-import org.ietf.jgss.Oid;
-import sun.security.jgss.GSSExceptionImpl;
-import sun.security.jgss.GSSUtil;
-import sun.security.jgss.spi.GSSNameSpi;
-import sun.security.krb5.Realm;
-import sun.security.util.DerInputStream;
-import sun.security.util.DerOutputStream;
-import sun.security.util.ObjectIdentifier;
-
-import javax.security.auth.kerberos.ServicePermission;
-import java.io.IOException;
+import org.ietf.jgss.*;
 import java.lang.ref.Cleaner;
 import java.security.Provider;
+import java.security.Security;
+import java.io.IOException;
+import sun.security.krb5.Realm;
+import sun.security.jgss.GSSUtil;
+import sun.security.util.ObjectIdentifier;
+import sun.security.util.DerInputStream;
+import sun.security.util.DerOutputStream;
+import sun.security.jgss.GSSUtil;
+import sun.security.jgss.GSSExceptionImpl;
+import sun.security.jgss.spi.GSSNameSpi;
+
+import javax.security.auth.kerberos.ServicePermission;
 
 /**
  * This class is essentially a wrapper class for the gss_name_t
@@ -133,7 +133,7 @@ public class GSSNameElement implements GSSNameSpi {
                 // Need to add back the mech Oid portion (stripped
                 // off by GSSNameImpl class prior to calling this
                 // method) for "NT_EXPORT_NAME"
-                byte[] mechBytes;
+                byte[] mechBytes = null;
                 DerOutputStream dout = new DerOutputStream();
                 Oid mech = cStub.getMech();
                 try {
@@ -190,7 +190,7 @@ public class GSSNameElement implements GSSNameSpi {
     }
 
     private void setPrintables() throws GSSException {
-        Object[] printables;
+        Object[] printables = null;
         printables = cStub.displayName(pName);
         assert((printables != null) && (printables.length == 2));
         printableName = (String) printables[0];
@@ -203,7 +203,7 @@ public class GSSNameElement implements GSSNameSpi {
 
     // Need to be public for GSSUtil.getSubject()
     public String getKrbName() throws GSSException {
-        long mName;
+        long mName = 0;
         GSSLibStub stub = cStub;
         if (!GSSUtil.isKerberosMech(cStub.getMech())) {
             stub = GSSLibStub.getInstance(GSSUtil.GSS_KRB5_MECH_OID);
@@ -253,7 +253,7 @@ public class GSSNameElement implements GSSNameSpi {
 
         int mechOidLen  = (((0xFF & nameVal[pos++]) << 8) |
                            (0xFF & nameVal[pos++]));
-        ObjectIdentifier temp;
+        ObjectIdentifier temp = null;
         try {
             DerInputStream din = new DerInputStream(nameVal, pos,
                                                     mechOidLen);

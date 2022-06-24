@@ -36,7 +36,7 @@ import java.text.MessageFormat;
 
 public class Main {
 
-    public static final ResourceBundle I18N = ResourceBundle.getBundle(
+    private static final ResourceBundle I18N = ResourceBundle.getBundle(
             "jdk.jpackage.internal.resources.MainResources");
 
     /**

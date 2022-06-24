@@ -39,7 +39,6 @@
 #include "runtime/deoptimization.hpp"
 #include "runtime/jniHandles.inline.hpp"
 #include "runtime/javaCalls.hpp"
-#include "runtime/os.hpp"
 #include "jvmci/jniAccessMark.inline.hpp"
 #include "jvmci/jvmciCompiler.hpp"
 #include "jvmci/jvmciRuntime.hpp"
@@ -731,7 +730,8 @@ void JVMCIEnv::fthrow_error(const char* file, int line, const char* format, ...)
   va_list ap;
   va_start(ap, format);
   char msg[max_msg_size];
-  os::vsnprintf(msg, max_msg_size, format, ap);
+  vsnprintf(msg, max_msg_size, format, ap);
+  msg[max_msg_size-1] = '\0';
   va_end(ap);
   JavaThread* THREAD = JavaThread::current();
   if (is_hotspot()) {

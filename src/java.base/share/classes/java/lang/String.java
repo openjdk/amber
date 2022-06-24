@@ -845,8 +845,7 @@ public final class String
         CharsetEncoder ce = cs.newEncoder();
         int len = val.length >> coder;  // assume LATIN1=0/UTF16=1;
         int en = scale(len, ce.maxBytesPerChar());
-        // fastpath with ArrayEncoder implies `doReplace`.
-        if (doReplace && ce instanceof ArrayEncoder ae) {
+        if (ce instanceof ArrayEncoder ae) {
             // fastpath for ascii compatible
             if (coder == LATIN1 &&
                     ae.isASCIICompatible() &&
@@ -856,6 +855,10 @@ public final class String
             byte[] ba = new byte[en];
             if (len == 0) {
                 return ba;
+            }
+            if (doReplace) {
+                ce.onMalformedInput(CodingErrorAction.REPLACE)
+                        .onUnmappableCharacter(CodingErrorAction.REPLACE);
             }
 
             int blen = (coder == LATIN1) ? ae.encodeFromLatin1(val, 0, len, ba)

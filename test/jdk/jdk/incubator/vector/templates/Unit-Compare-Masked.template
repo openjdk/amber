@@ -1,4 +1,3 @@
-
     @Test(dataProvider = "$type$CompareOpMaskProvider")
     static void [[TEST]]$vectorteststype$Masked(IntFunction<$type$[]> fa, IntFunction<$type$[]> fb,
                                                 IntFunction<boolean[]> fm) {
@@ -21,3 +20,4 @@
             }
         }
     }
+

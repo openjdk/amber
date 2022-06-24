@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,26 +24,36 @@
 #ifndef SHARE_PRIMS_FOREIGN_GLOBALS_INLINE_HPP
 #define SHARE_PRIMS_FOREIGN_GLOBALS_INLINE_HPP
 
-#include "prims/foreignGlobals.hpp"
+#include "prims/foreign_globals.hpp"
 
-#include "classfile/javaClasses.hpp"
 #include "oops/oopsHierarchy.hpp"
 #include "oops/objArrayOop.hpp"
-#include "oops/oopCast.inline.hpp"
+
+template<typename T>
+static bool check_type(oop theOop) {
+  static_assert(sizeof(T) == 0, "No check_type specialization found for this type");
+  return false;
+}
+template<>
+inline bool check_type<objArrayOop>(oop theOop) { return theOop->is_objArray(); }
+template<>
+inline bool check_type<typeArrayOop>(oop theOop) { return theOop->is_typeArray(); }
+
+template<typename R>
+R ForeignGlobals::cast(oop theOop) {
+  assert(check_type<R>(theOop), "Invalid cast");
+  return (R) theOop;
+}
 
 template<typename T, typename Func>
-void ForeignGlobals::parse_register_array(objArrayOop jarray, int type_index, GrowableArray<T>& array, Func converter) {
-  objArrayOop subarray = oop_cast<objArrayOop>(jarray->obj_at(type_index));
+void ForeignGlobals::loadArray(objArrayOop jarray, int type_index, GrowableArray<T>& array, Func converter) const {
+  objArrayOop subarray = cast<objArrayOop>(jarray->obj_at(type_index));
   int subarray_length = subarray->length();
   for (int i = 0; i < subarray_length; i++) {
     oop storage = subarray->obj_at(i);
-    jint index = jdk_internal_foreign_abi_VMStorage::index(storage);
+    jint index = storage->int_field(VMS.index_offset);
     array.push(converter(index));
   }
-}
-
-inline const char* null_safe_string(const char* str) {
-  return str == nullptr ? "NULL" : str;
 }
 
 #endif // SHARE_PRIMS_FOREIGN_GLOBALS_INLINE_HPP

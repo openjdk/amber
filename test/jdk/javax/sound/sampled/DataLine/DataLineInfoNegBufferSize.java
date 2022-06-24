@@ -30,7 +30,6 @@ import javax.sound.sampled.Mixer;
 
 /**
  * @test
- * @key sound
  * @bug 5021234
  * @summary Using -2 for buffer size will fail retrieval of lines
  */

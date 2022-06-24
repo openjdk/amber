@@ -75,7 +75,7 @@ import jdk.javadoc.internal.doclets.toolkit.PropertyUtils;
  * Extra Members: these are members enclosed in an undocumented
  * package-private type element, and may not be linkable (or documented),
  * however, the members of such a type element may be documented, as if
- * declared in the subtype, only if the enclosing type is not being
+ * declared in the sub type, only if the enclosing type is not being
  * documented by a filter such as -public, -protected, etc.
  * <p>
  * Visible Members: these are the members that are "visible"
@@ -205,8 +205,8 @@ public class VisibleMemberTable {
      * sole {@code {@inheritDoc}} or devoid of any API comments.
      * <p>
      * b.The list may contain (extra) members, inherited by inaccessible
-     * supertypes, primarily package private types. These members are
-     * required to be documented in the subtype when the supertype is
+     * super types, primarily package private types. These members are
+     * required to be documented in the subtype when the super type is
      * not documented.
      *
      * @param kind the member kind
@@ -294,8 +294,8 @@ public class VisibleMemberTable {
     /**
      * Returns a set of visible type elements in this type element's lineage.
      * <p>
-     * This method returns the supertypes in the inheritance
-     * order C, B, A, j.l.O. The superinterfaces however are
+     * This method returns the super-types in the inheritance
+     * order C, B, A, j.l.O. The super-interfaces however are
      * alpha sorted and appended to the resulting set.
      *
      * @return the set of visible classes in this map
@@ -307,12 +307,12 @@ public class VisibleMemberTable {
         // Add this type element first.
         result.add(te);
 
-        // Add the superclasses.
+        // Add the super classes.
         allSuperclasses.stream()
                 .map(vmt -> vmt.te)
                 .forEach(result::add);
 
-        // ... and finally the sorted superinterfaces.
+        // ... and finally the sorted super interfaces.
         allSuperinterfaces.stream()
                 .map(vmt -> vmt.te)
                 .sorted(utils.comparators.makeGeneralPurposeComparator())
@@ -419,7 +419,7 @@ public class VisibleMemberTable {
             VisibleMemberTable vmt = mcache.getVisibleMemberTable(parent);
             allSuperclasses.add(vmt);
             allSuperclasses.addAll(vmt.getAllSuperclasses());
-            // Add direct superinterfaces of a superclass, if any.
+            // Add direct super interfaces of a super class, if any.
             allSuperinterfaces.addAll(vmt.getAllSuperinterfaces());
             parents.add(vmt);
         }

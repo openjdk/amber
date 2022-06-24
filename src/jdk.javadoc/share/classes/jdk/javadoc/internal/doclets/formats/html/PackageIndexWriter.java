@@ -109,6 +109,10 @@ public class PackageIndexWriter extends AbstractOverviewIndexWriter {
             }
 
             target.add(table);
+
+            if (table.needsScript()) {
+                getMainBodyScript().append(table.getScript());
+            }
         }
     }
 }

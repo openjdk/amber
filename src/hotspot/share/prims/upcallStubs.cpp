@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,17 +22,30 @@
  */
 
 #include "precompiled.hpp"
-#include "code/codeBlob.hpp"
-#include "code/codeCache.hpp"
+#include "runtime/jniHandles.inline.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
+#include "code/codeCache.hpp"
+#include "runtime/vmOperations.hpp"
 
 JVM_ENTRY(static jboolean, UH_FreeUpcallStub0(JNIEnv *env, jobject _unused, jlong addr))
-  // safe to call 'find_blob' without code cache lock, because stub is always alive
+  //acquire code cache lock
+  MutexLocker mu(CodeCache_lock, Mutex::_no_safepoint_check_flag);
+  //find code blob
   CodeBlob* cb = CodeCache::find_blob((char*)addr);
-  if (cb == nullptr) {
+  if (cb == NULL) {
     return false;
   }
-  UpcallStub::free(cb->as_upcall_stub());
+  //free global JNI handle
+  jobject handle = NULL;
+  if (cb->is_optimized_entry_blob()) {
+    handle = ((OptimizedEntryBlob*)cb)->receiver();
+  } else {
+    jobject* handle_ptr = (jobject*)(void*)cb->content_begin();
+    handle = *handle_ptr;
+  }
+  JNIHandles::destroy_global(handle);
+  //free code blob
+  CodeCache::free(cb);
   return true;
 JVM_END
 

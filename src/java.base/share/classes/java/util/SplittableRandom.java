@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2013, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,6 +24,7 @@
  */
 package java.util;
 
+import java.math.BigInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.random.RandomGenerator;
 import java.util.random.RandomGenerator.SplittableGenerator;
@@ -550,7 +551,9 @@ public final class SplittableRandom implements RandomGenerator, SplittableGenera
      * @param randomNumberBound the bound (exclusive) of each random value
      * @return a stream of pseudorandom {@code double} values,
      *         each with the given origin (inclusive) and bound (exclusive)
-     * @throws IllegalArgumentException {@inheritDoc}
+     * @throws IllegalArgumentException if {@code streamSize} is
+     *         less than zero, or {@code randomNumberOrigin}
+     *         is greater than or equal to {@code randomNumberBound}
      */
     @Override
     public DoubleStream doubles(long streamSize, double randomNumberOrigin, double randomNumberBound) {
@@ -569,7 +572,8 @@ public final class SplittableRandom implements RandomGenerator, SplittableGenera
      * @param randomNumberBound the bound (exclusive) of each random value
      * @return a stream of pseudorandom {@code double} values,
      *         each with the given origin (inclusive) and bound (exclusive)
-     * @throws IllegalArgumentException {@inheritDoc}
+     * @throws IllegalArgumentException if {@code randomNumberOrigin}
+     *         is greater than or equal to {@code randomNumberBound}
      */
     @Override
     public DoubleStream doubles(double randomNumberOrigin, double randomNumberBound) {

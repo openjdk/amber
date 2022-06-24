@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -37,7 +37,7 @@ import java.security.Provider;
  */
 public interface GSSCredentialSpi {
 
-    Provider getProvider();
+    public Provider getProvider();
 
     /**
      * Called to invalidate this credential element and release
@@ -46,7 +46,7 @@ public interface GSSCredentialSpi {
      *
      * @exception GSSException with major codes NO_CRED and FAILURE
      */
-    void dispose() throws GSSException;
+    public void dispose() throws GSSException;
 
     /**
      * Returns the principal name for this credential. The name
@@ -55,7 +55,7 @@ public interface GSSCredentialSpi {
      * @return GSSNameSpi representing principal name of this credential
      * @exception GSSException may be thrown
      */
-    GSSNameSpi getName() throws GSSException;
+    public GSSNameSpi getName() throws GSSException;
 
     /**
      * Returns the init lifetime remaining.
@@ -63,7 +63,7 @@ public interface GSSCredentialSpi {
      * @return the init lifetime remaining in seconds
      * @exception GSSException may be thrown
      */
-    int getInitLifetime() throws GSSException;
+    public int getInitLifetime() throws GSSException;
 
 
     /**
@@ -72,21 +72,21 @@ public interface GSSCredentialSpi {
      * @return the accept lifetime remaining in seconds
      * @exception GSSException may be thrown
      */
-    int getAcceptLifetime() throws GSSException;
+    public int getAcceptLifetime() throws GSSException;
 
     /**
      * Determines if this credential element can be used by a context
      * initiator.
      * @return true if it can be used for initiating contexts
      */
-    boolean isInitiatorCredential() throws GSSException;
+    public boolean isInitiatorCredential() throws GSSException;
 
     /**
      * Determines if this credential element can be used by a context
      * acceptor.
      * @return true if it can be used for accepting contexts
      */
-    boolean isAcceptorCredential() throws GSSException;
+    public boolean isAcceptorCredential() throws GSSException;
 
     /**
      * Returns the oid representing the underlying credential
@@ -95,7 +95,7 @@ public interface GSSCredentialSpi {
      * @return the Oid for this credential mechanism
      * @exception GSSException may be thrown
      */
-    Oid getMechanism();
+    public Oid getMechanism();
 
     /**
      * Impersonates another client.
@@ -104,5 +104,5 @@ public interface GSSCredentialSpi {
      * @return the new credential
      * @exception GSSException may be thrown
      */
-    GSSCredentialSpi impersonate(GSSNameSpi name) throws GSSException;
+    public GSSCredentialSpi impersonate(GSSNameSpi name) throws GSSException;
 }

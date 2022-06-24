@@ -56,7 +56,13 @@ import jdk.jfr.internal.settings.ThrottleSetting;
 // holds SettingControl instances that need to be released
 // when a class is unloaded (to avoid memory leaks).
 public final class EventControl {
-    record NamedControl(String name, Control control) {
+    static final class NamedControl {
+        public final String name;
+        public final Control control;
+        NamedControl(String name, Control control) {
+            this.name = name;
+            this.control = control;
+        }
     }
     static final String FIELD_SETTING_PREFIX = "setting";
     private static final Type TYPE_ENABLED = TypeLibrary.createType(EnabledSetting.class);
@@ -279,19 +285,21 @@ public final class EventControl {
         }
     }
 
-    void writeActiveSettingEvent(long timestamp) {
+    void writeActiveSettingEvent() {
         if (!type.isRegistered()) {
             return;
         }
+        ActiveSettingEvent event = ActiveSettingEvent.EVENT.get();
         for (NamedControl nc : namedControls) {
             if (Utils.isSettingVisible(nc.control, type.hasEventHook()) && type.isVisible()) {
                 String value = nc.control.getLastValue();
                 if (value == null) {
                     value = nc.control.getDefaultValue();
                 }
-                if (ActiveSettingEvent.EVENT.isEnabled()) {
-                    ActiveSettingEvent.commit(timestamp, 0L, type.getId(), nc.name(), value);
-                }
+                event.id = type.getId();
+                event.name = nc.name;
+                event.value = value;
+                event.commit();
             }
         }
     }

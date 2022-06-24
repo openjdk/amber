@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2005, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2005, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package sun.security.jgss;
 
-import java.security.PrivilegedAction;
 import java.util.HashMap;
 import javax.security.auth.login.AppConfigurationEntry;
 import javax.security.auth.login.Configuration;
@@ -73,7 +72,11 @@ public class LoginConfigImpl extends Configuration {
             throw new IllegalArgumentException(mech.toString() + " not supported");
         }
         config = java.security.AccessController.doPrivileged
-                ((PrivilegedAction<Configuration>) Configuration::getConfiguration);
+                (new java.security.PrivilegedAction <Configuration> () {
+            public Configuration run() {
+                return Configuration.getConfiguration();
+            }
+        });
     }
 
     /**
@@ -163,7 +166,7 @@ public class LoginConfigImpl extends Configuration {
      * the system-wide Configuration object.
      */
     private AppConfigurationEntry[] getDefaultConfigurationEntry() {
-        HashMap <String, String> options = new HashMap<>(2);
+        HashMap <String, String> options = new HashMap <String, String> (2);
 
         if (mechName == null || mechName.equals("krb5")) {
             if (isServerSide(caller)) {

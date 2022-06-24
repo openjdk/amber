@@ -729,7 +729,6 @@ void TemplateInterpreterGenerator::generate_fixed_frame(bool native_call) {
 //
 
 address TemplateInterpreterGenerator::generate_Continuation_doYield_entry(void) {
-  if (!Continuations::enabled()) return nullptr;
   Unimplemented();
   return NULL;
 }

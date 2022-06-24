@@ -30,7 +30,6 @@ import javax.sound.sampled.Mixer;
 
 /**
  * @test
- * @key sound
  * @bug 4429762
  * @summary Some instrument names in some soundbanks include bad extra characters
  */

@@ -32,24 +32,21 @@ import java.util.function.BooleanSupplier;
  * Utility class to invoke System.gc()
  */
 public class ForceGC {
-    private final static Cleaner cleaner = Cleaner.create();
-
-    private final CountDownLatch cleanerInvoked;
+    private final CountDownLatch cleanerInvoked = new CountDownLatch(1);
+    private final Cleaner cleaner = Cleaner.create();
     private Object o;
-    private int gcCount = 0;
 
     public ForceGC() {
         this.o = new Object();
-        this.cleanerInvoked = new CountDownLatch(1);
-        cleaner.register(o, cleanerInvoked::countDown);
+        cleaner.register(o, () -> cleanerInvoked.countDown());
     }
 
     private void doit(int iter) {
         try {
             for (int i = 0; i < 10; i++) {
                 System.gc();
-                gcCount++;
-                if (cleanerInvoked.await(100L, TimeUnit.MILLISECONDS)) {
+                System.out.println("doit() iter: " + iter + ", gc " + i);
+                if (cleanerInvoked.await(1L, TimeUnit.SECONDS)) {
                     return;
                 }
             }
@@ -71,20 +68,12 @@ public class ForceGC {
         o = null; // Keep reference to Object until now, to ensure the Cleaner
                   // doesn't count down the latch before await() is called.
         for (int i = 0; i < 10; i++) {
-            if (s.getAsBoolean()) {
-                System.out.println("ForceGC condition met after System.gc() " + gcCount + " times");
-                return true;
-            }
-
+            if (s.getAsBoolean()) return true;
             doit(i);
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
+            try { Thread.sleep(1000); } catch (InterruptedException e) {
                 throw new AssertionError("unexpected interrupted sleep", e);
             }
         }
-
-        System.out.println("ForceGC condition not met after System.gc() " + gcCount + " times");
         return false;
     }
 }

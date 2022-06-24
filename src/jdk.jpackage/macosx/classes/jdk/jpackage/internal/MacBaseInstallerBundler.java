@@ -46,7 +46,7 @@ import static jdk.jpackage.internal.StandardBundlerParam.SIGN_BUNDLE;
 
 public abstract class MacBaseInstallerBundler extends AbstractBundler {
 
-    private final BundlerParamInfo<Path> APP_IMAGE_TEMP_ROOT =
+    public final BundlerParamInfo<Path> APP_IMAGE_TEMP_ROOT =
             new StandardBundlerParam<>(
             "mac.app.imageRoot",
             Path.class,
@@ -156,25 +156,15 @@ public abstract class MacBaseInstallerBundler extends AbstractBundler {
     }
 
     protected Path prepareAppBundle(Map<String, ? super Object> params)
-            throws PackagerException, IOException {
-        Path appDir;
-        Path appImageRoot = APP_IMAGE_TEMP_ROOT.fetchFrom(params);
+            throws PackagerException {
         Path predefinedImage =
                 StandardBundlerParam.getPredefinedAppImage(params);
         if (predefinedImage != null) {
-            appDir = appImageRoot.resolve(APP_NAME.fetchFrom(params) + ".app");
-            IOUtils.copyRecursive(predefinedImage, appDir);
-        } else {
-            appDir = appImageBundler.execute(params, appImageRoot);
+            return predefinedImage;
         }
+        Path appImageRoot = APP_IMAGE_TEMP_ROOT.fetchFrom(params);
 
-        if (!StandardBundlerParam.isRuntimeInstaller(params)) {
-            new PackageFile(APP_NAME.fetchFrom(params)).save(
-                    ApplicationLayout.macAppImage().resolveAt(appDir));
-           Files.deleteIfExists(AppImageFile.getPathInAppImage(appDir));
-        }
-
-        return appDir;
+        return appImageBundler.execute(params, appImageRoot);
     }
 
     @Override

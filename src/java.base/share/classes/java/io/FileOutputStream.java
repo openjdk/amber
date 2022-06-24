@@ -314,7 +314,6 @@ public class FileOutputStream extends OutputStream
      * @param      b   the byte to be written.
      * @throws     IOException  if an I/O error occurs.
      */
-    @Override
     public void write(int b) throws IOException {
         boolean append = fdAccess.getAppend(fd);
         long comp = Blocker.begin();
@@ -341,10 +340,9 @@ public class FileOutputStream extends OutputStream
      * Writes {@code b.length} bytes from the specified byte array
      * to this file output stream.
      *
-     * @param      b   {@inheritDoc}
-     * @throws     IOException  {@inheritDoc}
+     * @param      b   the data.
+     * @throws     IOException  if an I/O error occurs.
      */
-    @Override
     public void write(byte[] b) throws IOException {
         boolean append = fdAccess.getAppend(fd);
         long comp = Blocker.begin();
@@ -359,12 +357,11 @@ public class FileOutputStream extends OutputStream
      * Writes {@code len} bytes from the specified byte array
      * starting at offset {@code off} to this file output stream.
      *
-     * @param      b     {@inheritDoc}
-     * @param      off   {@inheritDoc}
-     * @param      len   {@inheritDoc}
+     * @param      b     the data.
+     * @param      off   the start offset in the data.
+     * @param      len   the number of bytes to write.
      * @throws     IOException  if an I/O error occurs.
      */
-    @Override
     public void write(byte[] b, int off, int len) throws IOException {
         boolean append = fdAccess.getAppend(fd);
         long comp = Blocker.begin();
@@ -395,7 +392,6 @@ public class FileOutputStream extends OutputStream
      *
      * @revised 1.4
      */
-    @Override
     public void close() throws IOException {
         if (closed) {
             return;

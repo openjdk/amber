@@ -32,7 +32,6 @@ import org.openjdk.jmh.infra.Blackhole;
 
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Thread)
-@Fork(jvmArgsPrepend = {"--add-modules=jdk.incubator.vector"})
 public class RotateBenchmark {
     @Param({"256","512"})
     int size;

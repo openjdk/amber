@@ -1,4 +1,3 @@
-
     static $type$ [[TEST]]_unary($type$ a, $type$ b) {
         return ($type$)([[TEST_OP]]);
     }

@@ -20,7 +20,6 @@
 
 package com.sun.org.apache.xpath.internal.jaxp;
 
-import com.sun.org.apache.xml.internal.utils.WrappedRuntimeException;
 import com.sun.org.apache.xpath.internal.objects.XObject;
 import javax.xml.namespace.QName;
 import javax.xml.transform.TransformerException;
@@ -28,7 +27,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathEvaluationResult;
 import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFunctionException;
 import javax.xml.xpath.XPathFunctionResolver;
 import javax.xml.xpath.XPathVariableResolver;
 import jdk.xml.internal.JdkXmlFeatures;
@@ -39,7 +37,7 @@ import org.xml.sax.InputSource;
  * The XPathExpression interface encapsulates a (compiled) XPath expression.
  *
  * @author  Ramesh Mandava
- * @LastModified: May 2022
+ * @LastModified: Apr 2022
  */
 public class XPathExpressionImpl extends XPathImplUtil implements XPathExpression {
 
@@ -79,7 +77,7 @@ public class XPathExpressionImpl extends XPathImplUtil implements XPathExpressio
     }
 
     public Object eval(Object item, QName returnType)
-            throws TransformerException {
+            throws javax.xml.transform.TransformerException {
         XObject resultObject = eval(item, xpath);
         return getResultAsType(resultObject, returnType);
     }
@@ -90,20 +88,20 @@ public class XPathExpressionImpl extends XPathImplUtil implements XPathExpressio
         isSupported(returnType);
         try {
             return eval(item, returnType);
-        } catch (TransformerException te) {
+        } catch (java.lang.NullPointerException npe) {
+            // If VariableResolver returns null Or if we get
+            // NullPointerException at this stage for some other reason
+            // then we have to reurn XPathException
+            throw new XPathExpressionException (npe);
+        } catch (javax.xml.transform.TransformerException te) {
             Throwable nestedException = te.getException();
-            if (nestedException instanceof XPathFunctionException) {
-                throw (XPathFunctionException)nestedException;
+            if (nestedException instanceof javax.xml.xpath.XPathFunctionException) {
+                throw (javax.xml.xpath.XPathFunctionException)nestedException;
             } else {
                 // For any other exceptions we need to throw
                 // XPathExpressionException (as per spec)
                 throw new XPathExpressionException(te);
             }
-        } catch (RuntimeException re) {
-            if (re instanceof WrappedRuntimeException) {
-                throw new XPathExpressionException(((WrappedRuntimeException)re).getException());
-            }
-            throw new XPathExpressionException(re);
         }
     }
 
@@ -117,18 +115,12 @@ public class XPathExpressionImpl extends XPathImplUtil implements XPathExpressio
     @Override
     public Object evaluate(InputSource source, QName returnType)
         throws XPathExpressionException {
-        requireNonNull(source, "Source");
         isSupported (returnType);
         try {
             Document document = getDocument(source);
             return eval(document, returnType);
         } catch (TransformerException e) {
             throw new XPathExpressionException(e);
-        } catch (RuntimeException re) {
-            if (re instanceof WrappedRuntimeException) {
-                throw new XPathExpressionException(((WrappedRuntimeException)re).getException());
-            }
-            throw new XPathExpressionException(re);
         }
     }
 
@@ -151,13 +143,8 @@ public class XPathExpressionImpl extends XPathImplUtil implements XPathExpressio
                 return XPathResultImpl.getValue(resultObject, type);
             }
 
-        } catch (TransformerException te) {
+        } catch (javax.xml.transform.TransformerException te) {
             throw new XPathExpressionException(te);
-        } catch (RuntimeException re) {
-            if (re instanceof WrappedRuntimeException) {
-                throw new XPathExpressionException(((WrappedRuntimeException)re).getException());
-            }
-            throw new XPathExpressionException(re);
         }
     }
 

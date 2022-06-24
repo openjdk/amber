@@ -143,7 +143,9 @@ public class Messages {
      * @param args optional arguments to be replaced in the message
      */
     public void warning(DocTreePath path, String key, Object... args) {
-        report(WARNING, path, resources.getText(key, args));
+        if (configuration.showMessage(path, key)) {
+            report(WARNING, path, resources.getText(key, args));
+        }
     }
 
     /**
@@ -168,7 +170,9 @@ public class Messages {
      * @param args optional arguments to be replaced in the message
      */
     public void warning(Element e, String key, Object... args) {
-        report(WARNING, e, resources.getText(key, args));
+        if (configuration.showMessage(e, key)) {
+            report(WARNING, e, resources.getText(key, args));
+        }
     }
 
     /**

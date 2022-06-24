@@ -22,16 +22,10 @@
  */
 
 #include "precompiled.hpp"
-#include "prims/downcallLinker.hpp"
+#include "prims/universalNativeInvoker.hpp"
 #include "utilities/debug.hpp"
 
-RuntimeStub* DowncallLinker::make_downcall_stub(BasicType* signature,
-                                                int num_args,
-                                                BasicType ret_bt,
-                                                const ABIDescriptor& abi,
-                                                const GrowableArray<VMReg>& input_registers,
-                                                const GrowableArray<VMReg>& output_registers,
-                                                bool needs_return_buffer) {
+address ProgrammableInvoker::generate_adapter(jobject jabi, jobject jlayout) {
   Unimplemented();
   return nullptr;
 }

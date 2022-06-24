@@ -40,7 +40,6 @@ import java.io.PrintStream;
  *     Fixed according to the bug 4651181.
  *     Ported from JVMDI.
  *
- * @requires vm.continuations
  * @library /test/lib
  * @compile --enable-preview -source ${jdk.version} classprep01.java
  * @run main/othervm/native --enable-preview -agentlib:classprep01 classprep01

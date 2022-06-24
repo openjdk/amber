@@ -28,7 +28,6 @@ import javax.sound.sampled.Mixer;
 
 /**
  * @test
- * @key sound
  * @bug 4964288
  * @summary Unexpected IAE raised while getting TargetDataLine
  */

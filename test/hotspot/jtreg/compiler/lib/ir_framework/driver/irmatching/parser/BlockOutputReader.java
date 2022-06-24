@@ -25,36 +25,27 @@ package compiler.lib.ir_framework.driver.irmatching.parser;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Pattern;
 
 /**
  * Class to read all lines of a PrintIdeal or PrintOptoAssembly block.
  */
 class BlockOutputReader {
-    private final BlockLine line;
+    private final BufferedReader reader;
 
-    public BlockOutputReader(BufferedReader reader, Pattern compileIdPatternForTestClass) {
-        this.line = new BlockLine(reader, compileIdPatternForTestClass);
+    public BlockOutputReader(BufferedReader reader) {
+        this.reader = reader;
     }
 
     /**
      * Read all lines belonging to a PrintIdeal or PrintOptoAssembly output block.
      */
-    public Block readBlock() throws IOException {
+    public String readBlock() throws IOException {
+        BlockLine line = new BlockLine(reader);
         StringBuilder builder = new StringBuilder();
-        List<String> testClassCompilations = new ArrayList<>();
         while (line.readLine() && !line.isBlockEnd()) {
-            if (line.isTestClassCompilation()) {
-                // Could have safepointed while writing the block (see IRMatcher.SAFEPOINT_WHILE_PRINTING_MESSAGE)
-                // and enqueuing the next test class method for compilation during the interruption. Record this
-                // method to ensure that we read the PrintIdeal/PrintOptoAssembly blocks for that method later.
-                testClassCompilations.add(line.getLine());
-            }
             builder.append(escapeXML(line.getLine())).append(System.lineSeparator());
         }
-        return new Block(builder.toString(), testClassCompilations);
+        return builder.toString();
     }
 
     /**

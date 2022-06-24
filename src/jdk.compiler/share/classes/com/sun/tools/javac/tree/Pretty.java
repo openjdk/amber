@@ -26,7 +26,6 @@
 package com.sun.tools.javac.tree;
 
 import java.io.*;
-import java.util.stream.Collectors;
 
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
@@ -878,28 +877,6 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
-    @Override
-    public void visitConstantCaseLabel(JCConstantCaseLabel tree) {
-        try {
-            print(tree.expr);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    @Override
-    public void visitPatternCaseLabel(JCPatternCaseLabel tree) {
-        try {
-            print(tree.pat);
-            if (tree.guard != null) {
-                print(" when ");
-                print(tree.guard);
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
     public void visitSwitchExpression(JCSwitchExpression tree) {
         try {
             print("switch ");
@@ -940,16 +917,11 @@ public class Pretty extends JCTree.Visitor {
     }
 
     @Override
-    public void visitRecordPattern(JCRecordPattern tree) {
+    public void visitGuardPattern(JCGuardPattern patt) {
         try {
-            printExpr(tree.deconstructor);
-            print("(");
-            printExprs(tree.nested);
-            print(")");
-            if (tree.var != null) {
-                print(" ");
-                print(tree.var.name);
-            }
+            printExpr(patt.patt);
+            print(" && ");
+            printExpr(patt.expr);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
@@ -1446,23 +1418,6 @@ public class Pretty extends JCTree.Visitor {
                     print("\"" + Convert.quote(tree.value.toString()) + "\"");
                     break;
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public void visitStringTemplate(JCStringTemplate tree) {
-        try {
-            JCExpression policy = tree.policy;
-            print("[");
-            if (policy != null) {
-                printExpr(policy);
-            }
-            print("]");
-            print("\"" + tree.fragments.stream().collect(Collectors.joining("\\{}")) + "\"");
-            print("(");
-            printExprs(tree.expressions);
-            print(")");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

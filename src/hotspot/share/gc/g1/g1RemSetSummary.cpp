@@ -52,6 +52,7 @@ void G1RemSetSummary::update() {
 
   G1CollectedHeap* g1h = G1CollectedHeap::heap();
   g1h->concurrent_refine()->threads_do(&collector);
+  _coarsenings = HeapRegionRemSet::coarsen_stats();
 
   set_sampling_task_vtime(g1h->rem_set()->sampling_task_vtime());
 }
@@ -69,6 +70,7 @@ double G1RemSetSummary::rs_thread_vtime(uint thread) const {
 }
 
 G1RemSetSummary::G1RemSetSummary(bool should_update) :
+  _coarsenings(),
   _num_vtimes(G1ConcurrentRefine::max_num_threads()),
   _rs_threads_vtimes(NEW_C_HEAP_ARRAY(double, _num_vtimes, mtGC)),
   _sampling_task_vtime(0.0f) {
@@ -88,6 +90,8 @@ void G1RemSetSummary::set(G1RemSetSummary* other) {
   assert(other != NULL, "just checking");
   assert(_num_vtimes == other->_num_vtimes, "just checking");
 
+  _coarsenings = other->_coarsenings;
+
   memcpy(_rs_threads_vtimes, other->_rs_threads_vtimes, sizeof(double) * _num_vtimes);
 
   set_sampling_task_vtime(other->sampling_task_vtime());
@@ -96,6 +100,8 @@ void G1RemSetSummary::set(G1RemSetSummary* other) {
 void G1RemSetSummary::subtract_from(G1RemSetSummary* other) {
   assert(other != NULL, "just checking");
   assert(_num_vtimes == other->_num_vtimes, "just checking");
+
+  _coarsenings.subtract_from(other->_coarsenings);
 
   for (uint i = 0; i < _num_vtimes; i++) {
     set_rs_thread_vtime(i, other->rs_thread_vtime(i) - rs_thread_vtime(i));
@@ -322,6 +328,8 @@ public:
 };
 
 void G1RemSetSummary::print_on(outputStream* out) {
+  out->print("Coarsening: ");
+  _coarsenings.print_on(out);
   out->print_cr("  Concurrent refinement threads times (s)");
   out->print("     ");
   for (uint i = 0; i < _num_vtimes; i++) {

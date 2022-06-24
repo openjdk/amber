@@ -32,9 +32,9 @@ import static org.testng.Assert.assertEquals;
 public class CallArrangerTestBase {
 
     public static void checkArgumentBindings(CallingSequence callingSequence, Binding[][] argumentBindings) {
-        assertEquals(callingSequence.argumentBindingsCount(), argumentBindings.length);
+        assertEquals(callingSequence.argumentCount(), argumentBindings.length);
 
-        for (int i = 0; i < callingSequence.argumentBindingsCount(); i++) {
+        for (int i = 0; i < callingSequence.argumentCount(); i++) {
             List<Binding> actual = callingSequence.argumentBindings(i);
             Binding[] expected = argumentBindings[i];
             assertEquals(actual, Arrays.asList(expected));

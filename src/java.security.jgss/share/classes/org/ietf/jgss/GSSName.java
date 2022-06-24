@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -115,7 +115,7 @@ public interface GSSName {
      * States(840) mit(113554) infosys(1) gssapi(2) generic(1) service_name(4)
      * }</code>
      */
-    Oid NT_HOSTBASED_SERVICE
+    public static final Oid NT_HOSTBASED_SERVICE
         = Oid.getInstance("1.2.840.113554.1.2.1.4");
 
     /**
@@ -125,7 +125,7 @@ public interface GSSName {
      * States(840) mit(113554) infosys(1) gssapi(2) generic(1) user_name(1)
      * }</code>
      */
-    Oid NT_USER_NAME
+    public static final Oid NT_USER_NAME
         = Oid.getInstance("1.2.840.113554.1.2.1.1");
 
     /**
@@ -136,7 +136,7 @@ public interface GSSName {
      * <code>{ iso(1) member-body(2) United States(840) mit(113554)
      * infosys(1) gssapi(2) generic(1) machine_uid_name(2) }</code>
      */
-    Oid NT_MACHINE_UID_NAME
+    public static final Oid NT_MACHINE_UID_NAME
         = Oid.getInstance("1.2.840.113554.1.2.1.2");
 
     /**
@@ -148,7 +148,7 @@ public interface GSSName {
      * States(840) mit(113554) infosys(1) gssapi(2) generic(1)
      * string_uid_name(3) }</code>
      */
-    Oid NT_STRING_UID_NAME
+    public static final Oid NT_STRING_UID_NAME
         = Oid.getInstance("1.2.840.113554.1.2.1.3");
 
     /**
@@ -157,7 +157,7 @@ public interface GSSName {
      * <code>{ 1(iso), 3(org), 6(dod), 1(internet),
      * 5(security), 6(nametypes), 3(gss-anonymous-name) }</code>
      */
-    Oid NT_ANONYMOUS
+    public static final Oid NT_ANONYMOUS
         = Oid.getInstance("1.3.6.1.5.6.3");
 
     /**
@@ -168,7 +168,7 @@ public interface GSSName {
      * 3(org), 6(dod), 1(internet), 5(security), 6(nametypes),
      * 4(gss-api-exported-name) }</code>
      */
-    Oid NT_EXPORT_NAME
+    public static final Oid NT_EXPORT_NAME
         = Oid.getInstance("1.3.6.1.5.6.4");
 
     /**
@@ -185,7 +185,7 @@ public interface GSSName {
      *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
      *         {@link GSSException#FAILURE GSSException.FAILURE}
      */
-    boolean equals(GSSName another) throws GSSException;
+    public boolean equals(GSSName another) throws GSSException;
 
     /**
      * Compares this <code>GSSName</code> object to another Object that might be a
@@ -198,14 +198,14 @@ public interface GSSName {
      * @param another the object to compare this name to
      * @see #equals(GSSName)
      */
-    boolean equals(Object another);
+    public boolean equals(Object another);
 
     /**
      * Returns a hashcode value for this GSSName.
      *
      * @return a hashCode value
      */
-    int hashCode();
+    public int hashCode();
 
     /**
      * Creates a name that is canonicalized for some
@@ -224,7 +224,7 @@ public interface GSSName {
      *         {@link GSSException#BAD_NAME GSSException.BAD_NAME},
      *         {@link GSSException#FAILURE GSSException.FAILURE}
      */
-    GSSName canonicalize(Oid mech) throws GSSException;
+    public GSSName canonicalize(Oid mech) throws GSSException;
 
     /**
      * Returns a canonical contiguous byte representation of a mechanism name
@@ -259,7 +259,7 @@ public interface GSSName {
      *         {@link GSSException#BAD_NAMETYPE GSSException.BAD_NAMETYPE},
      *         {@link GSSException#FAILURE GSSException.FAILURE}
      */
-    byte[] export() throws GSSException;
+    public byte[] export() throws GSSException;
 
     /**
      * Returns a textual representation of the <code>GSSName</code> object.  To retrieve
@@ -269,7 +269,7 @@ public interface GSSName {
      *
      * @return a String representing this name in printable form.
      */
-    String toString();
+    public String toString();
 
     /**
      * Returns the name type of the printable
@@ -283,14 +283,14 @@ public interface GSSName {
      * major error codes:
      *         {@link GSSException#FAILURE GSSException.FAILURE}
      */
-    Oid getStringNameType() throws GSSException;
+    public Oid getStringNameType() throws GSSException;
 
     /**
      * Tests if this name object represents an anonymous entity.
      *
      * @return true if this is an anonymous name, false otherwise.
      */
-    boolean isAnonymous();
+    public boolean isAnonymous();
 
     /**
      * Tests if this name object represents a Mechanism Name (MN). An MN is
@@ -299,6 +299,6 @@ public interface GSSName {
      *
      * @return true if this is an MN, false otherwise.
      */
-    boolean isMN();
+    public boolean isMN();
 
 }

@@ -23,8 +23,7 @@
 
 /**
  * @test
- * @summary Basic test for JFR jdk.VirtualThreadXXX events
- * @requires vm.continuations
+ * @summary Basic test for JFR jdk.VirtualThreadXXX events.
  * @modules jdk.jfr java.base/java.lang:+open
  * @compile --enable-preview -source ${jdk.version} JfrEvents.java
  * @run testng/othervm --enable-preview JfrEvents

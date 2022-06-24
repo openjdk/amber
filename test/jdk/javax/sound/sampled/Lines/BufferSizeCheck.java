@@ -30,7 +30,6 @@ import javax.sound.sampled.SourceDataLine;
 
 /**
  * @test
- * @key sound
  * @bug 4661602
  * @summary Buffersize is checked when re-opening line
  */

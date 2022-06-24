@@ -38,32 +38,17 @@ public class DeprecatedAPIListBuilder extends SummaryAPIListBuilder {
 
     private SortedSet<Element> forRemoval;
     public final List<String> releases;
-    private final Set<String> foundReleases;
 
     /**
      * Constructor.
      *
      * @param configuration the current configuration of the doclet
-     * @param since list of releases passed via <code>--since</code> option
+     * @param releases list of releases
      */
-    public DeprecatedAPIListBuilder(BaseConfiguration configuration, List<String> since) {
+    public DeprecatedAPIListBuilder(BaseConfiguration configuration, List<String> releases) {
         super(configuration, configuration.utils::isDeprecated);
-        this.foundReleases = new HashSet<>();
+        this.releases = releases;
         buildSummaryAPIInfo();
-        // The releases list is set to the intersection of releases defined via `--since` option
-        // and actually occurring values of `Deprecated.since` in documented deprecated elements.
-        // If there are `Deprecated.since` values not contained in the `--since` option list
-        // an empty string is added to the releases list which causes the writer to generate
-        // a checkbox for other (unlisted) releases.
-        List<String> releases = new ArrayList<>(since);
-        if (!releases.isEmpty()) {
-            releases.retainAll(foundReleases);
-            if (!releases.containsAll(foundReleases)) {
-                // Empty string is added for other releases, including the default value ""
-                releases.add("");
-            }
-        }
-        this.releases = Collections.unmodifiableList(releases);
     }
 
     public SortedSet<Element> getForRemoval() {
@@ -75,7 +60,6 @@ public class DeprecatedAPIListBuilder extends SummaryAPIListBuilder {
 
     @Override
     protected void handleElement(Element e) {
-        foundReleases.add(utils.getDeprecatedSince(e));
         if (utils.isDeprecatedForRemoval(e)) {
             getForRemoval().add(e);
         }

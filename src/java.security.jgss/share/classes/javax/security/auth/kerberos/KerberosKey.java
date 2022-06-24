@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,7 +25,6 @@
 
 package javax.security.auth.kerberos;
 
-import java.io.Serial;
 import java.util.Arrays;
 import javax.crypto.SecretKey;
 import javax.security.auth.DestroyFailedException;
@@ -87,7 +86,6 @@ import javax.security.auth.DestroyFailedException;
  */
 public class KerberosKey implements SecretKey {
 
-    @Serial
     private static final long serialVersionUID = -4625402278148246993L;
 
     /**
@@ -110,7 +108,7 @@ public class KerberosKey implements SecretKey {
      *
      * @serial
      */
-    private final KeyImpl key;
+    private KeyImpl key;
 
     private transient boolean destroyed = false;
 
@@ -246,7 +244,7 @@ public class KerberosKey implements SecretKey {
     /**
      * Destroys this key by clearing out the key material of this secret key.
      *
-     * @throws DestroyFailedException if some error occurs while destroying
+     * @throws DestroyFailedException if some error occurs while destorying
      * this key.
      */
     public void destroy() throws DestroyFailedException {
@@ -314,10 +312,11 @@ public class KerberosKey implements SecretKey {
             return true;
         }
 
-        if (! (other instanceof KerberosKey otherKey)) {
+        if (! (other instanceof KerberosKey)) {
             return false;
         }
 
+        KerberosKey otherKey = ((KerberosKey) other);
         if (isDestroyed() || otherKey.isDestroyed()) {
             return false;
         }
@@ -329,9 +328,15 @@ public class KerberosKey implements SecretKey {
         }
 
         if (principal == null) {
-            return otherKey.getPrincipal() == null;
+            if (otherKey.getPrincipal() != null) {
+                return false;
+            }
         } else {
-            return principal.equals(otherKey.getPrincipal());
+            if (!principal.equals(otherKey.getPrincipal())) {
+                return false;
+            }
         }
+
+        return true;
     }
 }

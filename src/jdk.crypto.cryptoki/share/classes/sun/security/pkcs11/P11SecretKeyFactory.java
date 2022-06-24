@@ -88,7 +88,7 @@ final class P11SecretKeyFactory extends SecretKeyFactorySpi {
     }
 
     // returns the PKCS11 key type of the specified algorithm
-    // no pseudo KeyTypes
+    // no psuedo KeyTypes
     static long getPKCS11KeyType(String algorithm) {
         long kt = getKeyType(algorithm);
         if (kt == -1 || kt > PCKK_ANY) {

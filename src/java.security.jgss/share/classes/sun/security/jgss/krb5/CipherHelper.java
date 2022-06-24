@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2004, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2004, 2017, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -76,10 +76,9 @@ class CipherHelper {
     private static final byte[] ZERO_IV = new byte[DES_IV_SIZE];
     private static final byte[] ZERO_IV_AES = new byte[AES_IV_SIZE];
 
-    private final int etype;
-    private final int sgnAlg;
-    private final int sealAlg;
-    private final byte[] keybytes;
+    private int etype;
+    private int sgnAlg, sealAlg;
+    private byte[] keybytes;
 
     CipherHelper(EncryptionKey key) throws GSSException {
         etype = key.getEType();
@@ -135,7 +134,11 @@ class CipherHelper {
     }
 
     boolean isArcFour() {
-        return etype == EncryptedData.ETYPE_ARCFOUR_HMAC;
+        boolean flag = false;
+        if (etype == EncryptedData.ETYPE_ARCFOUR_HMAC) {
+            flag = true;
+        }
+        return flag;
     }
 
     @SuppressWarnings("fallthrough")
@@ -381,8 +384,9 @@ class CipherHelper {
 
         case EncryptedData.ETYPE_AES256_CTS_HMAC_SHA384_192:
             try {
-                return Aes256Sha2.calculateChecksum(keybytes, key_usage,
+                byte[] answer = Aes256Sha2.calculateChecksum(keybytes, key_usage,
                         buf, 0, total);
+                return answer;
             } catch (GeneralSecurityException e) {
                 GSSException ge = new GSSException(GSSException.FAILURE, -1,
                         "Could not use AES256 signing algorithm - " +
@@ -840,7 +844,7 @@ class CipherHelper {
         byte[] plaintext, int pStart, int pLen, byte[] ciphertext, int cStart,
         int key_usage) throws GSSException {
 
-        byte[] ctext;
+        byte[] ctext = null;
         switch (etype) {
             case EncryptedData.ETYPE_AES128_CTS_HMAC_SHA1_96:
                     ctext = aes128Encrypt(confounder, tokenHeader,
@@ -882,7 +886,7 @@ class CipherHelper {
      * @param len the length of the data
      * @throws GSSException when an error occuse in the encryption
      */
-    private byte[] getDesCbcChecksum(byte[] key,
+    private byte[] getDesCbcChecksum(byte key[],
                                      byte[] header,
                                      byte[] data, int offset, int len)
         throws GSSException {
@@ -950,14 +954,14 @@ class CipherHelper {
      * @param key the bytes for the DES key
      * @param ivBytes the initial vector bytes
      */
-    private Cipher getInitializedDes(boolean encryptMode, byte[] key,
-                                     byte[] ivBytes)
+    private final Cipher getInitializedDes(boolean encryptMode, byte[] key,
+                                          byte[] ivBytes)
         throws  GSSException  {
 
 
         try {
             IvParameterSpec iv = new IvParameterSpec(ivBytes);
-            SecretKey jceKey = new SecretKeySpec(key, "DES");
+            SecretKey jceKey = (SecretKey) (new SecretKeySpec(key, "DES"));
 
             Cipher desCipher = Cipher.getInstance("DES/CBC/NoPadding");
             desCipher.init(
@@ -982,8 +986,8 @@ class CipherHelper {
      * @param offset the offset for the encrypted data
      * @param len the length of the encrypted data
      * @param dataOutBuf the output buffer where the application data
-     * should be written
-     * @param dataOffset the offset where the application data should
+     * should be writte
+     * @param dataOffset the offser where the application data should
      * be written.
      * @throws GSSException is an error occurs while decrypting the
      * data
@@ -1073,8 +1077,8 @@ class CipherHelper {
      * read
      * @param len the length of the ciphertext data
      * @param dataOutBuf the output buffer where the application data
-     * should be written
-     * @param dataOffset the offset where the application data should
+     * should be writte
+     * @param dataOffset the offser where the application data should
      * be written.
      * @throws GSSException is an error occurs while decrypting the
      * data
@@ -1083,12 +1087,12 @@ class CipherHelper {
         InputStream is, int len, byte[] dataOutBuf, int dataOffset)
         throws GSSException, IOException {
 
-        int temp;
+        int temp = 0;
 
         Cipher des = getInitializedDes(false, key, ZERO_IV);
 
         WrapTokenInputStream truncatedInputStream =
-                new WrapTokenInputStream(is, len);
+            new WrapTokenInputStream(is, len);
         CipherInputStream cis = new CipherInputStream(truncatedInputStream,
                                                       des);
         /*
@@ -1415,7 +1419,7 @@ class CipherHelper {
         int cStart, int cLen, byte[] plaintext, int pStart, int key_usage)
         throws GSSException {
 
-        byte[] ptext;
+        byte[] ptext = null;
 
         try {
             ptext = Aes128.decryptRaw(keybytes, key_usage,
@@ -1452,7 +1456,7 @@ class CipherHelper {
             int cStart, int cLen, byte[] plaintext, int pStart, int key_usage)
             throws GSSException {
 
-        byte[] ptext;
+        byte[] ptext = null;
 
         try {
             ptext = Aes128Sha2.decryptRaw(keybytes, key_usage,
@@ -1629,10 +1633,10 @@ class CipherHelper {
      * the CipherInputStream from treating the bytes of the following token
      * as part fo the ciphertext for this token.
      */
-    static class WrapTokenInputStream extends InputStream {
+    class WrapTokenInputStream extends InputStream {
 
-        private final InputStream is;
-        private final int length;
+        private InputStream is;
+        private int length;
         private int remaining;
 
         private int temp;

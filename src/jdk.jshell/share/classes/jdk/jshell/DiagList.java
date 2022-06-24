@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -40,7 +40,6 @@ final class DiagList extends ArrayList<Diag> {
     private int cntNotStmt = 0;
     private int cntUnreach = 0;
     private int cntResolve = 0;
-    private int cntOverride = 0;
     private int cntOther = 0;
 
     DiagList() {
@@ -65,8 +64,6 @@ final class DiagList extends ArrayList<Diag> {
                 ++cntNotStmt;
             } else if (d.isResolutionError()) {
                 ++cntResolve;
-            } else if (d.isOverrideError()) {
-                ++cntOverride;
             } else {
                 ++cntOther;
             }
@@ -117,7 +114,7 @@ final class DiagList extends ArrayList<Diag> {
     }
 
     boolean hasErrors() {
-        return (cntNotStmt + cntResolve + cntUnreach + cntOverride + cntOther) > 0;
+        return (cntNotStmt + cntResolve + cntUnreach + cntOther) > 0;
     }
 
     boolean hasResolutionErrorsAndNoOthers() {
@@ -133,7 +130,7 @@ final class DiagList extends ArrayList<Diag> {
     }
 
     boolean hasOtherThanNotStatementErrors() {
-        return (cntResolve + cntUnreach + cntOverride + cntOther) > 0;
+        return (cntResolve + cntUnreach + cntOther) > 0;
     }
 
 }

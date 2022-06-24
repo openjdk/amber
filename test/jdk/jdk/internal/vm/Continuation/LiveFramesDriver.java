@@ -24,7 +24,6 @@
 /**
  * @test
  * @summary Functional test for continuations walked with StackWalker's LiveStackFrames
- * @requires vm.continuations
  * @build java.base/java.lang.LiveFrames
  * @modules java.base/jdk.internal.vm
  *

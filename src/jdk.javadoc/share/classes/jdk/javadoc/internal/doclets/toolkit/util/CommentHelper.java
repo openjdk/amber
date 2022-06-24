@@ -125,8 +125,19 @@ public class CommentHelper {
         }
     }
 
-    public String getParameterName(ParamTree p) {
-        return p.getName().getName().toString();
+    public boolean isTypeParameter(DocTree dtree) {
+        if (dtree.getKind() == PARAM) {
+            return ((ParamTree)dtree).isTypeParameter();
+        }
+        return false;
+    }
+
+    public String getParameterName(DocTree dtree) {
+        if (dtree.getKind() == PARAM) {
+            return ((ParamTree) dtree).getName().getName().toString();
+        } else {
+            return null;
+        }
     }
 
     Element getElement(ReferenceTree rtree) {
@@ -547,8 +558,10 @@ public class CommentHelper {
         return dtree.getKind() == SEE ? ((SeeTree)dtree).getReference() : null;
     }
 
-    public ReferenceTree getExceptionName(ThrowsTree tt) {
-        return tt.getExceptionName();
+    public ReferenceTree getExceptionName(DocTree dtree) {
+        return (dtree.getKind() == THROWS || dtree.getKind() == EXCEPTION)
+                ? ((ThrowsTree)dtree).getExceptionName()
+                : null;
     }
 
     public IdentifierTree getName(DocTree dtree) {

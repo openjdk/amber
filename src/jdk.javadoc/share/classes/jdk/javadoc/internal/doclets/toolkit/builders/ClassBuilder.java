@@ -170,7 +170,7 @@ public class ClassBuilder extends AbstractBuilder {
     }
 
     /**
-     * If this is an interface, list all superinterfaces.
+     * If this is an interface, list all super interfaces.
      *
      * @param target the content to which the documentation will be added
      */

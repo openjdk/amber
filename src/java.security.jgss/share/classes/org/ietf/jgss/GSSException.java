@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2000, 2015, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -25,9 +25,6 @@
 
 package org.ietf.jgss;
 
-import java.io.Serial;
-import java.util.Objects;
-
 /**
  * This exception is thrown whenever a GSS-API error occurs, including
  * any mechanism specific error.  It may contain both the major and the
@@ -44,7 +41,6 @@ import java.util.Objects;
  */
 public class GSSException extends Exception {
 
-    @Serial
     private static final long serialVersionUID = -2706218945227726672L;
 
     /**
@@ -179,7 +175,7 @@ public class GSSException extends Exception {
     public static final int GAP_TOKEN = 22;
 
 
-    private static final String[] messages = {
+    private static String[] messages = {
         "Channel binding mismatch", // BAD_BINDINGS
         "Unsupported mechanism requested", // BAD_MECH
         "Invalid name provided", // BAD_NAME
@@ -210,7 +206,7 @@ public class GSSException extends Exception {
     *
     * @serial
     */
-    private final int major;
+    private int major;
 
    /**
     * The minor code for this exception
@@ -237,7 +233,7 @@ public class GSSException extends Exception {
     /**
      *  Creates a GSSException object with a specified major code.
      *
-     * @param majorCode the GSS error code for the problem causing this
+     * @param majorCode the The GSS error code for the problem causing this
      * exception to be thrown.
      */
     public GSSException (int majorCode) {
@@ -253,7 +249,7 @@ public class GSSException extends Exception {
      * specific major string for it.
      *
      * @param majorCode the fatal error code causing this exception.
-     * @param majorString an explicit message to be included in this exception
+     * @param majorString an expicit message to be included in this exception
      */
     GSSException (int majorCode, String majorString) {
 
@@ -330,7 +326,10 @@ public class GSSException extends Exception {
      */
     public String getMajorString() {
 
-        return Objects.requireNonNullElseGet(majorString, () -> messages[major - 1]);
+        if (majorString != null)
+            return majorString;
+        else
+            return messages[major - 1];
     }
 
 
@@ -396,6 +395,9 @@ public class GSSException extends Exception {
      */
     private boolean validateMajor(int major) {
 
-        return major > 0 && major <= messages.length;
+        if (major > 0 && major <= messages.length)
+            return (true);
+
+        return (false);
     }
 }

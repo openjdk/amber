@@ -1,4 +1,3 @@
-
     static boolean test[[TEST]]($type$ a) {
         return [[TEST_OP]];
     }

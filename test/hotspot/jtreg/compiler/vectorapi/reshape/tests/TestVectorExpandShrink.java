@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -26,7 +26,6 @@ package compiler.vectorapi.reshape.tests;
 import compiler.lib.ir_framework.IR;
 import compiler.lib.ir_framework.Run;
 import compiler.lib.ir_framework.Test;
-import java.lang.foreign.MemorySegment;
 
 import static compiler.vectorapi.reshape.utils.VectorReshapeHelper.*;
 
@@ -39,7 +38,7 @@ import static compiler.vectorapi.reshape.utils.VectorReshapeHelper.*;
 public class TestVectorExpandShrink {
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB64toB128(MemorySegment input, MemorySegment output) {
+    public static void testB64toB128(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC64, BSPEC128, input, output);
     }
 
@@ -50,7 +49,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB64toB256(MemorySegment input, MemorySegment output) {
+    public static void testB64toB256(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC64, BSPEC256, input, output);
     }
 
@@ -61,7 +60,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB64toB512(MemorySegment input, MemorySegment output) {
+    public static void testB64toB512(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC64, BSPEC512, input, output);
     }
 
@@ -72,7 +71,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB128toB64(MemorySegment input, MemorySegment output) {
+    public static void testB128toB64(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC128, BSPEC64, input, output);
     }
 
@@ -83,7 +82,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB128toB256(MemorySegment input, MemorySegment output) {
+    public static void testB128toB256(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC128, BSPEC256, input, output);
     }
 
@@ -94,7 +93,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB128toB512(MemorySegment input, MemorySegment output) {
+    public static void testB128toB512(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC128, BSPEC512, input, output);
     }
 
@@ -105,7 +104,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB256toB64(MemorySegment input, MemorySegment output) {
+    public static void testB256toB64(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC256, BSPEC64, input, output);
     }
 
@@ -116,7 +115,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB256toB128(MemorySegment input, MemorySegment output) {
+    public static void testB256toB128(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC256, BSPEC128, input, output);
     }
 
@@ -127,7 +126,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB256toB512(MemorySegment input, MemorySegment output) {
+    public static void testB256toB512(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC256, BSPEC512, input, output);
     }
 
@@ -138,7 +137,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB512toB64(MemorySegment input, MemorySegment output) {
+    public static void testB512toB64(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC512, BSPEC64, input, output);
     }
 
@@ -149,7 +148,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB512toB128(MemorySegment input, MemorySegment output) {
+    public static void testB512toB128(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC512, BSPEC128, input, output);
     }
 
@@ -160,7 +159,7 @@ public class TestVectorExpandShrink {
 
     @Test
     @IR(counts = {REINTERPRET_NODE, "1"})
-    public static void testB512toB256(MemorySegment input, MemorySegment output) {
+    public static void testB512toB256(byte[] input, byte[] output) {
         vectorExpandShrink(BSPEC512, BSPEC256, input, output);
     }
 

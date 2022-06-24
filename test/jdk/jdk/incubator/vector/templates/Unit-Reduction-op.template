@@ -1,4 +1,3 @@
-
     @Test(dataProvider = "$type$UnaryOpProvider")
     static void [[TEST]]Reduce$vectorteststype$(IntFunction<$type$[]> fa) {
 [[KERNEL]]

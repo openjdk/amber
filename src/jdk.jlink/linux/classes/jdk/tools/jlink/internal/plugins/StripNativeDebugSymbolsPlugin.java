@@ -249,7 +249,7 @@ public final class StripNativeDebugSymbolsPlugin extends AbstractPlugin {
 
     private void validateStripArg(String stripArg) throws IllegalArgumentException {
         try {
-            Path strip = Paths.get(stripArg); // verify it's a reasonable path
+            Path strip = Paths.get(stripArg); // verify it's a resonable path
             if (!Files.isExecutable(strip)) {
                 throw new IllegalArgumentException(
                         getMessage(NAME + ".invalidstrip",

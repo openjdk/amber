@@ -118,13 +118,13 @@ public class GSSUtil {
     public static Subject getSubject(GSSName name,
                                      GSSCredential creds) {
 
-        HashSet<Object> privCredentials;
-        HashSet<Object> pubCredentials = new HashSet<>(); // empty Set
+        HashSet<Object> privCredentials = null;
+        HashSet<Object> pubCredentials = new HashSet<Object>(); // empty Set
 
-        Set<GSSCredentialSpi> gssCredentials;
+        Set<GSSCredentialSpi> gssCredentials = null;
 
         Set<KerberosPrincipal> krb5Principals =
-                new HashSet<>();
+                                new HashSet<KerberosPrincipal>();
 
         if (name instanceof GSSNameImpl) {
             try {
@@ -146,10 +146,10 @@ public class GSSUtil {
 
         if (creds instanceof GSSCredentialImpl) {
             gssCredentials = ((GSSCredentialImpl) creds).getElements();
-            privCredentials = new HashSet<>(gssCredentials.size());
+            privCredentials = new HashSet<Object>(gssCredentials.size());
             populateCredentials(privCredentials, gssCredentials);
         } else {
-            privCredentials = new HashSet<>(); // empty Set
+            privCredentials = new HashSet<Object>(); // empty Set
         }
         if (DEBUG) {
             debug("Created Subject with the following");
@@ -233,7 +233,7 @@ public class GSSUtil {
      */
     public static Subject login(GSSCaller caller, Oid mech) throws LoginException {
 
-        CallbackHandler cb;
+        CallbackHandler cb = null;
         if (caller instanceof HttpCaller) {
             cb = new sun.net.www.protocol.http.spnego.NegotiateCallbackHandler(
                     ((HttpCaller)caller).info());
@@ -259,7 +259,7 @@ public class GSSUtil {
 
     /**
      * Determines if the application doesn't mind if the mechanism obtains
-     * the required credentials from outside the current Subject. Our
+     * the required credentials from outside of the current Subject. Our
      * Kerberos v5 mechanism would do a JAAS login on behalf of the
      * application if this were the case.
      *
@@ -324,44 +324,46 @@ public class GSSUtil {
             @SuppressWarnings("removal")
             Vector<T> creds =
                 AccessController.doPrivilegedWithCombiner
-                ((PrivilegedExceptionAction<Vector<T>>) () -> {
-                    Subject currSubj = Subject.current();
-                    Vector<T> result = null;
-                    if (currSubj != null) {
-                        result = new Vector<>();
-                        Iterator<GSSCredentialImpl> iterator =
-                            currSubj.getPrivateCredentials
-                            (GSSCredentialImpl.class).iterator();
-                        while (iterator.hasNext()) {
-                            GSSCredentialImpl cred = iterator.next();
-                            if (DEBUG) {
-                                debug("...Found cred" + cred);
-                            }
-                            try {
-                                GSSCredentialSpi ce =
-                                    cred.getElement(mech, initiate);
+                (new PrivilegedExceptionAction<Vector<T>>() {
+                    public Vector<T> run() throws Exception {
+                        Subject currSubj = Subject.current();
+                        Vector<T> result = null;
+                        if (currSubj != null) {
+                            result = new Vector<T>();
+                            Iterator<GSSCredentialImpl> iterator =
+                                currSubj.getPrivateCredentials
+                                (GSSCredentialImpl.class).iterator();
+                            while (iterator.hasNext()) {
+                                GSSCredentialImpl cred = iterator.next();
                                 if (DEBUG) {
-                                    debug("......Found element: " + ce);
+                                    debug("...Found cred" + cred);
                                 }
-                                if (ce.getClass().equals(credCls) &&
-                                    (name == null ||
-                                     name.equals((Object) ce.getName()))) {
-                                    result.add(credCls.cast(ce));
-                                } else {
+                                try {
+                                    GSSCredentialSpi ce =
+                                        cred.getElement(mech, initiate);
                                     if (DEBUG) {
-                                        debug("......Discard element");
+                                        debug("......Found element: " + ce);
+                                    }
+                                    if (ce.getClass().equals(credCls) &&
+                                        (name == null ||
+                                         name.equals((Object) ce.getName()))) {
+                                        result.add(credCls.cast(ce));
+                                    } else {
+                                        if (DEBUG) {
+                                            debug("......Discard element");
+                                        }
+                                    }
+                                } catch (GSSException ge) {
+                                    if (DEBUG) {
+                                        debug("...Discard cred (" + ge + ")");
                                     }
                                 }
-                            } catch (GSSException ge) {
-                                if (DEBUG) {
-                                    debug("...Discard cred (" + ge + ")");
-                                }
                             }
+                        } else if (DEBUG) {
+                            debug("No Subject");
                         }
-                    } else if (DEBUG) {
-                        debug("No Subject");
+                        return result;
                     }
-                    return result;
                 });
             return creds;
         } catch (PrivilegedActionException pae) {

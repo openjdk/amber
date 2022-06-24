@@ -1,4 +1,3 @@
-
     @Test(dataProvider = "$type$TernaryOpMaskProvider")
     static void [[TEST]]$vectorteststype$BroadcastMaskedSmokeTest(IntFunction<$type$[]> fa, IntFunction<$type$[]> fb,
                                           IntFunction<$type$[]> fc, IntFunction<boolean[]> fm) {

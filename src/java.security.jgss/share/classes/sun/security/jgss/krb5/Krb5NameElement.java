@@ -47,10 +47,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class Krb5NameElement
     implements GSSNameSpi {
 
-    private final PrincipalName krb5PrincipalName;
+    private PrincipalName krb5PrincipalName;
 
-    private final String gssNameStr;
-    private final Oid gssNameType;
+    private String gssNameStr = null;
+    private Oid gssNameType = null;
 
     private Krb5NameElement(PrincipalName principalName,
                             String gssNameStr,
@@ -185,7 +185,7 @@ public class Krb5NameElement
     private static String getHostBasedInstance(String serviceName,
                                                String hostName)
         throws GSSException {
-            StringBuilder temp = new StringBuilder(serviceName);
+            StringBuffer temp = new StringBuffer(serviceName);
 
             try {
                 // A lack of "@" defaults to the service being on the local
@@ -199,7 +199,7 @@ public class Krb5NameElement
             }
             hostName = hostName.toLowerCase(Locale.ENGLISH);
 
-            temp.append('/').append(hostName);
+            temp = temp.append('/').append(hostName);
             return temp.toString();
     }
 
@@ -222,8 +222,9 @@ public class Krb5NameElement
         if (other == this)
             return true;
 
-        if (other instanceof Krb5NameElement that) {
-            return (this.krb5PrincipalName.getName().equals(
+        if (other instanceof Krb5NameElement) {
+                Krb5NameElement that = (Krb5NameElement) other;
+                return (this.krb5PrincipalName.getName().equals(
                             that.krb5PrincipalName.getName()));
         }
         return false;
@@ -321,7 +322,7 @@ public class Krb5NameElement
      * @return the Oid for the format of the printed name
      */
     public Oid getStringNameType() {
-        // XXX For NT_EXPORT_NAME return a different name type. In fact,
+        // XXX For NT_EXPORT_NAME return a different name type. Infact,
         // don't even store NT_EXPORT_NAME in the cons.
         return (gssNameType);
     }

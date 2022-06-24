@@ -384,10 +384,6 @@ public class DocLint extends com.sun.tools.doclint.DocLint {
         return false;
     }
 
-    public boolean isGroupEnabled(Messages.Group group, Env.AccessKind accessKind) {
-        return env.messages.isEnabled(group, accessKind);
-    }
-
     private String localize(String code, Object... args) {
         Messages m = (env != null) ? env.messages : new Messages(null);
         return m.localize(code, args);

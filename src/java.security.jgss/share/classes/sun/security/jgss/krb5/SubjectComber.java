@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2002, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,7 +86,7 @@ class SubjectComber {
         if (subject == null) {
             return null;
         } else {
-            List<T> answer = (oneOnly ? null : new ArrayList<>());
+            List<T> answer = (oneOnly ? null : new ArrayList<T>());
 
             if (credClass == KeyTab.class) {
                 Iterator<KeyTab> iterator =
@@ -151,10 +151,11 @@ class SubjectComber {
                     Iterator<Object> iterator = pcs.iterator();
                     while (iterator.hasNext()) {
                         Object obj = iterator.next();
-                        if (!(obj instanceof @SuppressWarnings("unchecked")
-                                KerberosTicket ticket)) {
+                        if (!(obj instanceof KerberosTicket)) {
                             continue;
                         }
+                        @SuppressWarnings("unchecked")
+                        KerberosTicket ticket = (KerberosTicket)obj;
                         if (DEBUG) {
                             System.out.println("Found ticket for "
                                                 + ticket.getClient()
@@ -180,7 +181,7 @@ class SubjectComber {
                                 } catch (DestroyFailedException dfe) {
                                     if (DEBUG) {
                                         System.out.println("Expired ticket not" +
-                                                " destroyed successfully. " + dfe);
+                                                " detroyed successfully. " + dfe);
                                     }
                                 }
                             }

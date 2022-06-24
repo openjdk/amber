@@ -33,8 +33,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
@@ -46,6 +44,7 @@ import jdk.jfr.consumer.RecordedEvent;
 import jdk.jfr.internal.LogLevel;
 import jdk.jfr.internal.LogTag;
 import jdk.jfr.internal.Logger;
+import jdk.jfr.internal.PlatformRecording;
 import jdk.jfr.internal.SecuritySupport;
 
 /*
@@ -55,19 +54,24 @@ import jdk.jfr.internal.SecuritySupport;
 public abstract class AbstractEventStream implements EventStream {
     private static final AtomicLong counter = new AtomicLong();
 
-    private final CountDownLatch terminated = new CountDownLatch(1);
+    private final Object terminated = new Object();
     private final Runnable flushOperation = () -> dispatcher().runFlushActions();
     @SuppressWarnings("removal")
     private final AccessControlContext accessControllerContext;
     private final StreamConfiguration streamConfiguration = new StreamConfiguration();
+    protected final PlatformRecording recording;
     private final List<Configuration> configurations;
-    private final ParserState parserState = new ParserState();
+
     private volatile Thread thread;
     private Dispatcher dispatcher;
+
+    protected final ParserState parserState = new ParserState();
+
     private boolean daemon = false;
 
-    AbstractEventStream(@SuppressWarnings("removal") AccessControlContext acc, List<Configuration> configurations) throws IOException {
+    AbstractEventStream(@SuppressWarnings("removal") AccessControlContext acc, PlatformRecording recording, List<Configuration> configurations) throws IOException {
         this.accessControllerContext = Objects.requireNonNull(acc);
+        this.recording = recording;
         this.configurations = configurations;
     }
 
@@ -179,22 +183,37 @@ public abstract class AbstractEventStream implements EventStream {
             throw new IllegalArgumentException("timeout value is negative");
         }
 
-        long nanos;
+        long base = System.currentTimeMillis();
+        long now = 0;
+
+        long millis;
         try {
-            nanos = timeout.toNanos();
+            millis = Math.multiplyExact(timeout.getSeconds(), 1000);
         } catch (ArithmeticException a) {
-            nanos = Long.MAX_VALUE;
+            millis = Long.MAX_VALUE;
         }
-        if (nanos == 0) {
-            terminated.await();
+        int nanos = timeout.toNanosPart();
+        if (nanos == 0 && millis == 0) {
+            synchronized (terminated) {
+                while (!isClosed()) {
+                    terminated.wait(0);
+                }
+            }
         } else {
-            terminated.await(nanos, TimeUnit.NANOSECONDS);
+            while (!isClosed()) {
+                long delay = millis - now;
+                if (delay <= 0) {
+                    break;
+                }
+                synchronized (terminated) {
+                    terminated.wait(delay, nanos);
+                }
+                now = System.currentTimeMillis() - base;
+            }
         }
     }
 
     protected abstract void process() throws IOException;
-
-    protected abstract boolean isRecording();
 
     protected final void closeParser() {
         parserState.close();
@@ -202,10 +221,6 @@ public abstract class AbstractEventStream implements EventStream {
 
     protected final boolean isClosed() {
         return parserState.isClosed();
-    }
-
-    protected final ParserState parserState() {
-        return parserState;
     }
 
     public final void startAsync(long startNanos) {
@@ -239,7 +254,7 @@ public abstract class AbstractEventStream implements EventStream {
             if (streamConfiguration.started) {
                 throw new IllegalStateException("Event stream can only be started once");
             }
-            if (isRecording() && streamConfiguration.startTime == null) {
+            if (recording != null && streamConfiguration.startTime == null) {
                 streamConfiguration.setStartNanos(startNanos);
             }
             streamConfiguration.setStarted(true);
@@ -259,7 +274,9 @@ public abstract class AbstractEventStream implements EventStream {
             try {
                 close();
             } finally {
-                terminated.countDown();
+                synchronized (terminated) {
+                    terminated.notifyAll();
+                }
             }
         }
     }

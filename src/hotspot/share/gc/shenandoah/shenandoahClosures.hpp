@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2022, Red Hat, Inc. All rights reserved.
+ * Copyright (c) 2019, 2020, Red Hat, Inc. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -24,7 +24,6 @@
 #ifndef SHARE_GC_SHENANDOAH_SHENANDOAHCLOSURES_HPP
 #define SHARE_GC_SHENANDOAH_SHENANDOAHCLOSURES_HPP
 
-#include "code/nmethod.hpp"
 #include "memory/iterator.hpp"
 #include "oops/accessDecorators.hpp"
 #include "runtime/handshake.hpp"
@@ -72,12 +71,7 @@ private:
   void do_oop_work(T* p);
 };
 
-class ShenandoahOopClosureBase : public MetadataVisitingOopIterateClosure {
-public:
-  inline void do_nmethod(nmethod* nm);
-};
-
-class ShenandoahUpdateRefsClosure: public ShenandoahOopClosureBase {
+class ShenandoahUpdateRefsClosure: public OopClosure {
 private:
   ShenandoahHeap* _heap;
 public:
@@ -90,7 +84,7 @@ private:
 };
 
 template <DecoratorSet MO = MO_UNORDERED>
-class ShenandoahEvacuateUpdateMetadataClosure: public ShenandoahOopClosureBase {
+class ShenandoahEvacuateUpdateMetadataClosure: public BasicOopIterateClosure {
 private:
   ShenandoahHeap* const _heap;
   Thread* const         _thread;
@@ -105,7 +99,7 @@ private:
 };
 
 // Context free version, cannot cache calling thread
-class ShenandoahEvacuateUpdateRootsClosure : public ShenandoahOopClosureBase {
+class ShenandoahEvacuateUpdateRootsClosure : public BasicOopIterateClosure {
 private:
   ShenandoahHeap* const _heap;
 public:

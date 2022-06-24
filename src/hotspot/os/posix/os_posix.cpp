@@ -247,25 +247,6 @@ int os::create_file_for_heap(const char* dir) {
   return fd;
 }
 
-// Is a (classpath) directory empty?
-bool os::dir_is_empty(const char* path) {
-  DIR *dir = NULL;
-  struct dirent *ptr;
-
-  dir = ::opendir(path);
-  if (dir == NULL) return true;
-
-  // Scan the directory
-  bool result = true;
-  while (result && (ptr = ::readdir(dir)) != NULL) {
-    if (strcmp(ptr->d_name, ".") != 0 && strcmp(ptr->d_name, "..") != 0) {
-      result = false;
-    }
-  }
-  ::closedir(dir);
-  return result;
-}
-
 static char* reserve_mmapped_memory(size_t bytes, char* requested_addr) {
   char * addr;
   int flags = MAP_PRIVATE NOT_AIX( | MAP_NORESERVE ) | MAP_ANONYMOUS;
@@ -415,7 +396,7 @@ char* os::map_memory_to_file_aligned(size_t size, size_t alignment, int file_des
 
 int os::vsnprintf(char* buf, size_t len, const char* fmt, va_list args) {
   // All supported POSIX platforms provide C99 semantics.
-  ALLOW_C_FUNCTION(::vsnprintf, int result = ::vsnprintf(buf, len, fmt, args);)
+  int result = ::vsnprintf(buf, len, fmt, args);
   // If an encoding error occurred (result < 0) then it's not clear
   // whether the buffer is NUL terminated, so ensure it is.
   if ((result < 0) && (len > 0)) {
@@ -783,11 +764,11 @@ struct hostent* os::get_host_by_name(char* name) {
 }
 
 void os::exit(int num) {
-  ALLOW_C_FUNCTION(::exit, ::exit(num);)
+  ::exit(num);
 }
 
 void os::_exit(int num) {
-  ALLOW_C_FUNCTION(::_exit, ::_exit(num);)
+  ::_exit(num);
 }
 
 // Builds a platform dependent Agent_OnLoad_<lib_name> function name
@@ -2003,7 +1984,7 @@ void os::abort(bool dump_core, void* siginfo, const void* context) {
     LINUX_ONLY(if (DumpPrivateMappingsInCore) ClassLoader::close_jrt_image();)
     ::abort(); // dump core
   }
-  os::_exit(1);
+  ::_exit(1);
 }
 
 // Die immediately, no exit hook, no abort hook, no cleanup.

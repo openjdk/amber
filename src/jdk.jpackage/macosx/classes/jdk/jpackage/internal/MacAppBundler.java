@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Optional;
 import static jdk.jpackage.internal.MacBaseInstallerBundler.SIGNING_KEYCHAIN;
 import static jdk.jpackage.internal.MacBaseInstallerBundler.SIGNING_KEY_USER;
-import static jdk.jpackage.internal.StandardBundlerParam.APP_STORE;
+import static jdk.jpackage.internal.MacAppImageBuilder.APP_STORE;
 import static jdk.jpackage.internal.StandardBundlerParam.MAIN_CLASS;
 import static jdk.jpackage.internal.StandardBundlerParam.VERSION;
 import static jdk.jpackage.internal.StandardBundlerParam.SIGN_BUNDLE;
@@ -105,21 +105,16 @@ public class MacAppBundler extends AppImageBundler {
             throws ConfigException {
 
         if (StandardBundlerParam.getPredefinedAppImage(params) != null) {
-            if (!Optional.ofNullable(
-                    SIGN_BUNDLE.fetchFrom(params)).orElse(Boolean.FALSE)) {
-                throw new ConfigException(
-                        I18N.getString("error.app-image.mac-sign.required"),
-                        null);
-            }
-        } else {
-            // validate short version
-            try {
-                String version = VERSION.fetchFrom(params);
-                CFBundleVersion.of(version);
-            } catch (IllegalArgumentException ex) {
-                throw new ConfigException(ex.getMessage(), I18N.getString(
-                        "error.invalid-cfbundle-version.advice"), ex);
-            }
+            return;
+        }
+
+        // validate short version
+        try {
+            String version = VERSION.fetchFrom(params);
+            CFBundleVersion.of(version);
+        } catch (IllegalArgumentException ex) {
+            throw new ConfigException(ex.getMessage(), I18N.getString(
+                    "error.invalid-cfbundle-version.advice"), ex);
         }
 
         // reject explicitly set sign to true and no valid signature key

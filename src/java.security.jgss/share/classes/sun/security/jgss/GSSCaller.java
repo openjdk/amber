@@ -36,7 +36,7 @@ public sealed class GSSCaller permits HttpCaller {
     public static final GSSCaller CALLER_INITIATE = new GSSCaller("INITIATE");
     public static final GSSCaller CALLER_ACCEPT = new GSSCaller("ACCEPT");
 
-    private final String name;
+    private String name;
     GSSCaller(String s) {
         name = s;
     }

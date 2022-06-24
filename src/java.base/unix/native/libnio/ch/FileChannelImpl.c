@@ -51,6 +51,8 @@
 #include "java_lang_Integer.h"
 #include <assert.h>
 
+static jfieldID chan_fd;        /* jobject 'fd' in sun.nio.ch.FileChannelImpl */
+
 #if defined(__linux__)
 typedef ssize_t copy_file_range_func(int, loff_t*, int, loff_t*, size_t,
                                      unsigned int);
@@ -58,9 +60,10 @@ static copy_file_range_func* my_copy_file_range_func = NULL;
 #endif
 
 JNIEXPORT jlong JNICALL
-Java_sun_nio_ch_FileChannelImpl_allocationGranularity0(JNIEnv *env, jclass clazz)
+Java_sun_nio_ch_FileChannelImpl_initIDs(JNIEnv *env, jclass clazz)
 {
     jlong pageSize = sysconf(_SC_PAGESIZE);
+    chan_fd = (*env)->GetFieldID(env, clazz, "fd", "Ljava/io/FileDescriptor;");
 #if defined(__linux__)
     my_copy_file_range_func =
         (copy_file_range_func*) dlsym(RTLD_DEFAULT, "copy_file_range");
@@ -81,10 +84,11 @@ handle(JNIEnv *env, jlong rv, char *msg)
 
 
 JNIEXPORT jlong JNICALL
-Java_sun_nio_ch_FileChannelImpl_map0(JNIEnv *env, jobject this, jobject fdo,
+Java_sun_nio_ch_FileChannelImpl_map0(JNIEnv *env, jobject this,
                                      jint prot, jlong off, jlong len, jboolean map_sync)
 {
     void *mapAddress = 0;
+    jobject fdo = (*env)->GetObjectField(env, this, chan_fd);
     jint fd = fdval(env, fdo);
     int protections = 0;
     int flags = 0;
@@ -276,8 +280,7 @@ Java_sun_nio_ch_FileChannelImpl_transferFrom0(JNIEnv *env, jobject this,
     if (n < 0) {
         if (errno == EAGAIN)
             return IOS_UNAVAILABLE;
-        if ((errno == EBADF || errno == EINVAL || errno == EXDEV) &&
-            ((ssize_t)count >= 0))
+        if ((errno == EINVAL || errno == EXDEV) && ((ssize_t)count >= 0))
             return IOS_UNSUPPORTED_CASE;
         if (errno == EINTR) {
             return IOS_INTERRUPTED;
@@ -290,6 +293,7 @@ Java_sun_nio_ch_FileChannelImpl_transferFrom0(JNIEnv *env, jobject this,
     return IOS_UNSUPPORTED;
 #endif
 }
+
 
 JNIEXPORT jint JNICALL
 Java_sun_nio_ch_FileChannelImpl_maxDirectTransferSize0(JNIEnv* env, jobject this)

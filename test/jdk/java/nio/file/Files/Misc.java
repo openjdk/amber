@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2008, 2019, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -22,29 +22,17 @@
  */
 
 /* @test
- * @bug 4313887 6838333 8005566 8032220 8215467 8255576 8286160
+ * @bug 4313887 6838333 8005566 8032220 8215467 8255576
  * @summary Unit test for miscellenous methods in java.nio.file.Files
- * @library .. /test/lib
- * @build jdk.test.lib.Platform
- * @run main Misc
+ * @library ..
  */
 
-import java.io.IOException;
-import java.io.File;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.attribute.AclEntry;
-import java.nio.file.attribute.AclEntryPermission;
-import java.nio.file.attribute.AclEntryType;
-import java.nio.file.attribute.AclFileAttributeView;
-import java.nio.file.attribute.DosFileAttributeView;
-import java.nio.file.attribute.UserPrincipal;
-import java.util.List;
-import jdk.test.lib.Platform;
-
+import java.nio.file.*;
 import static java.nio.file.Files.*;
 import static java.nio.file.LinkOption.*;
+import java.nio.file.attribute.*;
+import java.io.IOException;
+import java.util.*;
 
 public class Misc {
 
@@ -90,7 +78,7 @@ public class Misc {
         } catch (IOException x) { }
 
         // the root directory always exists
-        Path root = Path.of("/");
+        Path root = Paths.get("/");
         Files.createDirectories(root);
         Files.createDirectories(root.toAbsolutePath());
     }
@@ -105,7 +93,7 @@ public class Misc {
         assertTrue(!isHidden(tmpdir));
 
         Path file = tmpdir.resolve(".foo");
-        if (Platform.isWindows()) {
+        if (System.getProperty("os.name").startsWith("Windows")) {
             createFile(file);
             try {
                 setAttribute(file, "dos:hidden", true);
@@ -298,13 +286,6 @@ public class Misc {
             assertTrue(exists(tmpdir));
             assertTrue(!notExists(tmpdir));
 
-            if (Platform.isWindows()) {
-                Path pageFile = Path.of("C:\\pagefile.sys");
-                if (pageFile.toFile().exists()) {
-                    System.out.printf("Check page file %s%n", pageFile);
-                    assertTrue(exists(pageFile));
-                }
-            }
 
             // sym link exists
             if (TestUtil.supportsLinks(tmpdir)) {
@@ -370,7 +351,7 @@ public class Misc {
             /**
              * Test: Windows DOS read-only attribute
              */
-            if (Platform.isWindows()) {
+            if (System.getProperty("os.name").startsWith("Windows")) {
                 setAttribute(file, "dos:readonly", true);
                 try {
                     assertTrue(!isWritable(file));
@@ -400,10 +381,10 @@ public class Misc {
     }
 
     private static boolean isRoot() {
-        if (Platform.isWindows())
+        if (System.getProperty("os.name").startsWith("Windows"))
             return false;
 
-        Path passwd = Path.of("/etc/passwd");
+        Path passwd = Paths.get("/etc/passwd");
         return Files.isWritable(passwd);
     }
 }

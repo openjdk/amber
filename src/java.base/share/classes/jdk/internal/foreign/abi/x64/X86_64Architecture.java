@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -134,8 +134,7 @@ public class X86_64Architecture implements Architecture {
 
     public static ABIDescriptor abiFor(VMStorage[] inputIntRegs, VMStorage[] inputVectorRegs, VMStorage[] outputIntRegs,
                                        VMStorage[] outputVectorRegs, int numX87Outputs, VMStorage[] volatileIntRegs,
-                                       VMStorage[] volatileVectorRegs, int stackAlignment, int shadowSpace,
-                                       VMStorage targetAddrStorage, VMStorage retBufAddrStorage) {
+                                       VMStorage[] volatileVectorRegs, int stackAlignment, int shadowSpace) {
         return new ABIDescriptor(
             INSTANCE,
             new VMStorage[][] {
@@ -152,8 +151,8 @@ public class X86_64Architecture implements Architecture {
                 volatileVectorRegs,
             },
             stackAlignment,
-            shadowSpace,
-            targetAddrStorage, retBufAddrStorage);
+            shadowSpace
+        );
     }
 
 }

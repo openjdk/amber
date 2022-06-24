@@ -256,8 +256,7 @@ public class Random implements RandomGenerator, java.io.Serializable {
     private static final long addend = 0xBL;
     private static final long mask = (1L << 48) - 1;
 
-    private static final double DOUBLE_UNIT = 0x1.0p-53; // 1.0 / (1L << Double.PRECISION)
-    private static final float FLOAT_UNIT = 0x1.0p-24f; // 1.0f / (1 << Float.PRECISION)
+    private static final double DOUBLE_UNIT = 0x1.0p-53; // 1.0 / (1L << 53)
 
     /**
      * Creates a new random number generator. This constructor sets
@@ -599,12 +598,12 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * low-order bit of the significand would be 0 than that it would be 1.]
      *
      * @return the next pseudorandom, uniformly distributed {@code float}
-     *         value between {@code 0.0f} and {@code 1.0f} from this
+     *         value between {@code 0.0} and {@code 1.0} from this
      *         random number generator's sequence
      */
     @Override
     public float nextFloat() {
-        return next(Float.PRECISION) * FLOAT_UNIT;
+        return next(24) / ((float)(1 << 24));
     }
 
     /**
@@ -645,7 +644,7 @@ public class Random implements RandomGenerator, java.io.Serializable {
      */
     @Override
     public double nextDouble() {
-        return (((long)(next(Double.PRECISION - 27)) << 27) + next(27)) * DOUBLE_UNIT;
+        return (((long)(next(26)) << 27) + next(27)) * DOUBLE_UNIT;
     }
 
     private double nextNextGaussian;
@@ -1071,12 +1070,26 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * pseudorandom {@code double} values, each conforming to the given origin
      * (inclusive) and bound (exclusive).
      *
+     * <p>A pseudorandom {@code double} value is generated as if it's the result
+     * of calling the following method with the origin and bound:
+     * <pre> {@code
+     * double nextDouble(double origin, double bound) {
+     *   double r = nextDouble();
+     *   r = r * (bound - origin) + origin;
+     *   if (r >= bound) // correct for rounding
+     *     r = Math.nextDown(bound);
+     *   return r;
+     * }}</pre>
+     *
      * @param streamSize the number of values to generate
      * @param randomNumberOrigin the origin (inclusive) of each random value
      * @param randomNumberBound the bound (exclusive) of each random value
      * @return a stream of pseudorandom {@code double} values,
      *         each with the given origin (inclusive) and bound (exclusive)
-    * @throws IllegalArgumentException {@inheritDoc}
+     * @throws IllegalArgumentException if {@code streamSize} is less than zero,
+     *         or {@code randomNumberOrigin} is not finite,
+     *         or {@code randomNumberBound} is not finite, or {@code randomNumberOrigin}
+     *         is greater than or equal to {@code randomNumberBound}
      * @since 1.8
      */
     @Override
@@ -1088,7 +1101,18 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * Returns an effectively unlimited stream of pseudorandom {@code
      * double} values, each conforming to the given origin (inclusive) and bound
      * (exclusive).
-
+     *
+     * <p>A pseudorandom {@code double} value is generated as if it's the result
+     * of calling the following method with the origin and bound:
+     * <pre> {@code
+     * double nextDouble(double origin, double bound) {
+     *   double r = nextDouble();
+     *   r = r * (bound - origin) + origin;
+     *   if (r >= bound) // correct for rounding
+     *     r = Math.nextDown(bound);
+     *   return r;
+     * }}</pre>
+     *
      * @implNote This method is implemented to be equivalent to {@code
      * doubles(Long.MAX_VALUE, randomNumberOrigin, randomNumberBound)}.
      *
@@ -1096,7 +1120,8 @@ public class Random implements RandomGenerator, java.io.Serializable {
      * @param randomNumberBound the bound (exclusive) of each random value
      * @return a stream of pseudorandom {@code double} values,
      *         each with the given origin (inclusive) and bound (exclusive)
-     * @throws IllegalArgumentException {@inheritDoc}
+     * @throws IllegalArgumentException if {@code randomNumberOrigin}
+     *         is greater than or equal to {@code randomNumberBound}
      * @since 1.8
      */
     @Override

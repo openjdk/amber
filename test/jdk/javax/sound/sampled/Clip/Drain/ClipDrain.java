@@ -29,7 +29,6 @@ import javax.sound.sampled.Mixer;
 
 /**
  * @test
- * @key sound
  * @bug 4732218
  * @summary Clip.drain does not actually block until all I/O is complete as
  *          documented.
