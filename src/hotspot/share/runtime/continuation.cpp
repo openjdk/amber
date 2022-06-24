@@ -29,6 +29,7 @@
 #include "runtime/continuationHelper.inline.hpp"
 #include "runtime/continuationWrapper.inline.hpp"
 #include "runtime/interfaceSupport.inline.hpp"
+#include "runtime/javaThread.inline.hpp"
 #include "runtime/osThread.hpp"
 #include "runtime/vframe.inline.hpp"
 #include "runtime/vframe_hp.hpp"
@@ -412,7 +413,7 @@ void Continuations::init() {
 // While virtual threads are in Preview, there are some VM mechanisms we disable if continuations aren't used
 // See NMethodSweeper::do_stack_scanning and nmethod::is_not_on_continuation_stack
 bool Continuations::enabled() {
-  return Arguments::enable_preview();
+  return VMContinuations && Arguments::enable_preview();
 }
 
 // We initialize the _gc_epoch to 2, because previous_completed_gc_marking_cycle

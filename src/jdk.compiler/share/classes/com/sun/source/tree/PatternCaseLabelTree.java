@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,23 +28,24 @@ package com.sun.source.tree;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * A guard pattern tree.
- *
- * @since 17
+ * A case label element that refers to an expression
+ * @since 19
  */
 @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
-public interface GuardedPatternTree extends PatternTree {
+public interface PatternCaseLabelTree extends CaseLabelTree {
 
     /**
-     * The guarded pattern expression.
-     * @return the guarded pattern
+     * The pattern for the case.
+     *
+     * @return the pattern
      */
     public PatternTree getPattern();
 
     /**
-     * The guard expression.
-     * @return the guard expression
+     * The guard for the case.
+     *
+     * @return the guard
      */
-    public ExpressionTree getExpression();
+    ExpressionTree getGuard();
 
 }

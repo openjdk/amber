@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,14 +21,15 @@
  * questions.
  */
 
-#include "precompiled.hpp"
-#include "prims/universalNativeInvoker.hpp"
+// key: compiler.err.raw.deconstruction.pattern
+// key: compiler.note.preview.filename
+// key: compiler.note.preview.recompile
+// options: --enable-preview -source ${jdk.version}
 
-void ProgrammableInvoker::Generator::generate() {
-  Unimplemented();
-}
+class RawDeconstructionPattern {
+    boolean test(Object o) {
+        return o instanceof R(String s);
+    }
 
-address ProgrammableInvoker::generate_adapter(jobject jabi, jobject jlayout) {
-  Unimplemented();
-  return nullptr;
+    record R<T>(T t) {}
 }

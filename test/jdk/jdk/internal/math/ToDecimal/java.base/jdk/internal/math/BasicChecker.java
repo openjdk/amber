@@ -21,21 +21,29 @@
  * questions.
  */
 
-#include "precompiled.hpp"
-#include "prims/foreign_globals.hpp"
-#include "utilities/debug.hpp"
+package jdk.internal.math;
 
-const ABIDescriptor ForeignGlobals::parse_abi_descriptor_impl(jobject jabi) const {
-  ShouldNotCallThis();
-  return {};
-}
+class BasicChecker {
 
-const BufferLayout ForeignGlobals::parse_buffer_layout_impl(jobject jlayout) const {
-  ShouldNotCallThis();
-  return {};
-}
+    private static int errors;
 
-const CallRegs ForeignGlobals::parse_call_regs_impl(jobject jconv) const {
-  ShouldNotCallThis();
-  return {};
+    static boolean addError(String reason) {
+        ++errors;
+        System.err.println(reason);
+        return true;
+    }
+
+    static boolean addOnFail(boolean expected, String reason) {
+        if (expected) {
+            return false;
+        }
+        return addError(reason);
+    }
+
+    static void throwOnErrors(String testClassName) {
+        if (errors > 0) {
+            throw new RuntimeException(errors + " errors found in " + testClassName);
+        }
+    }
+
 }

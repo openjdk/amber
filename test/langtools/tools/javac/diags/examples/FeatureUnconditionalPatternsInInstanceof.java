@@ -1,6 +1,5 @@
 /*
- * Copyright (c) 2020, Oracle and/or its affiliates. All rights reserved.
- * Copyright (c) 2020, 2021, Huawei Technologies Co., Ltd. All rights reserved.
+ * Copyright (c) 2010, 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -20,14 +19,15 @@
  * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
  * or visit www.oracle.com if you need additional information or have any
  * questions.
- *
  */
 
-#include "precompiled.hpp"
-#include "prims/universalNativeInvoker.hpp"
-#include "utilities/debug.hpp"
+// key: compiler.misc.feature.unconditional.patterns.in.instanceof
+// key: compiler.warn.preview.feature.use.plural
+// options: --enable-preview -source ${jdk.version} -Xlint:-options,preview
 
-address ProgrammableInvoker::generate_adapter(jobject jabi, jobject jlayout) {
-  Unimplemented();
-  return nullptr;
+import java.util.*;
+
+class FeatureUnconditionalTypesInstanceof {
+    String s;
+    boolean b = (s instanceof String str);
 }
