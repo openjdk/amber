@@ -212,6 +212,7 @@ public class Preview {
             case CASE_NULL -> true;
             case PATTERN_SWITCH -> true;
             case STRING_TEMPLATES -> true;
+            case UNESCAPED_STRINGS -> true;
             case UNCONDITIONAL_PATTERN_IN_INSTANCEOF -> true;
             case RECORD_PATTERNS -> true;
 

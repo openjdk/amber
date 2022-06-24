@@ -145,21 +145,6 @@ public class JavaTokenizer extends UnicodeReader {
     protected boolean isStringTemplate;
 
     /**
-     * true if translateEscapes should not be called.
-     */
-    protected boolean noEscapeEditing;
-
-    /**
-     * true if embedded expressions should be ignored.
-     */
-    protected boolean noEmbeddedExpressions;
-
-    /**
-     * true if last token was a period.
-     */
-    protected boolean wasPeriod;
-
-    /**
      * The set of lint options currently in effect. It is initialized
      * from the context, and then is set/reset as needed by Attr as it
      * visits all the various parts of the trees during attribution.
@@ -436,89 +421,62 @@ public class JavaTokenizer extends UnicodeReader {
     private void scanLitChar(int pos) {
         int backslash = position();
         if (acceptThenPut('\\')) {
-            if (noEscapeEditing) {
-                switch (get()) {
-                    case '\n':
-                    case '\r':
-                        if (isTextBlock) {
-                            skipLineTerminator();
-                            // Normalize line terminator.
-                            put('\n');
-                        } else {
-                            lexError(position(), Errors.IllegalEscChar);
-                        }
-                        break;
+            hasEscapeSequences = true;
+            switch (get()) {
+                case '0':
+                case '1':
+                case '2':
+                case '3':
+                case '4':
+                case '5':
+                case '6':
+                case '7':
+                    char leadch = get();
+                    putThenNext();
 
-                    case '{':
-                        if (noEmbeddedExpressions) {
+                    if (inRange('0', '7')) {
+                        putThenNext();
+
+                        if (leadch <= '3' && inRange('0', '7')) {
                             putThenNext();
-                        } else {
-                            scanEmbeddedExpression(pos, backslash);
                         }
-                        break;
+                    }
+                    break;
 
-                    default:
-                        putThenNext();
-                        break;
-                }
-            } else {
-                hasEscapeSequences = true;
-                switch (get()) {
-                    case '0':
-                    case '1':
-                    case '2':
-                    case '3':
-                    case '4':
-                    case '5':
-                    case '6':
-                    case '7':
-                        char leadch = get();
-                        putThenNext();
+                case 'b':
+                case 't':
+                case 'n':
+                case 'f':
+                case 'r':
+                case '\'':
+                case '\"':
+                case '\\':
+                    putThenNext();
+                    break;
 
-                        if (inRange('0', '7')) {
-                            putThenNext();
+                case 's':
+                    checkSourceLevel(position(), Feature.TEXT_BLOCKS);
+                    putThenNext();
+                    break;
 
-                            if (leadch <= '3' && inRange('0', '7')) {
-                                putThenNext();
-                            }
-                        }
-                        break;
-
-                    case 'b':
-                    case 't':
-                    case 'n':
-                    case 'f':
-                    case 'r':
-                    case '\'':
-                    case '\"':
-                    case '\\':
-                        putThenNext();
-                        break;
-
-                    case 's':
-                        checkSourceLevel(position(), Feature.TEXT_BLOCKS);
-                        putThenNext();
-                        break;
-
-                    case '\n':
-                    case '\r':
-                        if (isTextBlock) {
-                            skipLineTerminator();
-                            // Normalize line terminator.
-                            put('\n');
-                        } else {
-                            lexError(position(), Errors.IllegalEscChar);
-                        }
-                        break;
-
-                    case '{':
-                        scanEmbeddedExpression(pos, backslash);
-                        break;
-
-                    default:
+                case '\n':
+                case '\r':
+                    if (isTextBlock) {
+                        skipLineTerminator();
+                        // Normalize line terminator.
+                        put('\n');
+                    } else {
                         lexError(position(), Errors.IllegalEscChar);
-                        break;
-                }
+                    }
+                    break;
+
+                case '{':
+                    scanEmbeddedExpression(pos, backslash);
+                    break;
+
+                default:
+                    lexError(position(), Errors.IllegalEscChar);
+                    break;
             }
         } else {
             putThenNext();
@@ -531,11 +489,6 @@ public class JavaTokenizer extends UnicodeReader {
      * @param pos  position of the first character in literal.
      */
     private void scanString(int pos) {
-        if (accept('\\')) {
-            noEscapeEditing = true;
-            noEmbeddedExpressions = !wasPeriod;
-            wasPeriod = false;
-        }
         // Track the end of first line for error recovery.
         int firstEOLN = NOT_FOUND;
 
@@ -939,8 +892,6 @@ public class JavaTokenizer extends UnicodeReader {
         isTextBlock = false;
         hasEscapeSequences = false;
         isStringTemplate = false;
-        noEscapeEditing = false;
-        noEmbeddedExpressions = false;
         fragmentRanges = List.nil();
 
         int pos;
@@ -1202,8 +1153,6 @@ public class JavaTokenizer extends UnicodeReader {
                 fragmentRanges = fragmentRanges.append(endPos);
             }
 
-            wasPeriod = tk == TokenKind.DOT;
-
             if (tk.tag == Token.Tag.DEFAULT) {
                 return new Token(tk, pos, endPos, comments);
             } else  if (tk.tag == Token.Tag.NAMED) {
@@ -1282,9 +1231,7 @@ public class JavaTokenizer extends UnicodeReader {
         List<Token> tokens = List.nil();
         Iterator<Integer> rangeIter = fragmentRanges.iterator();
         for (String fragment : fragment(string)) {
-            if (!noEscapeEditing) {
-                fragment = fragment.translateEscapes();
-            }
+            fragment = fragment.translateEscapes();
             int fragmentPos = rangeIter.next();
             int fragmentEndPos = rangeIter.next();
             Token token = new StringToken(TokenKind.STRINGFRAGMENT,
