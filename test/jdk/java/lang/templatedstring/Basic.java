@@ -36,6 +36,7 @@ import java.util.function.*;
 public class Basic {
     public static void main(String... arg) {
         concatenationTests();
+        noEscapeTests();
         componentTests();
         limitsTests();
         policyTests();
@@ -74,6 +75,18 @@ public class Basic {
         ASSERT(STR.apply("\{x + y}"), "" + (x + y));
         ASSERT(("\{x} \{y}").apply(STR), x + " " + y);
         ASSERT(("\{x + y}").apply(STR), "" + (x + y));
+    }
+
+    /**
+     * No escape translation tests.
+     */
+    static void noEscapeTests() {
+        int x = 10;
+        int y = 20;
+        ASSERT("Adding \{x} to \{y}\n\tyields \{x + y}.".concat(), "Adding 10 to 20\n\tyields 30.");
+        ASSERT(STR."Adding \{x} to \{y}\n\tyields \{x + y}.",      "Adding 10 to 20\n\tyields 30.");
+        ASSERT(\"Adding \{x} to \{y}\n\tyields \{x + y}.",         "Adding \\{x} to \\{y}\\n\\tyields \\{x + y}.");
+        ASSERT(STR.\"Adding \{x} to \{y}\n\tyields \{x + y}.",     "Adding 10 to 20\\n\\tyields 30.");
     }
 
     /*

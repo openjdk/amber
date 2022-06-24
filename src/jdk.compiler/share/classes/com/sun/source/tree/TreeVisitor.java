@@ -287,6 +287,36 @@ public interface TreeVisitor<R,P> {
     R visitDefaultCaseLabel(DefaultCaseLabelTree node, P p);
 
     /**
+     * Visits a {@code ConstantCaseLabelTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 19
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+    R visitConstantCaseLabel(ConstantCaseLabelTree node, P p);
+
+    /**
+     * Visits a {@code PatternCaseLabelTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 19
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
+    R visitPatternCaseLabel(PatternCaseLabelTree node, P p);
+
+    /**
+     * Visits a {@code DeconstructionPatternTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 19
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.RECORD_PATTERNS, reflective=true)
+    R visitDeconstructionPattern(DeconstructionPatternTree node, P p);
+
+    /**
      * Visits a {@code MethodTree} node.
      * @param node the node being visited
      * @param p a parameter value
@@ -309,16 +339,6 @@ public interface TreeVisitor<R,P> {
      * @return a result value
      */
     R visitNewArray(NewArrayTree node, P p);
-
-    /**
-     * Visits a {@code GuardPatternTree} node.
-     * @param node the node being visited
-     * @param p a parameter value
-     * @return a result value
-     * @since 17
-     */
-    @PreviewFeature(feature=PreviewFeature.Feature.SWITCH_PATTERN_MATCHING, reflective=true)
-    R visitGuardedPattern(GuardedPatternTree node, P p);
 
     /**
      * Visits a {@code ParenthesizedPatternTree} node.

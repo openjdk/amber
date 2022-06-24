@@ -25,11 +25,11 @@
 
 package java.lang;
 
-import jdk.internal.math.FloatingDecimal;
+import jdk.internal.math.DoubleToDecimal;
+import jdk.internal.math.FloatToDecimal;
 
-import java.lang.invoke.StringConcatFactory.StringConcatItem;
-import java.util.Arrays;
-import java.util.Spliterator;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import jdk.internal.util.ArraysSupport;
@@ -876,8 +876,13 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(float f) {
-        FloatingDecimal.appendTo(f,this);
+        try {
+            FloatToDecimal.appendTo(f, this);
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
         return this;
+
     }
 
     /**
@@ -893,7 +898,11 @@ abstract sealed class AbstractStringBuilder implements Appendable, CharSequence
      * @return  a reference to this object.
      */
     public AbstractStringBuilder append(double d) {
-        FloatingDecimal.appendTo(d,this);
+        try {
+            DoubleToDecimal.appendTo(d, this);
+        } catch (IOException e) {
+            throw new AssertionError(e);
+        }
         return this;
     }
 

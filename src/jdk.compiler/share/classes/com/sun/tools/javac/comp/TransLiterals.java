@@ -518,15 +518,19 @@ public final class TransLiterals extends TreeTranslator {
             return newClass;
         }
 
-        boolean isSTRPolicy() {
+        boolean isPolicy(Name name) {
             if (policy instanceof JCIdent ident && ident.sym instanceof VarSymbol varSym) {
                 if (varSym.flags() == (PUBLIC | FINAL | STATIC) &&
-                        varSym.name == names.str &&
+                        varSym.name == name &&
                         types.isSameType(varSym.owner.type, syms.templatePolicyType)) {
                     return true;
                 }
             }
             return false;
+        }
+
+        boolean isSTRPolicy() {
+            return isPolicy(names.str);
         }
 
         boolean isLinkagePolicy() {

@@ -1071,6 +1071,10 @@ public class FileChannelImpl
             unmap();
         }
 
+        public long capacity() {
+            return cap;
+        }
+
         public void unmap() {
             if (address == 0)
                 return;
@@ -1183,15 +1187,15 @@ public class FileChannelImpl
             else
                 return Util.newMappedByteBuffer(0, 0, dummy, null, isSync);
         } else if ((!writable) || (prot == MAP_RO)) {
-            return Util.newMappedByteBufferR((int)unmapper.cap,
-                    unmapper.address + unmapper.pagePosition,
-                    unmapper.fd,
-                    unmapper, isSync);
+            return Util.newMappedByteBufferR((int)unmapper.capacity(),
+                    unmapper.address(),
+                    unmapper.fileDescriptor(),
+                    unmapper, unmapper.isSync());
         } else {
-            return Util.newMappedByteBuffer((int)unmapper.cap,
-                    unmapper.address + unmapper.pagePosition,
-                    unmapper.fd,
-                    unmapper, isSync);
+            return Util.newMappedByteBuffer((int)unmapper.capacity(),
+                    unmapper.address(),
+                    unmapper.fileDescriptor(),
+                    unmapper, unmapper.isSync());
         }
     }
 
@@ -1207,8 +1211,10 @@ public class FileChannelImpl
         Objects.requireNonNull(session, "Session is null");
         MemorySessionImpl sessionImpl = MemorySessionImpl.toSessionImpl(session);
         sessionImpl.checkValidStateSlow();
-        if (offset < 0) throw new IllegalArgumentException("Requested bytes offset must be >= 0.");
-        if (size < 0) throw new IllegalArgumentException("Requested bytes size must be >= 0.");
+        if (offset < 0)
+            throw new IllegalArgumentException("Requested bytes offset must be >= 0.");
+        if (size < 0)
+            throw new IllegalArgumentException("Requested bytes size must be >= 0.");
 
         boolean isSync = isSync(mode);
         int prot = toProt(mode);
@@ -1218,14 +1224,17 @@ public class FileChannelImpl
             modes |= MAP_MEM_SEG_READ_ONLY;
         }
         if (unmapper != null) {
-            AbstractMemorySegmentImpl segment = new MappedMemorySegmentImpl(unmapper.address(), unmapper, size,
-                    modes, session);
-            sessionImpl.addOrCleanupIfFail(new MemorySessionImpl.ResourceList.ResourceCleanup() {
-                @Override
-                public void cleanup() {
-                    unmapper.unmap();
-                }
-            });
+            AbstractMemorySegmentImpl segment =
+                new MappedMemorySegmentImpl(unmapper.address(), unmapper, size,
+                                            modes, session);
+            MemorySessionImpl.ResourceList.ResourceCleanup resource =
+                new MemorySessionImpl.ResourceList.ResourceCleanup() {
+                    @Override
+                    public void cleanup() {
+                        unmapper.unmap();
+                    }
+                };
+            sessionImpl.addOrCleanupIfFail(resource);
             return segment;
         } else {
             return new MappedMemorySegmentImpl.EmptyMappedMemorySegmentImpl(modes, session);
@@ -1296,7 +1305,7 @@ public class FileChannelImpl
                 mapSize = size + pagePosition;
                 try {
                     // If map0 did not throw an exception, the address is valid
-                    addr = map0(prot, mapPosition, mapSize, isSync);
+                    addr = map0(fd, prot, mapPosition, mapSize, isSync);
                 } catch (OutOfMemoryError x) {
                     // An OutOfMemoryError may indicate that we've exhausted
                     // memory so force gc and re-attempt map
@@ -1307,7 +1316,7 @@ public class FileChannelImpl
                         Thread.currentThread().interrupt();
                     }
                     try {
-                        addr = map0(prot, mapPosition, mapSize, isSync);
+                        addr = map0(fd, prot, mapPosition, mapSize, isSync);
                     } catch (OutOfMemoryError y) {
                         // After a second OOME, fail
                         throw new IOException("Map failed", y);
@@ -1557,7 +1566,8 @@ public class FileChannelImpl
     // -- Native methods --
 
     // Creates a new mapping
-    private native long map0(int prot, long position, long length, boolean isSync)
+    private native long map0(FileDescriptor fd, int prot, long position,
+                             long length, boolean isSync)
         throws IOException;
 
     // Removes an existing mapping
@@ -1575,12 +1585,12 @@ public class FileChannelImpl
     // Retrieves the maximum size of a transfer
     private static native int maxDirectTransferSize0();
 
-    // Caches fieldIDs
-    private static native long initIDs();
+    // Retrieves allocation granularity
+    private static native long allocationGranularity0();
 
     static {
         IOUtil.load();
-        allocationGranularity = initIDs();
+        allocationGranularity = allocationGranularity0();
         MAX_DIRECT_TRANSFER_SIZE = maxDirectTransferSize0();
     }
 }

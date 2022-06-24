@@ -69,6 +69,7 @@ public class Names {
     public final Name transitive;
     public final Name uses;
     public final Name open;
+    public final Name when;
     public final Name with;
     public final Name yield;
 
@@ -123,6 +124,7 @@ public class Names {
     // module names
     public final Name java_base;
     public final Name jdk_unsupported;
+    public final Name jdk_incubator_vector;
 
     // attribute names
     public final Name Annotation;
@@ -258,6 +260,7 @@ public class Names {
         transitive = fromString("transitive");
         uses = fromString("uses");
         open = fromString("open");
+        when = fromString("when");
         with = fromString("with");
         yield = fromString("yield");
 
@@ -313,6 +316,7 @@ public class Names {
         // module names
         java_base = fromString("java.base");
         jdk_unsupported = fromString("jdk.unsupported");
+        jdk_incubator_vector = fromString("jdk.incubator.vector");
 
         // attribute names
         Annotation = fromString("Annotation");
