@@ -192,12 +192,6 @@ public class TreeDiffer extends TreeScanner {
                 result = true;
                 return;
             }
-            if (symbol instanceof Symbol.VarSymbol vsymbol) {
-                vsymbol.I.printStackTrace();
-            }
-            if (otherSymbol instanceof Symbol.VarSymbol osymbol) {
-                osymbol.I.printStackTrace();
-            }
         }
         result = tree.sym == that.sym;
     }

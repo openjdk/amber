@@ -1643,8 +1643,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
      */
     public static class VarSymbol extends Symbol implements VariableElement {
 
-        public Throwable I = new Throwable();
-
         /** The variable's declaration position.
          */
         public int pos = Position.NOPOS;
