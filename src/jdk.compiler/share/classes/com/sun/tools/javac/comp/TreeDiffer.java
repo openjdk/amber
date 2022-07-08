@@ -151,7 +151,7 @@ public class TreeDiffer extends TreeScanner {
         }
     }
 
-    private boolean scan(Iterable<? extends JCTree> xs, Iterable<? extends JCTree> ys) {
+    public boolean scan(Iterable<? extends JCTree> xs, Iterable<? extends JCTree> ys) {
         if (xs == null || ys == null) {
             return xs == null && ys == null;
         }
@@ -191,6 +191,12 @@ public class TreeDiffer extends TreeScanner {
             if (Objects.equals(equiv.get(symbol), otherSymbol)) {
                 result = true;
                 return;
+            }
+            if (symbol instanceof Symbol.VarSymbol vsymbol) {
+                vsymbol.I.printStackTrace();
+            }
+            if (otherSymbol instanceof Symbol.VarSymbol osymbol) {
+                osymbol.I.printStackTrace();
             }
         }
         result = tree.sym == that.sym;
