@@ -221,7 +221,7 @@ public class TransPatterns extends TreeTranslator {
                             currentMethodSym);
                 }
 
-                Type principalType = principalType((JCPattern) tree.pattern);
+                Type principalType = types.erasure(TreeInfo.primaryPatternType(((JCPattern) tree.pattern)));
                 JCExpression resultExpression= (JCExpression) this.<JCTree>translate(tree.pattern);
                 if (!tree.allowNull || !types.isSubtype(currentValue.type, principalType)) {
                     resultExpression =
@@ -452,8 +452,10 @@ public class TransPatterns extends TreeTranslator {
             }
             Symbol accessor = getAccessor(component);
             JCExpression accessedComponentValue =
-                    make.App(make.QualIdent(accessor),
-                             List.of(convert(make.Ident(recordBinding), recordBinding.type))); //TODO - cast needed? Should avoid?
+                    convert(
+                        make.App(make.QualIdent(accessor),
+                                 List.of(convert(make.Ident(recordBinding), recordBinding.type))), //TODO - cast needed????
+                        componentType);//TODO - cast only when needed
             JCInstanceOf firstLevelCheck = (JCInstanceOf) make.TypeTest(accessedComponentValue, nestedBinding).setType(syms.booleanType);
             //TODO: verify deep/complex nesting with nulls
             firstLevelCheck.allowNull = allowNull;
