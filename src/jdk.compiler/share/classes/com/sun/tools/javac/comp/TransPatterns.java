@@ -737,51 +737,12 @@ public class TransPatterns extends TreeTranslator {
     }
 
     List<JCCase> processCases(JCTree currentSwitch, List<JCCase> inputCases) {
-        ListBuffer<JCCase> newCases2 = new ListBuffer<>();
-        VarSymbol commonBinding = null;
-        JCExpression commonNestedExpression = null;
-        VarSymbol commonNestedBinding = null;
-
+        interface AccummulatorResolver {
+            public void resolve(VarSymbol commonBinding, JCExpression commonNestedExpression, VarSymbol commonNestedBinding);
+        }
         ListBuffer<JCCase> accummulator = new ListBuffer<>();
-        for (List<JCCase> c = inputCases; c.nonEmpty(); c = c.tail) {
-            VarSymbol currentBinding;
-            JCExpression currentNestedExpression;
-            VarSymbol currentNestedBinding;
-
-            if (c.head.labels.size() == 1 &&
-                c.head.labels.head instanceof JCPatternCaseLabel patternLabel &&
-                patternLabel.guard instanceof JCBinary binOp &&
-                binOp.lhs instanceof JCInstanceOf instanceofCheck &&
-                instanceofCheck.pattern instanceof JCBindingPattern binding) {
-                currentBinding = ((JCBindingPattern) patternLabel.pat).var.sym;
-                currentNestedExpression = instanceofCheck.expr;
-                currentNestedBinding = binding.var.sym;
-            } else if (c.head.labels.size() == 1 &&
-                c.head.labels.head instanceof JCPatternCaseLabel patternLabel &&
-                patternLabel.guard instanceof JCInstanceOf instanceofCheck &&
-                instanceofCheck.pattern instanceof JCBindingPattern binding) {
-                currentBinding = ((JCBindingPattern) patternLabel.pat).var.sym;
-                currentNestedExpression = instanceofCheck.expr;
-                currentNestedBinding = binding.var.sym;
-            } else {
-                currentBinding = null;
-                currentNestedExpression = null;
-                currentNestedBinding = null;
-            }
-            if (commonBinding == null) {
-                if (currentBinding != null) {
-                    commonBinding = currentBinding;
-                    commonNestedExpression = currentNestedExpression;
-                    commonNestedBinding = currentNestedBinding;
-                    accummulator.add(c.head);
-                } else {
-                    newCases2.add(c.head);
-                }
-            } else if (currentBinding != null &&
-                       commonBinding.type.tsym == currentBinding.type.tsym &&
-                       new TreeDiffer(List.of(commonBinding), List.of(currentBinding)).scan(commonNestedExpression, currentNestedExpression)) {
-                accummulator.add(c.head);
-            } else {
+        ListBuffer<JCCase> result = new ListBuffer<>();
+        AccummulatorResolver resolveAccummulator = (commonBinding, commonNestedExpression, commonNestedBinding) -> {
                 if (accummulator.size() > 1) {
                     Assert.checkNonNull(commonBinding);
                     Assert.checkNonNull(commonNestedExpression);
@@ -815,19 +776,65 @@ public class TransPatterns extends TreeTranslator {
                     newSwitch.patternSwitch = true;
                     JCPatternCaseLabel leadingTest = (JCPatternCaseLabel) accummulator.first().labels.head;
                     leadingTest.guard = null;
-                    newCases2.add(make.Case(CaseKind.STATEMENT, List.of(leadingTest), List.of(newSwitch), null));
+                    result.add(make.Case(CaseKind.STATEMENT, List.of(leadingTest), List.of(newSwitch), null));
                 } else {
-                    newCases2.addAll(accummulator);
+                    result.addAll(accummulator);
                 }
                 accummulator.clear();
+        };
+
+        VarSymbol commonBinding = null;
+        JCExpression commonNestedExpression = null;
+        VarSymbol commonNestedBinding = null;
+
+        for (List<JCCase> c = inputCases; c.nonEmpty(); c = c.tail) {
+            VarSymbol currentBinding;
+            JCExpression currentNestedExpression;
+            VarSymbol currentNestedBinding;
+
+            if (c.head.labels.size() == 1 &&
+                c.head.labels.head instanceof JCPatternCaseLabel patternLabel &&
+                patternLabel.guard instanceof JCBinary binOp &&
+                binOp.lhs instanceof JCInstanceOf instanceofCheck &&
+                instanceofCheck.pattern instanceof JCBindingPattern binding) {
+                currentBinding = ((JCBindingPattern) patternLabel.pat).var.sym;
+                currentNestedExpression = instanceofCheck.expr;
+                currentNestedBinding = binding.var.sym;
+            } else if (c.head.labels.size() == 1 &&
+                c.head.labels.head instanceof JCPatternCaseLabel patternLabel &&
+                patternLabel.guard instanceof JCInstanceOf instanceofCheck &&
+                instanceofCheck.pattern instanceof JCBindingPattern binding) {
+                currentBinding = ((JCBindingPattern) patternLabel.pat).var.sym;
+                currentNestedExpression = instanceofCheck.expr;
+                currentNestedBinding = binding.var.sym;
+            } else {
+                currentBinding = null;
+                currentNestedExpression = null;
+                currentNestedBinding = null;
+            }
+            if (commonBinding == null) {
+                if (currentBinding != null) {
+                    commonBinding = currentBinding;
+                    commonNestedExpression = currentNestedExpression;
+                    commonNestedBinding = currentNestedBinding;
+                    accummulator.add(c.head);
+                } else {
+                    result.add(c.head);
+                }
+            } else if (currentBinding != null &&
+                       commonBinding.type.tsym == currentBinding.type.tsym &&
+                       new TreeDiffer(List.of(commonBinding), List.of(currentBinding)).scan(commonNestedExpression, currentNestedExpression)) {
+                accummulator.add(c.head);
+            } else {
+                resolveAccummulator.resolve(commonBinding, commonNestedExpression, commonNestedBinding);
                 accummulator.add(c.head);
                 commonBinding = currentBinding;
                 commonNestedExpression = currentNestedExpression;
                 commonNestedBinding = currentNestedBinding;
             }
         }
-        newCases2.addAll(accummulator); //XXX: generate sub-switches.
-        return newCases2.toList();
+        resolveAccummulator.resolve(commonBinding, commonNestedExpression, commonNestedBinding);
+        return result.toList();
     }
 
     private Type principalType(JCTree p) {
