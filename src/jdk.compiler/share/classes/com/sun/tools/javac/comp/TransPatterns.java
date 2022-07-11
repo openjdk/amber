@@ -447,7 +447,7 @@ public class TransPatterns extends TreeTranslator {
                 nestedBinding = (JCBindingPattern) nestedPattern;
                 allowNull = true;
             }
-            Symbol accessor = getAccessor(component);
+            Symbol accessor = getAccessor(recordPattern.pos(), component);
             JCExpression accessedComponentValue =
                     convert(
                         make.App(make.QualIdent(accessor),
