@@ -65,14 +65,12 @@ import com.sun.tools.javac.util.Name;
 import com.sun.tools.javac.util.Names;
 import com.sun.tools.javac.util.Options;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.LinkedHashMap;
 
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.RecordComponent;
-import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.code.Type;
 import static com.sun.tools.javac.code.TypeTag.BOT;
 import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
@@ -103,9 +101,7 @@ import com.sun.tools.javac.util.Assert;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 import com.sun.tools.javac.util.Pair;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 
 /**
  * This pass translates pattern-matching constructs, such as instanceof <pattern>.
@@ -197,7 +193,16 @@ public class TransPatterns extends TreeTranslator {
 
     @Override
     public void visitTypeTest(JCInstanceOf tree) {
-        if (tree.pattern instanceof JCPattern) {
+        if (tree.pattern instanceof JCPattern pattern) {
+            while (pattern instanceof JCParenthesizedPattern parenthesized) {
+                pattern = parenthesized.pattern;
+            }
+            JCExpression extraConditions = null;
+            if (pattern instanceof JCRecordPattern recordPattern) {
+                Pair<JCBindingPattern, JCExpression> unrolledRecordPattern = unrollRecordPattern(recordPattern);
+                pattern = unrolledRecordPattern.fst;
+                extraConditions = unrolledRecordPattern.snd;
+            }
             //E instanceof $pattern
             //=>
             //(let T' N$temp = E; N$temp instanceof typeof($pattern) && <desugared $pattern>)
@@ -222,13 +227,17 @@ public class TransPatterns extends TreeTranslator {
                             currentMethodSym);
                 }
 
-                Type principalType = types.erasure(TreeInfo.primaryPatternType(((JCPattern) tree.pattern)));
-                JCExpression resultExpression= (JCExpression) this.<JCTree>translate(tree.pattern);
+                Type principalType = types.erasure(TreeInfo.primaryPatternType((pattern)));
+                 JCExpression resultExpression= (JCExpression) this.<JCTree>translate(pattern);
                 if (!tree.allowNull || !types.isSubtype(currentValue.type, principalType)) {
                     resultExpression =
                             makeBinary(Tag.AND,
                                        makeTypeTest(make.Ident(currentValue), make.Type(principalType)),
                                        resultExpression);
+                }
+                if (extraConditions != null) {
+                    extraConditions = translate(extraConditions);
+                    resultExpression = makeBinary(Tag.AND, resultExpression, extraConditions);
                 }
                 if (currentValue != exprSym) {
                     resultExpression =
@@ -250,7 +259,7 @@ public class TransPatterns extends TreeTranslator {
     public void visitBindingPattern(JCBindingPattern tree) {
         //it is assumed the primary type has already been checked:
         BindingSymbol binding = (BindingSymbol) tree.var.sym;
-        Type castTargetType = principalType(tree);
+        Type castTargetType = types.erasure(TreeInfo.primaryPatternType(tree));
         VarSymbol bindingVar = bindingContext.bindingDeclared(binding);
 
         if (bindingVar != null) {
@@ -273,86 +282,7 @@ public class TransPatterns extends TreeTranslator {
 
     @Override
     public void visitRecordPattern(JCRecordPattern tree) {
-        //type test already done, finish handling of deconstruction patterns ("T(PATT1, PATT2, ...)")
-        //=>
-        //<PATT1-handling> && <PATT2-handling> && ...
-        List<? extends RecordComponent> components = tree.record.getRecordComponents();
-        List<? extends Type> nestedFullComponentTypes = tree.fullComponentTypes;
-        List<? extends JCPattern> nestedPatterns = tree.nested;
-        JCExpression test = null;
-        while (components.nonEmpty() && nestedFullComponentTypes.nonEmpty() && nestedPatterns.nonEmpty()) {
-            //PATTn for record component COMPn of type Tn;
-            //PATTn is a type test pattern or a deconstruction pattern:
-            //=>
-            //(let Tn $c$COMPn = ((T) N$temp).COMPn(); <PATTn extractor>)
-            //or
-            //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn != null && <PATTn extractor>)
-            //or
-            //(let Tn $c$COMPn = ((T) N$temp).COMPn(); $c$COMPn instanceof T' && <PATTn extractor>)
-            RecordComponent component = components.head;
-            JCPattern nested = nestedPatterns.head;
-            VarSymbol nestedTemp = new VarSymbol(Flags.SYNTHETIC,
-                names.fromString(target.syntheticNameChar() + "c" + target.syntheticNameChar() + component.name),
-                                 component.erasure(types),
-                                 currentMethodSym);
-            Symbol accessor = getAccessor(tree.pos(), component);
-            JCVariableDecl nestedTempVar =
-                    make.VarDef(nestedTemp,
-                                make.App(make.QualIdent(accessor),
-                                         List.of(convert(make.Ident(currentValue), tree.type))));
-            JCExpression extracted;
-            VarSymbol prevCurrentValue = currentValue;
-            try {
-                currentValue = nestedTemp;
-                extracted = (JCExpression) this.<JCTree>translate(nested);
-            } finally {
-                currentValue = prevCurrentValue;
-            }
-            JCExpression extraTest = null;
-            if (!types.isAssignable(nestedTemp.type, nested.type)) {
-                if (!types.isAssignable(nestedFullComponentTypes.head, nested.type)) {
-                    extraTest = makeTypeTest(make.Ident(nestedTemp),
-                                             make.Type(nested.type));
-                }
-            } else if (nested.type.isReference() && nested.hasTag(Tag.RECORDPATTERN)) {
-                extraTest = makeBinary(Tag.NE, make.Ident(nestedTemp), makeNull());
-            }
-            if (extraTest != null) {
-                extracted = makeBinary(Tag.AND, extraTest, extracted);
-            }
-            LetExpr getAndRun = make.LetExpr(nestedTempVar, extracted);
-            getAndRun.needsCond = true;
-            getAndRun.setType(syms.booleanType);
-            if (test == null) {
-                test = getAndRun;
-            } else {
-                test = makeBinary(Tag.AND, test, getAndRun);
-            }
-            components = components.tail;
-            nestedFullComponentTypes = nestedFullComponentTypes.tail;
-            nestedPatterns = nestedPatterns.tail;
-        }
-
-        if (tree.var != null) {
-            BindingSymbol binding = (BindingSymbol) tree.var.sym;
-            Type castTargetType = principalType(tree);
-            VarSymbol bindingVar = bindingContext.bindingDeclared(binding);
-
-            JCAssign fakeInit =
-                    (JCAssign) make.at(TreeInfo.getStartPos(tree))
-                                   .Assign(make.Ident(bindingVar),
-                                           convert(make.Ident(currentValue), castTargetType))
-                                   .setType(bindingVar.erasure(types));
-            LetExpr nestedLE = make.LetExpr(List.of(make.Exec(fakeInit)),
-                                            make.Literal(true));
-            nestedLE.needsCond = true;
-            nestedLE.setType(syms.booleanType);
-            test = test != null ? makeBinary(Tag.AND, test, nestedLE) : nestedLE;
-        }
-
-        Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
-        Assert.check(components.isEmpty() == nestedFullComponentTypes.isEmpty());
-        result = test != null ? test : makeLit(syms.booleanType, 1);
+        Assert.error();
     }
 
     private MethodSymbol getAccessor(DiagnosticPosition pos, RecordComponent component) {
@@ -404,7 +334,7 @@ public class TransPatterns extends TreeTranslator {
                      tree.hasUnconditionalPattern, tree.patternSwitch);
     }
 
-    private Pair<JCBindingPattern, JCExpression> unrollDeconstructionPattern(JCRecordPattern recordPattern) {
+    private Pair<JCBindingPattern, JCExpression> unrollRecordPattern(JCRecordPattern recordPattern) {
         Type recordType = recordPattern.record.type;  //XXX: erasure
         JCVariableDecl recordBindingVar;
 
@@ -425,7 +355,7 @@ public class TransPatterns extends TreeTranslator {
         JCExpression secondLevelChecks = null;
         while (components.nonEmpty()) {
             RecordComponent component = components.head;
-            Type componentType = nestedFullComponentTypes.head;
+            Type componentType = types.erasure(nestedFullComponentTypes.head);
             JCPattern nestedPattern = nestedPatterns.head;
             while (nestedPattern instanceof JCParenthesizedPattern paren) {
                 nestedPattern = paren.pattern;
@@ -433,7 +363,7 @@ public class TransPatterns extends TreeTranslator {
             JCBindingPattern nestedBinding;
             boolean allowNull;
             if (nestedPattern instanceof JCRecordPattern nestedRecordPattern) {
-                Pair<JCBindingPattern, JCExpression> nestedDesugared = unrollDeconstructionPattern(nestedRecordPattern);
+                Pair<JCBindingPattern, JCExpression> nestedDesugared = unrollRecordPattern(nestedRecordPattern);
                 if (nestedDesugared.snd != null) {
                     if (secondLevelChecks == null) {
                         secondLevelChecks = nestedDesugared.snd;
@@ -536,7 +466,7 @@ public class TransPatterns extends TreeTranslator {
                 c.head.labels = c.head.labels.map(l -> {
                     if (l instanceof JCPatternCaseLabel patternLabel &&
                         patternLabel.pat instanceof JCRecordPattern recordPattern) {
-                        Pair<JCBindingPattern, JCExpression> deconstructed = unrollDeconstructionPattern(recordPattern);
+                        Pair<JCBindingPattern, JCExpression> deconstructed = unrollRecordPattern(recordPattern);
                         return make.PatternCaseLabel(deconstructed.fst, deconstructed.snd);
                     }
                     return l;
