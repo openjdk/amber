@@ -349,7 +349,7 @@ public class TypeEnter implements Completer {
                 try {
                     String autoImports = """
                             import static java.lang.TemplatePolicy.STR;
-                            import static java.util.FormatterPolicy.FMTR;
+                            import static java.util.FormatterPolicy.FMT;
                             import java.lang.TemplatePolicy.*;
                             """;
 

@@ -143,7 +143,7 @@ import jdk.internal.javac.PreviewFeature;
  * SimplePolicy<JSONObject> jsonPolicy = ts -> new JSONObject(ts.concat());
  * }
  * @implNote The Java compiler automatically imports {@link STR},
- * {@link java.util.FormatterPolicy#FMTR}, {@link SimplePolicy} and
+ * {@link java.util.FormatterPolicy#FMT}, {@link SimplePolicy} and
  * {@link StringPolicy}.
  *
  * @param <R>  Policy's apply result type.

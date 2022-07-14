@@ -54,7 +54,7 @@ import static java.lang.invoke.MethodType.*;
  * @since 19
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-final class FormatBuilder {
+final class FormatterBuilder {
     private static final Lookup LOOKUP = lookup();
 
     private final String format;
@@ -63,7 +63,7 @@ final class FormatBuilder {
     private final DecimalFormatSymbols dfs;
     private final boolean isGenericDFS;
 
-    FormatBuilder(String format, Locale locale, Class<?>[] ptypes) {
+    FormatterBuilder(String format, Locale locale, Class<?>[] ptypes) {
         this.format = format;
         this.locale = locale;
         this.ptypes = ptypes;
@@ -170,15 +170,15 @@ final class FormatBuilder {
             findStringConcatItemConstructor(FormatItemNull.class);
 
     private static final MethodHandle NullCheck_MH =
-            findStaticMethod(FormatBuilder.class, "nullCheck", boolean.class,
+            findStaticMethod(FormatterBuilder.class, "nullCheck", boolean.class,
                     Object.class);
 
     private static final MethodHandle FormattableCheck_MH =
-            findStaticMethod(FormatBuilder.class, "formattableCheck", boolean.class,
+            findStaticMethod(FormatterBuilder.class, "formattableCheck", boolean.class,
                     Object.class);
 
     private static final MethodHandle ToLong_MH =
-            findStaticMethod(java.util.FormatBuilder.class, "toLong", long.class,
+            findStaticMethod(java.util.FormatterBuilder.class, "toLong", long.class,
                     int.class);
 
     private static final MethodHandle ToString_MH =

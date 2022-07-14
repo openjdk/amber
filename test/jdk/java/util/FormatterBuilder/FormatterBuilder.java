@@ -25,16 +25,15 @@
  * @test
  * @bug 0000000
  * @summary Exercise format builder.
- * @compile --enable-preview -source ${jdk.version} FormatBuilder.java
- * @run main/othervm --enable-preview FormatBuilder
+ * @compile --enable-preview -source ${jdk.version} FormatterBuilder.java
+ * @run main/othervm --enable-preview FormatterBuilder
  */
 
 import java.util.*;
-import static java.util.FormatterPolicy.FMTR;
 
-public class FormatBuilder {
+public class FormatterBuilder {
     public static void main(String... args) {
-        suite(FMTR);
+        suite(FMT);
         Locale thai = Locale.forLanguageTag("th-TH-u-nu-thai");
         FormatterPolicy thaiFormat = new FormatterPolicy(thai);
         Locale.setDefault(thai);
@@ -43,7 +42,7 @@ public class FormatBuilder {
 
     static void test(String a, String b) {
         if (!Objects.equals(a, b)) {
-            throw new RuntimeException("format and FMTR do not match: " + a + " : " + b);
+            throw new RuntimeException("format and FMT do not match: " + a + " : " + b);
         }
     }
 

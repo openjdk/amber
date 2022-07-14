@@ -40,7 +40,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * int x = 10;
  * int y = 20;
- * String result = FMTR."%05d\{x} + %05d\{y} = %05d\{x + y}";
+ * String result = FMT."%05d\{x} + %05d\{y} = %05d\{x + y}";
  * }
  * result is: <code>00010 + 00020 = 00030</code>
  *
@@ -58,7 +58,7 @@ public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     /**
      * Predefined FormatterPolicy instance that uses Locale.US.
      */
-    public static final FormatterPolicy FMTR = new FormatterPolicy(Locale.US);
+    public static final FormatterPolicy FMT = new FormatterPolicy(Locale.US);
 
     /**
      * {@link Locale} used to format
@@ -109,7 +109,7 @@ public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
         Objects.requireNonNull(type);
         String format = Formatter.templatedStringFormat(fragments);
         Class<?>[] ptypes = type.dropParameterTypes(0,1).parameterArray();
-        FormatBuilder fmh = new FormatBuilder(format, locale, ptypes);
+        FormatterBuilder fmh = new FormatterBuilder(format, locale, ptypes);
         MethodHandle mh = fmh.build();
         mh = MethodHandles.dropArguments(mh, 0, type.parameterType(0));
 

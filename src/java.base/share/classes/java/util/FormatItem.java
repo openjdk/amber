@@ -43,7 +43,7 @@ import jdk.internal.util.Digits.*;
 import static java.lang.invoke.MethodType.methodType;
 
 /**
- * A specialized objects used by FormatBuilder that knows how to insert
+ * A specialized objects used by FormatterBuilder that knows how to insert
  * themselves into a concatenation performed by StringConcatFactory.
  *
  * @since 19
