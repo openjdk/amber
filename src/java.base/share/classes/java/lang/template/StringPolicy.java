@@ -36,6 +36,8 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * StringPolicy policy = ts -> ts.concat();
  * }
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 @FunctionalInterface

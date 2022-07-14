@@ -121,6 +121,8 @@ import jdk.internal.javac.PreviewFeature;
  * @see java.lang.TemplatePolicy.SimplePolicy
  * @see java.lang.TemplatePolicy.StringPolicy
  * @see java.util.FormatterPolicy
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public interface TemplatedString {

@@ -148,6 +148,8 @@ import jdk.internal.javac.PreviewFeature;
  * @param <E>  Exception thrown type.
  *
  * @see java.util.FormatterPolicy
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 @FunctionalInterface

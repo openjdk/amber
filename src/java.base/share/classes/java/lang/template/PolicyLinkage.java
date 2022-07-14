@@ -42,6 +42,8 @@ import jdk.internal.javac.PreviewFeature;
  * specializing value types or avoiding boxing and vararg arrays.
  *
  * @implNote This interface is sealed to only allow standard policies.
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public sealed interface PolicyLinkage permits FormatterPolicy {

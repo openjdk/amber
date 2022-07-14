@@ -47,6 +47,8 @@ import jdk.internal.javac.PreviewFeature;
  * }
  *
  * @param <R>  Policy's apply result type.
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 @FunctionalInterface

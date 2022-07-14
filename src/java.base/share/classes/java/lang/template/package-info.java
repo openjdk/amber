@@ -24,6 +24,8 @@
  */
 
 /**
- * Provides support for string templates.
+ * Provides support for string templates and template policies.
+ *
+ * @since 20
  */
 package java.lang.template;

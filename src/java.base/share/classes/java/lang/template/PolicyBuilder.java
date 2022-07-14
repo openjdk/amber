@@ -90,6 +90,8 @@ import jdk.internal.javac.PreviewFeature;
  *
  * @implNote Due to the nature of lambdas, validating functions can only throw
  * unchecked exceptions, ex. {@link RuntimeException}.
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public class PolicyBuilder {
