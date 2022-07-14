@@ -4877,64 +4877,33 @@ public final class Formatter implements Closeable, Flushable {
     }
 
     /**
-     * Find a format specification at the end of a fragment.
+     * Constructs a {@link MethodHandle} expecting arguments matching
+     * {@code ptypes} and returning a {@link String} using the supplied
+     * {@code format} and {@code locale}.
      *
-     * @param fragment  fragment to check
-     * @param needed    if the specification is needed
+     * @param format  format string as described in <a href="#syntax">Format string
+     *                syntax</a>
+     * @param locale  {@link java.util.Locale locale} to apply during
+     *                formatting.
+     * @param ptypes  types of arguments
      *
-     * @return true if the specification is found and needed
+     * @return a formatting {@link MethodHandle}
      *
-     * @throws MissingFormatArgumentException if not at end or found and not needed
+     * @throws  java.lang.NullPointerException if any argument is null.
+     * @throws  IllegalFormatException
+     *          If a format string contains an illegal syntax, a format
+     *          specifier that is incompatible with the given arguments,
+     *          insufficient arguments given the format string, or other
+     *          illegal conditions.  For specification of all possible
+     *          formatting errors.
      */
-    private static boolean findFormat(String fragment, boolean needed) {
-        Matcher matcher = fsPattern.matcher(fragment);
-        String group;
+    public static MethodHandle formatterMethodHandle(String format, Locale locale, Class<?>... ptypes) {
+        Objects.requireNonNull(format, "format must not be null");
+        Objects.requireNonNull(locale, "locale must not be null");
+        Objects.requireNonNull(ptypes, "ptypes must not be null");
 
-        while (matcher.find()) {
-            group = matcher.group();
+        FormatterBuilder fmh = new FormatterBuilder(format, locale, ptypes);
 
-            if (!group.equals("%%") && !group.equals("%n")) {
-                if (matcher.end() == fragment.length() && needed) {
-                    return true;
-                }
-
-                throw new MissingFormatArgumentException(group);
-            }
-        }
-
-        return false;
+        return fmh.build();
     }
-
-    /**
-     * Convert a {@link TemplatedString} fragments, containing format specifications,
-     * to a form that can be passed on to {@link Formatter}. The method scans each fragment,
-     * matching up formatter specifications with the following expression. If no
-     * specification is found, the method inserts "%s".
-     *
-     * @param fragments  string template fragments
-     *
-     * @return  format string
-     */
-    static String templatedStringFormat(List<String> fragments) {
-        StringBuilder sb = new StringBuilder();
-        int lastIndex = fragments.size() - 1;
-        List<String> formats = fragments.subList(0, lastIndex);
-        String last = fragments.get(lastIndex);
-
-        for (String format : formats) {
-            if (findFormat(format, true)) {
-                sb.append(format);
-            } else {
-                sb.append(format);
-                sb.append("%s");
-            }
-        }
-
-        if (!findFormat(last, false)) {
-            sb.append(last);
-        }
-
-        return sb.toString();
-    }
-
 }

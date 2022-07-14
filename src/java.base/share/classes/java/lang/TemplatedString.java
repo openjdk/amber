@@ -25,7 +25,14 @@
 
 package java.lang;
 
-import java.util.*;
+import java.lang.template.FormatterPolicy;
+import java.lang.template.StringPolicy;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Iterator;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import jdk.internal.javac.PreviewFeature;
@@ -285,6 +292,25 @@ public interface TemplatedString {
 
         return new SimpleTemplatedString(fragments, values);
     }
+
+    /**
+     * Simple concatenation policy instance.
+     *
+     * @implNote The result of concatenation is not interned.
+     */
+    public static final StringPolicy STR = new StringPolicy() {
+        @Override
+        public String apply(TemplatedString templatedString) {
+            Objects.requireNonNull(templatedString);
+
+            return templatedString.concat();
+        }
+    };
+
+    /**
+     * Predefined FormatterPolicy instance that uses Locale.US.
+     */
+    public static final FormatterPolicy FMT = new FormatterPolicy(Locale.US);
 
     /**
      * Factory for creating a new {@link TemplateBuilder} instance.

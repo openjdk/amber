@@ -28,7 +28,8 @@ package java.lang.runtime;
 
 import java.lang.invoke.*;
 import java.lang.reflect.Modifier;
-import java.lang.TemplatePolicy.PolicyLinkage;
+import java.lang.template.PolicyLinkage;
+import java.lang.template.TemplatePolicy;
 import java.util.*;
 
 import jdk.internal.access.JavaLangAccess;

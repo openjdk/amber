@@ -628,9 +628,8 @@ public class Symtab {
         // For string templates
         templatedStringType = enterClass("java.lang.TemplatedString");
         templateBootstrapType = enterClass("java.lang.runtime.TemplateBootstrap");
-        templatePolicyType = enterClass("java.lang.TemplatePolicy");
-        policyLinkage = enterClass("java.lang.TemplatePolicy$PolicyLinkage");
-
+        templatePolicyType = enterClass("java.lang.template.TemplatePolicy");
+        policyLinkage = enterClass("java.lang.template.PolicyLinkage");
 
         // Enter a synthetic class that is used to mark internal
         // proprietary classes in ct.sym.  This class does not have a

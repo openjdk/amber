@@ -23,11 +23,20 @@
  * questions.
  */
 
-package java.util;
+package java.lang.template;
 
-import java.lang.invoke.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.TemplatePolicy.*;
+import java.lang.invoke.MethodType;
+import java.util.Formatter;
+import java.util.IllegalFormatException;
+import java.util.List;
+import java.util.Locale;
+import java.util.MissingFormatArgumentException;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import jdk.internal.javac.PreviewFeature;
 
@@ -56,11 +65,6 @@ import jdk.internal.javac.PreviewFeature;
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     /**
-     * Predefined FormatterPolicy instance that uses Locale.US.
-     */
-    public static final FormatterPolicy FMT = new FormatterPolicy(Locale.US);
-
-    /**
      * {@link Locale} used to format
      */
     private final Locale locale;
@@ -87,7 +91,7 @@ public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     @Override
     public final String apply(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);
-        String format = Formatter.templatedStringFormat(templatedString.fragments());
+        String format = templatedStringFormat(templatedString.fragments());
         Object[] values = templatedString.values().toArray(new Object[0]);
 
         return new Formatter(locale).format(format, values).toString();
@@ -107,12 +111,79 @@ public final class FormatterPolicy implements StringPolicy, PolicyLinkage {
     public MethodHandle applier(List<String> fragments, MethodType type) {
         Objects.requireNonNull(fragments);
         Objects.requireNonNull(type);
-        String format = Formatter.templatedStringFormat(fragments);
-        Class<?>[] ptypes = type.dropParameterTypes(0,1).parameterArray();
-        FormatterBuilder fmh = new FormatterBuilder(format, locale, ptypes);
-        MethodHandle mh = fmh.build();
+        String format = templatedStringFormat(fragments);
+        Class<?>[] ptypes = type.dropParameterTypes(0, 1).parameterArray();
+        MethodHandle mh = Formatter.formatterMethodHandle(format, locale, ptypes);
         mh = MethodHandles.dropArguments(mh, 0, type.parameterType(0));
 
         return mh;
     }
+
+    // %[argument_index$][flags][width][.precision][t]conversion
+    private static final String formatSpecifier
+            = "%(\\d+\\$)?([-#+ 0,(\\<]*)?(\\d+)?(\\.\\d+)?([tT])?([a-zA-Z%])";
+
+    private static final Pattern fsPattern = Pattern.compile(formatSpecifier);
+
+    /**
+     * Find a format specification at the end of a fragment.
+     *
+     * @param fragment  fragment to check
+     * @param needed    if the specification is needed
+     *
+     * @return true if the specification is found and needed
+     *
+     * @throws MissingFormatArgumentException if not at end or found and not needed
+     */
+    private static boolean findFormat(String fragment, boolean needed) {
+        Matcher matcher = fsPattern.matcher(fragment);
+        String group;
+
+        while (matcher.find()) {
+            group = matcher.group();
+
+            if (!group.equals("%%") && !group.equals("%n")) {
+                if (matcher.end() == fragment.length() && needed) {
+                    return true;
+                }
+
+                throw new MissingFormatArgumentException(group);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Convert a {@link TemplatedString} fragments, containing format specifications,
+     * to a form that can be passed on to {@link Formatter}. The method scans each fragment,
+     * matching up formatter specifications with the following expression. If no
+     * specification is found, the method inserts "%s".
+     *
+     * @param fragments  string template fragments
+     *
+     * @return  format string
+     */
+    private static String templatedStringFormat(List<String> fragments) {
+        StringBuilder sb = new StringBuilder();
+        int lastIndex = fragments.size() - 1;
+        List<String> formats = fragments.subList(0, lastIndex);
+        String last = fragments.get(lastIndex);
+
+        for (String format : formats) {
+            if (findFormat(format, true)) {
+                sb.append(format);
+            } else {
+                sb.append(format);
+                sb.append("%s");
+            }
+        }
+
+        if (!findFormat(last, false)) {
+            sb.append(last);
+        }
+
+        return sb.toString();
+    }
+
 }
