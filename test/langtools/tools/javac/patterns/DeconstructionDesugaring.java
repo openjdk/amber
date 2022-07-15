@@ -2,11 +2,10 @@
  * @test /nodynamiccopyright/
  * @summary XXX
  * @compile --enable-preview -source ${jdk.version} DeconstructionDesugaring.java
- * @run main/othervm --enable-preview  DeconstructionDesugaring
+ * @run main/othervm --enable-preview DeconstructionDesugaring
  */
 
 import java.util.function.ToIntFunction;
-
 public class DeconstructionDesugaring {
 
     public static void main(String... args) throws Throwable {
@@ -16,6 +15,10 @@ public class DeconstructionDesugaring {
     private void test() {
         test(this::runCheckStatement);
         test(this::runCheckExpression);
+        assertEquals(runCheckExpressionWithUnconditional(new R5(new R4(new Sub3()))), 3);
+        assertEquals(runCheckExpressionWithUnconditional(new R5(new R4(null))), 3);
+        assertEquals(runCheckExpressionWithUnconditional1(new R5(new R4(null))), 2);
+        assertEquals(runCheckExpressionWithUnconditional1(new R5(null)), 3);
     }
 
     private void test(ToIntFunction<Object> task) {
@@ -59,6 +62,22 @@ public class DeconstructionDesugaring {
         };
     }
 
+    private int runCheckExpressionWithUnconditional(R5 o) {
+        return switch (o) {
+            case R5(R4(Sub1 s)) -> 1;
+            case R5(R4(Sub2 s)) -> 2;
+            case R5(R4(Super s)) -> 3;
+        };
+    }
+
+    private int runCheckExpressionWithUnconditional1(R5 o) {
+        return switch (o) {
+            case R5(R4(Sub1 s)) -> 1;
+            case R5(R4(Super s)) -> 2;
+            case R5(Object obj) -> 3;
+        };
+    }
+
     private void assertEquals(int expected, int actual) {
         if (expected != actual) {
             throw new AssertionError("expected: " + expected + ", " +
@@ -70,4 +89,11 @@ public class DeconstructionDesugaring {
     record R2(Object o) {}
     record R3(Object o) {}
 
+    sealed class Super permits Sub1, Sub2, Sub3 {}
+    final class Sub1 extends Super {}
+    final class Sub2 extends Super {}
+    final class Sub3 extends Super {}
+
+    record R4(Super o) {}
+    record R5(R4 o) {}
 }
