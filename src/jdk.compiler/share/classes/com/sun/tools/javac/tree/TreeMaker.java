@@ -395,6 +395,15 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCMethodInvocation ApplyWithCatch(List<JCExpression> typeargs,
+                       JCExpression fn,
+                       List<JCExpression> args)
+    {
+        JCMethodInvocation tree = new JCMethodInvocationWithCatch(typeargs, fn, args);
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCNewClass NewClass(JCExpression encl,
                              List<JCExpression> typeargs,
                              JCExpression clazz,
@@ -801,6 +810,10 @@ public class TreeMaker implements JCTree.Factory {
      */
     public JCMethodInvocation App(JCExpression meth) {
         return Apply(null, meth, List.nil()).setType(meth.type.getReturnType());
+    }
+
+    public JCMethodInvocation AppWithCatch(JCExpression meth) {
+        return ApplyWithCatch(null, meth, List.nil()).setType(meth.type.getReturnType());
     }
 
     /** Create a method invocation from a method tree and a list of argument trees.

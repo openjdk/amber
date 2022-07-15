@@ -94,6 +94,7 @@ import com.sun.tools.javac.tree.JCTree.JCPatternCaseLabel;
 import com.sun.tools.javac.tree.JCTree.JCRecordPattern;
 import com.sun.tools.javac.tree.JCTree.JCStatement;
 import com.sun.tools.javac.tree.JCTree.JCSwitchExpression;
+import com.sun.tools.javac.tree.JCTree.JCTry;
 import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.tree.TreeScanner;
@@ -176,6 +177,7 @@ public class TransPatterns extends TreeTranslator {
     private MethodSymbol currentMethodSym = null;
     private VarSymbol currentValue = null;
     private Map<RecordComponent, MethodSymbol> component2Proxy = null;
+    private boolean currentTreeHasDeconstructors;
 
     protected TransPatterns(Context context) {
         context.put(transPatternsKey, this);
@@ -189,6 +191,17 @@ public class TransPatterns extends TreeTranslator {
         target = Target.instance(context);
         preview = Preview.instance(context);
         debugTransPatterns = Options.instance(context).isSet("debug.patterns");
+    }
+
+    @Override
+    public <T extends JCTree> T translate(T tree) {
+        boolean prevCurrentTreeHashDeconstructors = currentTreeHasDeconstructors;
+        try {
+            currentTreeHasDeconstructors = false;
+            return super.translate(tree);
+        } finally {
+            currentTreeHasDeconstructors |= prevCurrentTreeHashDeconstructors;
+        }
     }
 
     @Override
@@ -285,43 +298,6 @@ public class TransPatterns extends TreeTranslator {
         Assert.error();
     }
 
-    private MethodSymbol getAccessor(DiagnosticPosition pos, RecordComponent component) {
-        return component2Proxy.computeIfAbsent(component, c -> {
-            MethodType type = new MethodType(List.of(component.owner.erasure(types)),
-                                             types.erasure(component.type),
-                                             List.nil(),
-                                             syms.methodClass);
-            MethodSymbol proxy = new MethodSymbol(Flags.PRIVATE | Flags.STATIC | Flags.SYNTHETIC,
-                                                  names.fromString("$proxy$" + component.name),
-                                                  type,
-                                                  currentClass);
-            JCStatement accessorStatement =
-                    make.Return(make.App(make.Select(make.Ident(proxy.params().head), c.accessor)));
-            VarSymbol ctch = new VarSymbol(Flags.SYNTHETIC,
-                    names.fromString("catch" + currentClassTree.pos + target.syntheticNameChar()),
-                    syms.throwableType,
-                    currentMethodSym);
-            JCNewClass newException = makeNewClass(syms.matchExceptionType,
-                                                   List.of(makeApply(make.Ident(ctch),
-                                                                     names.toString,
-                                                                     List.nil()),
-                                                           make.Ident(ctch)));
-            JCTree.JCCatch catchClause = make.Catch(make.VarDef(ctch, null),
-                                                    make.Block(0, List.of(make.Throw(newException))));
-            JCStatement tryCatchAll = make.Try(make.Block(0, List.of(accessorStatement)),
-                                               List.of(catchClause),
-                                               null);
-            JCMethodDecl md = make.MethodDef(proxy,
-                                             proxy.externalType(types),
-                                             make.Block(0, List.of(tryCatchAll)));
-
-            pendingMethods.append(md);
-            currentClass.members().enter(proxy);
-
-            return proxy;
-        });
-    }
-
     @Override
     public void visitSwitch(JCSwitch tree) {
         handleSwitch(tree, tree.selector, tree.cases,
@@ -335,6 +311,8 @@ public class TransPatterns extends TreeTranslator {
     }
 
     private Pair<JCBindingPattern, JCExpression> unrollRecordPattern(JCRecordPattern recordPattern) {
+        currentTreeHasDeconstructors = true;
+
         Type recordType = recordPattern.record.type;  //XXX: erasure
         JCVariableDecl recordBindingVar;
 
@@ -377,11 +355,10 @@ public class TransPatterns extends TreeTranslator {
                 nestedBinding = (JCBindingPattern) nestedPattern;
                 allowNull = true;
             }
-            Symbol accessor = getAccessor(recordPattern.pos(), component);
             JCExpression accessedComponentValue =
                     convert(
-                        make.App(make.QualIdent(accessor),
-                                 List.of(convert(make.Ident(recordBinding), recordBinding.type))), //TODO - cast needed????
+                        make.AppWithCatch(make.Select(convert(make.Ident(recordBinding), recordBinding.type), //TODO - cast needed????
+                                 component.accessor)),
                         componentType);//TODO - cast only when needed
             JCInstanceOf firstLevelCheck = (JCInstanceOf) make.TypeTest(accessedComponentValue, nestedBinding).setType(syms.booleanType);
             //TODO: verify deep/complex nesting with nulls
@@ -870,6 +847,7 @@ public class TransPatterns extends TreeTranslator {
         try {
             currentMethodSym = tree.sym;
             super.visitMethodDef(tree);
+            prepareSyntheticCatchIfNeeded(tree.body);
         } finally {
             currentMethodSym = prevMethodSym;
         }
@@ -914,7 +892,8 @@ public class TransPatterns extends TreeTranslator {
         };
         MethodSymbol oldMethodSym = currentMethodSym;
         try {
-            if (currentMethodSym == null) {
+            boolean isInit = currentMethodSym == null;
+            if (isInit) {
                 // Block is a static or instance initializer.
                 currentMethodSym =
                     new MethodSymbol(tree.flags | Flags.BLOCK,
@@ -923,6 +902,10 @@ public class TransPatterns extends TreeTranslator {
             }
             for (List<JCStatement> l = tree.stats; l.nonEmpty(); l = l.tail) {
                 statements.append(translate(l.head));
+            }
+
+            if (isInit) {
+                prepareSyntheticCatchIfNeeded(tree);
             }
 
             tree.stats = statements.toList();
@@ -939,6 +922,16 @@ public class TransPatterns extends TreeTranslator {
         try {
             bindingContext = new BindingDeclarationFenceBindingContext();
             super.visitLambda(tree);
+            if (currentTreeHasDeconstructors) {
+                if (tree.body instanceof JCExpression value) {
+                    tree.body = make.Block(0, List.of(make.Return(value)));
+                }
+                if (tree.body instanceof JCBlock block) {
+                    prepareSyntheticCatchIfNeeded(block);
+                } else {
+                    Assert.error("Unexpected lambda body type: " + tree.body.getKind());
+                }
+            }
         } finally {
             bindingContext = prevContent;
         }
@@ -984,6 +977,27 @@ public class TransPatterns extends TreeTranslator {
             result = tree;
         } finally {
             currentMethodSym = prevMethodSym;
+        }
+    }
+
+    @Override
+    public void visitTry(JCTry tree) {
+        super.visitTry(tree);
+        prepareSyntheticCatchIfNeeded(tree.body);
+    }
+
+    private void prepareSyntheticCatchIfNeeded(JCBlock tree) {
+        if (currentTreeHasDeconstructors) {
+            VarSymbol ctch = new VarSymbol(Flags.SYNTHETIC,
+                    names.fromString("catch" + tree.pos + target.syntheticNameChar()),
+                    syms.throwableType,
+                    currentMethodSym);
+
+            tree.syntheticCatch = make.Catch(make.VarDef(ctch, null), make.Block(0, List.of(make.Throw(makeNewClass(syms.matchExceptionType, List.of(makeApply(make.Ident(ctch),
+                                                                     names.toString,
+                                                                     List.nil()),
+                                                           make.Ident(ctch)))))));
+            currentTreeHasDeconstructors = false;
         }
     }
 

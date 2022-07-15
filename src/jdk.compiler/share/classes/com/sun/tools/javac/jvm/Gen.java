@@ -171,6 +171,7 @@ public class Gen extends JCTree.Visitor {
     Chain switchExpressionFalseChain;
     List<LocalItem> stackBeforeSwitchExpression;
     LocalItem switchResult;
+    ListBuffer<int[]> invocationsWithCatches;
 
     /** Cache the symbol to reflect the qualifying type.
      *  key: corresponding type
@@ -1096,6 +1097,29 @@ public class Gen extends JCTree.Visitor {
     }
 
     public void visitBlock(JCBlock tree) {
+        if (tree.syntheticCatch != null) {
+            ListBuffer<int[]> prevSpans = invocationsWithCatches;
+            State startState = code.state.dup();
+            try {
+                invocationsWithCatches = new ListBuffer<>();
+                doVisitBlock(tree);
+            } finally {
+                Chain skipCatch = code.branch(goto_);
+                code.entryPoint(startState, tree.syntheticCatch.param.sym.type);
+                genSyntheticCatch(tree.syntheticCatch, env, invocationsWithCatches.toList());
+                if (env.info.gaps != null) {
+                    env.info.gaps.append(code.curCP());
+                    env.info.gaps.append(code.curCP());
+                }
+                code.resolve(skipCatch);
+                invocationsWithCatches = prevSpans;
+            }
+        } else {
+            doVisitBlock(tree);
+        }
+    }
+
+    private void doVisitBlock(JCBlock tree) {
         int limit = code.nextreg;
         Env<GenContext> localEnv = env.dup(tree, new GenContext());
         genStats(tree.stats, localEnv);
@@ -1670,6 +1694,27 @@ public class Gen extends JCTree.Visitor {
                 code.statBegin(TreeInfo.endPos(tree.body));
             }
         }
+        void genSyntheticCatch(JCCatch tree,
+                      Env<GenContext> env,
+                      List<int[]> spans) {
+            for (int[] span : spans) {
+                JCExpression subCatch = tree.param.vartype;
+                int catchType = makeRef(tree.pos(), subCatch.type);
+                registerCatch(tree.pos(),
+                              span[0], span[1], code.curCP(),
+                              catchType);
+            }
+            VarSymbol exparam = tree.param.sym;
+            code.statBegin(tree.pos);
+            code.markStatBegin();
+            int limit = code.nextreg;
+            code.newLocal(exparam);
+            items.makeLocalItem(exparam).store();
+            code.statBegin(TreeInfo.firstStatPos(tree.body));
+            genStat(tree.body, env, CRT_BLOCK);
+            code.endScopes(limit);
+            code.statBegin(TreeInfo.endPos(tree.body));
+        }
         // where
         List<Pair<List<Attribute.TypeCompound>, JCExpression>> catchTypesWithAnnotations(JCCatch tree) {
             return TreeInfo.isMultiCatch(tree) ?
@@ -1886,7 +1931,13 @@ public class Gen extends JCTree.Visitor {
         if (!msym.isDynamic()) {
             code.statBegin(tree.pos);
         }
-        result = m.invoke();
+        if (tree instanceof JCMethodInvocationWithCatch) {
+            int start = code.curCP();
+            result = m.invoke();
+            invocationsWithCatches.add(new int[] {start, code.curCP()});
+        } else {
+            result = m.invoke();
+        }
     }
 
     public void visitConditional(JCConditional tree) {

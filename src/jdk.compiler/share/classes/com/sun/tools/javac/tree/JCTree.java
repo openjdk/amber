@@ -1074,6 +1074,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public List<JCStatement> stats;
         /** Position of closing brace, optional. */
         public int endpos = Position.NOPOS;
+        public JCCatch syntheticCatch;
         protected JCBlock(long flags, List<JCStatement> stats) {
             this.stats = stats;
             this.flags = flags;
@@ -1823,6 +1824,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return(APPLY);
         }
+    }
+
+    public static class JCMethodInvocationWithCatch extends JCMethodInvocation {
+
+        public JCMethodInvocationWithCatch(List<JCExpression> typeargs, JCExpression meth, List<JCExpression> args) {
+            super(typeargs, meth, args);
+        }
+
     }
 
     /**
