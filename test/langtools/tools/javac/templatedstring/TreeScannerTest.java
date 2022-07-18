@@ -59,7 +59,7 @@ public class TreeScannerTest {
                 boolean prevLog = log;
                 try {
                     log = true;
-                    return super.visitTemplatedString(node, p);
+                    return super.visitStringTemplate(node, p);
                 } finally {
                     log = prevLog;
                 }

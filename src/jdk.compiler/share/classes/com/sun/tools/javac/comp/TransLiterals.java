@@ -293,14 +293,12 @@ public final class TransLiterals extends TreeTranslator {
             return createApply(owner, name, args, method);
         }
 
-        JCMethodInvocation createApplyListOf(List<JCExpression> list, Type argType) {
+        JCMethodInvocation createApplyToList(List<JCExpression> list, Type argType) {
             Type listType = makeListType(argType == null ? syms.objectType : argType);
-            JCMethodInvocation listOfApplied = createApply(syms.listType, names.of, list)
+            JCMethodInvocation toListApplied = createApply(syms.templateRuntimeType, names.toList, list)
                     .setType(listType);
-            JCFieldAccess meth = (JCFieldAccess)listOfApplied.meth;
-            boolean isVarArg = (meth.sym.flags() & VARARGS) != 0;
-            listOfApplied.varargsElement = isVarArg ? argType : null;
-            return listOfApplied;
+            toListApplied.varargsElement = argType;
+            return toListApplied;
         }
 
         JCMethodInvocation createApplyExprMethod(JCMethodDecl exprMethod) {
@@ -333,7 +331,7 @@ public final class TransLiterals extends TreeTranslator {
             Type stringListType = makeListType(syms.stringType);
             fragmentsVar = makeField(templatedStringClass, PRIVATE | STATIC,
                     names.fragmentsUpper, stringListType,
-                    createApplyListOf(fragmentArgs, syms.stringType));
+                    createApplyToList(fragmentArgs, syms.stringType));
             TransLiterals.MethodInfo method = createMethod(SYNTHETIC | PUBLIC, names.fragments,
                     stringListType, List.nil(), templatedStringClass);
             method.addStatement(make.Return(make.QualIdent(fragmentsVar.sym)));
@@ -374,7 +372,7 @@ public final class TransLiterals extends TreeTranslator {
             if (useValuesList) {
                 JCFieldAccess select = makeThisFieldSelect(templatedStringClass.type, valuesVar);
                 JCIdent ident = makeParamIdent(params, params.head.name);
-                JCAssign assign = make.Assign(select, createApplyListOf(List.of(ident), null));
+                JCAssign assign = make.Assign(select, createApplyToList(List.of(ident), null));
                 assign.type = ident.type;
                 method.addStatement(make.Exec(assign));
             } else {
@@ -392,7 +390,7 @@ public final class TransLiterals extends TreeTranslator {
             Type objectListType = makeListType(syms.objectType);
             MethodInfo method = createMethod(SYNTHETIC | PUBLIC, names.values,
                     objectListType, List.nil(), templatedStringClass);
-            method.addStatement(make.Return(createApplyListOf(createAccessors(), syms.objectType)));
+            method.addStatement(make.Return(createApplyToList(createAccessors(), syms.objectType)));
         }
 
         void createConcatMethod() {
@@ -475,7 +473,7 @@ public final class TransLiterals extends TreeTranslator {
                 staticArgsTypes = staticArgsTypes.append(syms.stringType);
             }
             Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), env,
-                    syms.templateBootstrapType, bootstrapName, staticArgsTypes, List.nil());
+                    syms.templateRuntimeType, bootstrapName, staticArgsTypes, List.nil());
             MethodType indyType = new MethodType(argTypes, tree.type, List.nil(), syms.methodClass);
             DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
                     methodName,

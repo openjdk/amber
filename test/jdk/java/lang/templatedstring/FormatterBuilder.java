@@ -29,6 +29,7 @@
  * @run main/othervm --enable-preview FormatterBuilder
  */
 
+import java.lang.template.*;
 import java.util.*;
 
 public class FormatterBuilder {

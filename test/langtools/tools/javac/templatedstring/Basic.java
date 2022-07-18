@@ -47,7 +47,6 @@ public class Basic {
         missingPartsTest();
         expressionsTest();
         invalidExpressionsTest();
-        placeholderTest();
         policyTest();
     }
 
@@ -162,16 +161,6 @@ public class Basic {
     }
 
     /*
-     * Placeholder test.
-     */
-    static void placeholderTest() {
-        compFail("""
-            int x = 10;
-            TemplatedString result = "\\{x} \\uFFFC";
-        """);
-    }
-
-    /*
      * Policy test.
      */
     static void policyTest() {
@@ -197,7 +186,6 @@ public class Basic {
     static void compPass(String code) {
         String source = """
             import java.util.*;
-            import static java.lang.TemplatePolicy.STR;
             public class TEST {
                 public static void main(String... arg) {
             """ +
@@ -225,7 +213,6 @@ public class Basic {
     static void compFail(String code) {
         String source = """
             import java.util.*;
-            import static java.lang.TemplatePolicy.STR;
             public class TEST {
                 public static void main(String... arg) {
             """ +

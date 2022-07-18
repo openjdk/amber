@@ -236,7 +236,7 @@ public class Symtab {
 
     // For string templates
     public final Type templatedStringType;
-    public final Type templateBootstrapType;
+    public final Type templateRuntimeType;
     public final Type templatePolicyType;
     public final Type policyLinkage;
 
@@ -627,7 +627,7 @@ public class Symtab {
 
         // For string templates
         templatedStringType = enterClass("java.lang.TemplatedString");
-        templateBootstrapType = enterClass("java.lang.template.TemplateBootstrap");
+        templateRuntimeType = enterClass("java.lang.runtime.TemplateRuntime");
         templatePolicyType = enterClass("java.lang.template.TemplatePolicy");
         policyLinkage = enterClass("java.lang.template.PolicyLinkage");
 

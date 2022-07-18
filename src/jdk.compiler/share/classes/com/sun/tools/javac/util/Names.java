@@ -228,7 +228,7 @@ public class Names {
     public final Name fragments;
     public final Name fragmentsUpper;
     public final Name valuesUpper;
-    public final Name of;
+    public final Name toList;
     public final Name str;
     public final Name templatedStringBSM;
 
@@ -411,7 +411,7 @@ public class Names {
         fragments = fromString("fragments");
         fragmentsUpper = fromString("FRAGMENTS");
         valuesUpper = fromString("VALUES");
-        of = fromString("of");
+        toList = fromString("toList");
         str = fromString("STR");
         templatedStringBSM = fromString("templatedStringBSM");
 
