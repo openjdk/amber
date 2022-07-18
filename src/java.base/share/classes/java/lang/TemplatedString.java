@@ -25,8 +25,7 @@
 
 package java.lang;
 
-import java.lang.template.FormatterPolicy;
-import java.lang.template.StringPolicy;
+import java.lang.template.*;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -76,7 +75,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link TemplatedString TemplatedStrings} are primarily used in conjuction
  * with {@link TemplatePolicy} to produce meaningful results. For example, if a
  * user wants basic string concatenation, then they can use a string template
- * expression with the standard {@link TemplatePolicy#STR} policy.
+ * expression with the standard {@link TemplatedString#STR} policy.
  * {@snippet :
  * int x = 10;
  * int y = 20;
@@ -117,10 +116,10 @@ import jdk.internal.javac.PreviewFeature;
  * @implSpec An instance of {@link TemplatedString} is immutatble. Also, the
  * fragment list size must be one more than the values list size.
  *
- * @see java.lang.TemplatePolicy
- * @see java.lang.TemplatePolicy.SimplePolicy
- * @see java.lang.TemplatePolicy.StringPolicy
- * @see java.util.FormatterPolicy
+ * @see java.lang.template.TemplatePolicy
+ * @see java.lang.template.SimplePolicy
+ * @see java.lang.template.StringPolicy
+ * @see java.lang.template.FormatterPolicy
  *
  * @since 20
  */

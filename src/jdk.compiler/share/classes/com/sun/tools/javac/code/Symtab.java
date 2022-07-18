@@ -627,7 +627,7 @@ public class Symtab {
 
         // For string templates
         templatedStringType = enterClass("java.lang.TemplatedString");
-        templateBootstrapType = enterClass("java.lang.runtime.TemplateBootstrap");
+        templateBootstrapType = enterClass("java.lang.template.TemplateBootstrap");
         templatePolicyType = enterClass("java.lang.template.TemplatePolicy");
         policyLinkage = enterClass("java.lang.template.PolicyLinkage");
 

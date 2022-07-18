@@ -147,7 +147,10 @@ import jdk.internal.javac.PreviewFeature;
  * @param <R>  Policy's apply result type.
  * @param <E>  Exception thrown type.
  *
- * @see java.util.FormatterPolicy
+ * @see java.lang.TemplatedString
+ * @see java.lang.template.SimplePolicy
+ * @see java.lang.template.StringPolicy
+ * @see java.lang.template.FormatterPolicy
  *
  * @since 20
  */

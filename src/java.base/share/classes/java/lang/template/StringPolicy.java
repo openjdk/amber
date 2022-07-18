@@ -31,7 +31,8 @@ import java.util.Objects;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * This interface simplifies declaration of {@link java.lang.TemplatePolicy TemplatePolicys}
+ * This interface simplifies declaration of
+ * {@link java.lang.template.TemplatePolicy TemplatePolicys}
  * that do not throw checked exceptions and have a result type of {@link String}. For example:
  * {@snippet :
  * StringPolicy policy = ts -> ts.concat();

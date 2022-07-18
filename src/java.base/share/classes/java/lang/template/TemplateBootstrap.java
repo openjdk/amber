@@ -23,7 +23,7 @@
  * questions.
  */
 
-package java.lang.runtime;
+package java.lang.template;
 
 
 import java.lang.invoke.*;

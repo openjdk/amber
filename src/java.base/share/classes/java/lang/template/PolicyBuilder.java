@@ -42,7 +42,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link StringPolicy} or {@link SimplePolicy}.
  * <p>
  * The user starts by creating a new instance of this class
- * using {@link java.lang.TemplatePolicy#builder()}. When the user is finished
+ * using {@link java.lang.template.TemplatePolicy#builder()}. When the user is finished
  * composing the policy then they should invoke {@link PolicyBuilder#build()}
  * on the instance returning a new instance of {@link StringPolicy}.
  * <p>
