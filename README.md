@@ -1,18 +1,11 @@
-# String templates
+# Welcome to the JDK!
 
-Additional classes
+For build instructions please see the
+[online documentation](https://openjdk.java.net/groups/build/doc/building.html),
+or either of these files:
 
-- [TemplatedString](site/java.base/java/lang/TemplatedString.html)
+- [doc/building.html](doc/building.html) (html version)
+- [doc/building.md](doc/building.md) (markdown version)
 
-- [TemplatedPolicy](site/java.base/java/lang/template/TemplatePolicy.html)
-
-- [SimplePolicy](site/java.base/java/lang/template/SimplePolicy.html)
-
-- [StringPolicy](site/java.base/java/lang/template/StringPolicy.html)
-
-- [FormatterPolicy](site/java.base/java/lang/template/FormatterPolicy.html)
-
-- [TemplateBuilder](site/java.base/java/lang/TemplatedString.TemplateBuilder.html)
-
-- [PolicyBuilder](site/java.base/java/lang/template/PolicyBuilder.html)
-
+See <https://openjdk.java.net/> for more information about
+the OpenJDK Community and the JDK.
