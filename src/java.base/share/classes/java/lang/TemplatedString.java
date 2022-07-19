@@ -99,7 +99,7 @@ import jdk.internal.javac.PreviewFeature;
  * StringBuilder sb = new StringBuilder();
  * Iterator<String> fragmentsIter = ts.fragments().iterator(); // @highlight substring="fragments()"
  *
- * for (Object value : ts.values()) {
+ * for (Object value : ts.values()) { // @highlight substring="values()"
  *     sb.append(fragmentsIter.next());
  *     sb.append(value);
  * }
@@ -164,7 +164,7 @@ public interface TemplatedString {
      * This method can be used as an alternative to string template expressions. For example,
      * {@snippet :
      * String result1 = STR."\{x} + \{y} = \{x + y}";
-     * String result2 = "\{x} + \{y} = \{x + y}".apply(STR);
+     * String result2 = "\{x} + \{y} = \{x + y}".apply(STR); // @highlight substring="apply"
      * }
      * produces an equivalent result for both {@code result1} and {@code result2}.
      *
@@ -291,7 +291,11 @@ public interface TemplatedString {
 
     /**
      * Simple concatenation policy instance.
-     *
+     * Example: {@snippet :
+     * int x = 10;
+     * int y = 20;
+     * String result = STR."\{x} + \{y} = \{x + y}"; // @highlight substring="STR"
+     * }
      * @implNote The result of concatenation is not interned.
      */
     public static final StringPolicy STR = new StringPolicy() {
@@ -305,6 +309,11 @@ public interface TemplatedString {
 
     /**
      * Predefined FormatterPolicy instance that uses Locale.US.
+     * Example: {@snippet :
+     * int x = 123;
+     * int y = 987;
+     * String result = FMT."%3d\{x} + %3d\{y} = %4d\{x + y}"; // @highlight substring="FMT"
+     * }
      */
     public static final FormatterPolicy FMT = new FormatterPolicy(Locale.US);
 
