@@ -73,6 +73,8 @@ import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.RecordComponent;
 import com.sun.tools.javac.code.Type;
 import static com.sun.tools.javac.code.TypeTag.BOT;
+import static com.sun.tools.javac.tree.JCTree.Tag.RECORDPATTERN;
+
 import com.sun.tools.javac.jvm.PoolConstant.LoadableConstant;
 import com.sun.tools.javac.jvm.Target;
 import com.sun.tools.javac.tree.JCTree;
@@ -650,13 +652,15 @@ public class TransPatterns extends TreeTranslator {
         ListBuffer<JCCase> accummulator = new ListBuffer<>();
         ListBuffer<JCCase> result = new ListBuffer<>();
         AccummulatorResolver resolveAccummulator = (commonBinding, commonNestedExpression, commonNestedBinding) -> {
+                boolean hasUnconditional = false;
                 if (accummulator.size() > 1) {
                     Assert.checkNonNull(commonBinding);
                     Assert.checkNonNull(commonNestedExpression);
                     Assert.checkNonNull(commonNestedBinding);
                     ListBuffer<JCCase> nestedCases = new ListBuffer<>();
 
-                    for (JCCase accummulated : accummulator) {
+                    for(List<JCCase> accList = accummulator.toList(); accList.nonEmpty(); accList = accList.tail) {
+                        var accummulated = accList.head;
                         JCPatternCaseLabel accummulatedFirstLabel = (JCPatternCaseLabel) accummulated.labels.head;
                         JCBindingPattern accummulatedPattern = (JCBindingPattern) accummulatedFirstLabel.pat;
                         VarSymbol accummulatedBinding = accummulatedPattern.var.sym;
@@ -673,11 +677,21 @@ public class TransPatterns extends TreeTranslator {
                             instanceofCheck = (JCInstanceOf) accummulatedFirstLabel.guard;
                         }
                         JCBindingPattern binding = (JCBindingPattern) instanceofCheck.pattern;
-                        nestedCases.add(make.Case(CaseKind.STATEMENT, List.of(make.PatternCaseLabel(binding, newGuard)), accummulated.stats, null));
+                        hasUnconditional =
+                                instanceofCheck.allowNull &&
+                                types.isSubtype(commonNestedExpression.type, types.boxedTypeOrType(types.erasure(binding.type))) &&
+                                accList.tail.isEmpty();
+                        if (hasUnconditional) {
+                            nestedCases.add(make.Case(CaseKind.STATEMENT, List.of(make.ConstantCaseLabel(makeLit(syms.botType, 0)), make.DefaultCaseLabel()),  accummulated.stats, null));
+                        } else {
+                            nestedCases.add(make.Case(CaseKind.STATEMENT, List.of(make.PatternCaseLabel(binding, newGuard)), accummulated.stats, null));
+                        }
                     }
-                    JCContinue continueSwitch = make.Continue(null);
-                    continueSwitch.target = currentSwitch;
-                    nestedCases.add(make.Case(CaseKind.STATEMENT, List.of(make.DefaultCaseLabel()), List.of(continueSwitch), null));
+                    if (!hasUnconditional) {
+                        JCContinue continueSwitch = make.Continue(null);
+                        continueSwitch.target = currentSwitch;
+                        nestedCases.add(make.Case(CaseKind.STATEMENT, List.of(make.DefaultCaseLabel()), List.of(continueSwitch), null));
+                    }
                     JCSwitch newSwitch = make.Switch(commonNestedExpression, nestedCases.toList());
                     newSwitch.cases = processCases(newSwitch, newSwitch.cases);
                     newSwitch.patternSwitch = true;
