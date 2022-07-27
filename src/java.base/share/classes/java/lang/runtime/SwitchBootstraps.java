@@ -293,8 +293,12 @@ public class SwitchBootstraps {
     @SuppressWarnings("removal")
     private static Class<?> generateInnerClass(MethodHandles.Lookup caller, Object[] labels) throws LambdaConversionException {
         var cw = new ClassWriter(ClassWriter.COMPUTE_MAXS | ClassWriter.COMPUTE_FRAMES);
+        String packageName = caller.lookupClass().getPackageName().replace('.', '/');
+        if (!packageName.isEmpty()) {
+            packageName += '/';
+        }
         cw.visit(CLASSFILE_VERSION, ACC_SUPER + ACC_FINAL + ACC_SYNTHETIC,
-                 caller.lookupClass().getPackageName().replace('.', '/') + "/TypeSwitch", null, //XXX: default package
+                 packageName + "TypeSwitch", null,
                  JAVA_LANG_OBJECT, new String[0]);
 
         InstructionAdapter mv
@@ -308,26 +312,31 @@ public class SwitchBootstraps {
         mv.iconst(-1);
         mv.visitInsn(IRETURN);
         mv.visitLabel(swtch);
-        mv.visitVarInsn(ILOAD, 1);
-        Label dflt = new Label();
-        record Element(Label label, Class<?> clazz) {}
-        List<Element> cases = new ArrayList<Element>();
-        for (Object o : labels) {
-            cases.add(new Element(new Label(), (Class<?>) o));
-        }
-        mv.visitTableSwitchInsn(0, labels.length - 1, dflt, cases.stream().map(e -> e.label()).toArray(s -> new Label[s]));
-        for (int idx = 0; idx < cases.size(); idx++) {
-            Element element = cases.get(idx);
-            mv.visitLabel(element.label());
-            mv.visitVarInsn(ALOAD, 0);
-            mv.visitTypeInsn(INSTANCEOF, element.clazz().getName().replace('.', '/'));
-            mv.visitJumpInsn(IFEQ, idx + 1 < cases.size() ? cases.get(idx + 1).label() : dflt);
-            mv.iconst(idx);
+        if (labels.length == 0) {
+            mv.iconst(labels.length);
+            mv.visitInsn(IRETURN);
+        } else {
+            mv.visitVarInsn(ILOAD, 1);
+            Label dflt = new Label();
+            record Element(Label label, Class<?> clazz) {}
+            List<Element> cases = new ArrayList<Element>();
+            for (Object o : labels) {
+                cases.add(new Element(new Label(), (Class<?>) o));
+            }
+            mv.visitTableSwitchInsn(0, labels.length - 1, dflt, cases.stream().map(e -> e.label()).toArray(s -> new Label[s]));
+            for (int idx = 0; idx < cases.size(); idx++) {
+                Element element = cases.get(idx);
+                mv.visitLabel(element.label());
+                mv.visitVarInsn(ALOAD, 0);
+                mv.visitTypeInsn(INSTANCEOF, element.clazz().getName().replace('.', '/'));
+                mv.visitJumpInsn(IFEQ, idx + 1 < cases.size() ? cases.get(idx + 1).label() : dflt);
+                mv.iconst(idx);
+                mv.visitInsn(IRETURN);
+            }
+            mv.visitLabel(dflt);
+            mv.iconst(labels.length);
             mv.visitInsn(IRETURN);
         }
-        mv.visitLabel(dflt);
-        mv.iconst(cases.size());
-        mv.visitInsn(IRETURN);
         // Maxs computed by ClassWriter.COMPUTE_MAXS, these arguments ignored
         mv.visitMaxs(-1, -1);
         mv.visitEnd();

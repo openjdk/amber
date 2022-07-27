@@ -748,7 +748,11 @@ public class TransPatterns extends TreeTranslator {
                 accummulator.add(c.head);
             } else {
                 resolveAccummulator.resolve(commonBinding, commonNestedExpression, commonNestedBinding);
-                accummulator.add(c.head);
+                if (currentBinding != null) {
+                    accummulator.add(c.head);
+                } else {
+                    result.add(c.head);
+                }
                 commonBinding = currentBinding;
                 commonNestedExpression = currentNestedExpression;
                 commonNestedBinding = currentNestedBinding;
