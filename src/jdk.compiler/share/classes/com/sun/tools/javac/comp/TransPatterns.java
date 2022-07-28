@@ -348,7 +348,7 @@ public class TransPatterns extends TreeTranslator {
                     if (secondLevelChecks == null) {
                         secondLevelChecks = nestedDesugared.snd;
                     } else {
-                        secondLevelChecks = makeBinary(Tag.AND, secondLevelChecks, nestedDesugared.snd);
+                        secondLevelChecks = mergeConditions(secondLevelChecks, nestedDesugared.snd);
                     }
                 }
                 nestedBinding = nestedDesugared.fst;
@@ -368,7 +368,7 @@ public class TransPatterns extends TreeTranslator {
             if (firstLevelChecks == null) {
                 firstLevelChecks = firstLevelCheck;
             } else {
-                firstLevelChecks = makeBinary(Tag.AND, firstLevelChecks, firstLevelCheck);
+                firstLevelChecks = mergeConditions(firstLevelChecks, firstLevelCheck);
             }
             components = components.tail;
             nestedFullComponentTypes = nestedFullComponentTypes.tail;
@@ -379,10 +379,22 @@ public class TransPatterns extends TreeTranslator {
         if (firstLevelChecks != null) {
             guard = firstLevelChecks;
             if (secondLevelChecks != null) {
-                guard = makeBinary(Tag.AND, guard, secondLevelChecks);
+                guard = mergeConditions(guard, secondLevelChecks);
             }
         }
         return Pair.of((JCBindingPattern) make.BindingPattern(recordBindingVar).setType(recordBinding.type), guard);
+    }
+
+    private JCExpression mergeConditions(JCExpression left, JCExpression right) {
+        if (left instanceof JCBinary lastBinary) {
+            while (lastBinary.rhs instanceof JCBinary nextBinary) {
+                lastBinary = nextBinary;
+            }
+            lastBinary.rhs = makeBinary(Tag.AND, lastBinary.rhs, right);
+            return left;
+        } else {
+            return makeBinary(Tag.AND, left, right);
+        }
     }
 
     private void handleSwitch(JCTree tree,
@@ -645,7 +657,7 @@ public class TransPatterns extends TreeTranslator {
         return tree;
     }
 
-    List<JCCase> processCases(JCTree currentSwitch, List<JCCase> inputCases) {
+    public List<JCCase> processCases(JCTree currentSwitch, List<JCCase> inputCases) {
         interface AccummulatorResolver {
             public void resolve(VarSymbol commonBinding, JCExpression commonNestedExpression, VarSymbol commonNestedBinding);
         }
