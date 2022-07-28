@@ -657,7 +657,7 @@ public class TransPatterns extends TreeTranslator {
         return tree;
     }
 
-    public List<JCCase> processCases(JCTree currentSwitch, List<JCCase> inputCases) {
+    protected List<JCCase> processCases(JCTree currentSwitch, List<JCCase> inputCases) {
         interface AccummulatorResolver {
             public void resolve(VarSymbol commonBinding, JCExpression commonNestedExpression, VarSymbol commonNestedBinding);
         }

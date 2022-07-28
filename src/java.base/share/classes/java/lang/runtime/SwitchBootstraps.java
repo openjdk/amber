@@ -43,6 +43,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -318,18 +319,27 @@ public class SwitchBootstraps {
         } else {
             mv.visitVarInsn(ILOAD, 1);
             Label dflt = new Label();
-            record Element(Label label, Class<?> clazz) {}
+            record Element(Label label, Class<?> clazz, Label falseTarget) {}
             List<Element> cases = new ArrayList<Element>();
-            for (Object o : labels) {
-                cases.add(new Element(new Label(), (Class<?>) o));
+            Class<?> lastClass = null;
+            Label lastClassLabel = dflt;
+            for (int i = labels.length - 1; i >= 0; i--) {
+                Class<?> label = (Class<?>) labels[i];
+                Element currentElement = new Element(new Label(), label, lastClassLabel);
+                cases.add(currentElement);
+                if (lastClass != label) {
+                    lastClassLabel = currentElement.label();
+                }
+                lastClass = label;
             }
+            Collections.reverse(cases);
             mv.visitTableSwitchInsn(0, labels.length - 1, dflt, cases.stream().map(e -> e.label()).toArray(s -> new Label[s]));
             for (int idx = 0; idx < cases.size(); idx++) {
                 Element element = cases.get(idx);
                 mv.visitLabel(element.label());
                 mv.visitVarInsn(ALOAD, 0);
                 mv.visitTypeInsn(INSTANCEOF, element.clazz().getName().replace('.', '/'));
-                mv.visitJumpInsn(IFEQ, idx + 1 < cases.size() ? cases.get(idx + 1).label() : dflt);
+                mv.visitJumpInsn(IFEQ, element.falseTarget());
                 mv.iconst(idx);
                 mv.visitInsn(IRETURN);
             }
@@ -347,19 +357,21 @@ public class SwitchBootstraps {
 
         final byte[] classBytes = cw.toByteArray();
         // If requested, dump out to a file for debugging purposes
-//        var dumper = ProxyClassesDumper.getInstance("/tmp/classes/classes");
-//        if (dumper != null) {
-//            AccessController.doPrivileged(new PrivilegedAction<>() {
-//                @Override
-//                public Void run() {
-//                    dumper.dumpClass("foobar", classBytes);
-//                    return null;
-//                }
-//            }, null,
-//            new FilePermission("<<ALL FILES>>", "read, write"),
-//            // createDirectories may need it
-//            new PropertyPermission("user.dir", "read"));
-//        }
+        if (false) {
+            var dumper = ProxyClassesDumper.getInstance("/tmp/classes/classes");
+            if (dumper != null) {
+                AccessController.doPrivileged(new PrivilegedAction<>() {
+                    @Override
+                    public Void run() {
+                        dumper.dumpClass("foobar", classBytes);
+                        return null;
+                    }
+                }, null,
+                new FilePermission("<<ALL FILES>>", "read, write"),
+                // createDirectories may need it
+                new PropertyPermission("user.dir", "read"));
+            }
+        }
         try {
             // this class is linked at the indy callsite; so define a hidden nestmate
             MethodHandles.Lookup lookup;
