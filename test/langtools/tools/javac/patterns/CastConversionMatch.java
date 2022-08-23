@@ -2,7 +2,7 @@
  * @test /nodynamiccopyright/
  * @bug 8231827
  * @summary Match which involves a cast conversion
- * @compile/fail/ref=CastConversionMatch.out -XDrawDiagnostics CastConversionMatch.java
+ * @compile -XDrawDiagnostics CastConversionMatch.java
  */
 
 public class CastConversionMatch {

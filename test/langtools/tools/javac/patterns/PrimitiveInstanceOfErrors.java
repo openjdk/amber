@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,11 +21,24 @@
  * questions.
  */
 
-// key: compiler.misc.type.req.class.array
-// key: compiler.err.type.found.req
+/**
+ * @test
+ * @summary Check behavior of instanceof for primitives
+ * @compile/fail/ref=PrimitiveInstanceOfErrors.out --enable-preview -source ${jdk.version} -XDrawDiagnostics -XDshould-stop.at=FLOW PrimitiveInstanceOfErrors.java
+ */
+public class PrimitiveInstanceOfErrors {
+    public static boolean unboxing_and_narrowing_primitive_not_allowed_per_casting_conversion() {
+        Long l_within_int_range = 42L;
+        Long l_outside_int_range = 999999999999999999L;
 
-import java.util.*;
+        return l_within_int_range instanceof int && !(l_outside_int_range instanceof int);
+    }
 
-class TypeReqClassArray {
-    Object o = int::new;
+    public static void boxing_conversions() {
+        int i = 42;
+
+        boolean ret1 = i instanceof Integer; // (Integer) i // OK and true
+        boolean ret2 = i instanceof Double;  // error: incompatible types
+        boolean ret3 = i instanceof Short;   // error: incompatible types
+    }
 }

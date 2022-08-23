@@ -2,8 +2,7 @@
  * @test /nodynamiccopyright/
  * @bug 8262891 8269146 8269113
  * @summary Verify errors related to pattern switches.
- * @enablePreview
- * @compile/fail/ref=SwitchErrors.out -XDrawDiagnostics -XDshould-stop.at=FLOW SwitchErrors.java
+ * @compile/fail/ref=SwitchErrors.out --enable-preview -source ${jdk.version} -XDrawDiagnostics -XDshould-stop.at=FLOW SwitchErrors.java
  */
 public class SwitchErrors {
     void incompatibleSelectorObjectString(Object o) {
@@ -127,12 +126,6 @@ public class SwitchErrors {
             default: break;
         }
     }
-    void primitivePattern(Object o) {
-        switch (o) {
-            case int i: break;
-            default: break;
-        }
-    }
     void patternAndDefault1(Object o) {
         switch (o) {
             case String s, default: break;
@@ -239,16 +232,6 @@ public class SwitchErrors {
             case CharSequence cs: break;
         }
     }
-    void primitiveToReference(int i) {
-        switch (i) {
-            case Integer j: break;
-        }
-    }
-    void referenceToPrimitive(Integer i) {
-        switch (i) {
-            case int j: break;
-        }
-    }
     void nullAndParenthesized1(Object o) {
         record R(Object o) {}
         switch (o) {
@@ -276,5 +259,17 @@ public class SwitchErrors {
             case ((R(var v))): case null: break;
             default: break;
         }
+    }
+    void switchLongOverByte(byte b) {
+        switch (b) {
+            case 0L: return ;
+        }
+    }
+    void switchOverPrimitiveFloatFromInt(float f) {
+        switch (f) {
+            case 16777216: break;
+            case 16777217: break;
+            default: break;
+        };
     }
 }

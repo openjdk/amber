@@ -31,7 +31,8 @@ import java.util.function.Function;
  * @test
  * @bug 8262891 8268333 8268896 8269802 8269808 8270151 8269113 8277864 8290709
  * @summary Check behavior of pattern switches.
- * @enablePreview
+ * @compile -g --enable-preview -source ${jdk.version} Switches.java
+ * @run main/othervm --enable-preview Switches
  */
 public class Switches {
 
@@ -88,6 +89,17 @@ public class Switches {
         assertEquals(5, switchOverPrimitiveInt(0));
         assertEquals(7, switchOverPrimitiveInt(1));
         assertEquals(9, switchOverPrimitiveInt(2));
+        assertEquals(5f, switchOverPrimitiveFloat(0f));
+        assertEquals(7f, switchOverPrimitiveFloat(1f));
+        assertEquals(9f, switchOverPrimitiveFloat(2f));
+        assertEquals(9f, switchOverPrimitiveFloat(2f));
+        assertEquals(5f, switchOverPrimitiveDouble(0d));
+        assertEquals(7f, switchOverPrimitiveDouble(1d));
+        assertEquals(9f, switchOverPrimitiveDouble(2d));
+        assertEquals(1, switchOverPrimitiveChar('a'));
+        assertEquals(-1, switchOverPrimitiveChar('x'));
+        assertTrue(switchOverPrimitiveBoolean(Boolean.valueOf(true)));
+        assertTrue(!switchOverPrimitiveBoolean(false));
         assertEquals("a", deconstructStatement(new R("a")));
         assertEquals("1", deconstructStatement(new R(1)));
         assertEquals("other", deconstructStatement(""));
@@ -621,6 +633,36 @@ public class Switches {
         };
     }
 
+    private float switchOverPrimitiveFloat(Float f) {
+        return switch (f) {
+            case 0f -> 5f + 0f;
+            case Float fi when fi == 1f -> 6f + fi;
+            case Float fi -> 7f + fi;
+        };
+    }
+
+    private double switchOverPrimitiveDouble(Double d) {
+        return switch (d) {
+            case 0d -> 5d + 0d;
+            case Double di when di == 1d -> 6d + di;
+            case Double di -> 7d + di;
+        };
+    }
+
+    private boolean switchOverPrimitiveBoolean(Boolean b) {
+        return switch (b) {
+            case true -> true;
+            case Boolean bi -> bi;
+        };
+    }
+
+    private int switchOverPrimitiveChar(int i) {
+        return switch (i) {
+            case 'a' -> 1;
+            default -> -1;
+        };
+    }
+
     String deconstructStatement(Object o) {
         switch (o) {
             case R(String s) -> {return s;}
@@ -663,6 +705,18 @@ public class Switches {
 
     void assertEquals(int expected, int actual) {
         if (expected != actual) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
+        }
+    }
+
+    void assertEquals(float expected, float actual) {
+        if (Float.compare(expected, actual) != 0) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
+        }
+    }
+
+    void assertEquals(double expected, double actual) {
+        if (Double.compare(expected, actual) != 0) {
             throw new AssertionError("Expected: " + expected + ", but got: " + actual);
         }
     }

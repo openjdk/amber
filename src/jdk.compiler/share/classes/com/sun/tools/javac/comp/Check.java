@@ -73,11 +73,8 @@ import static com.sun.tools.javac.code.TypeTag.WILDCARD;
 
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
-import javax.lang.model.type.TypeMirror;
-import javax.lang.model.util.ElementFilter;
 import javax.lang.model.util.ElementKindVisitor14;
 
 /** Type checking helper class for the attribution phase.
@@ -3906,6 +3903,53 @@ public class Check {
         return true;
     }
 
+    /** Check unconditionality between any combination of reference or primitive types.
+     *
+     *  Rules:
+     *  - widening from one reference type to another,
+     *  - boxing.
+     *
+     *  @param source     Source primitive or reference type
+     *  @param target     Target primitive or reference type
+     */
+    public boolean checkUnconditionallyExact(Type source, Type target) {
+        if (types.isSameType(source, target)) {
+            return true;
+        }
+
+        if (target.isPrimitive()) {
+            return (source.isReference() && types.isSubtype(types.boxedTypeOrType(types.erasure(source)), target)) ||
+                   (source.isReference() && isExactPrimitiveWidening(types.unboxedType(source), target) ) ||
+                    isExactPrimitiveWidening(source, target);
+        } else {
+            return types.isSubtype(types.boxedTypeOrType(types.erasure(source)), target);
+        }
+    }
+
+    /** Check unconditionality between primitive types.
+     *
+     *  - widening from one integral type to another,
+     *  - widening from one floating point type to another,
+     *  - widening from byte, short, or char to a floating point type,
+     *  - widening from int to double.
+     *
+     *  @param source     Source primitive type
+     *  @param target     Target primitive type
+     */
+    public boolean isExactPrimitiveWidening(Type source, Type target) {
+        if (types.isSameType(source, target)) {
+            return true;
+        }
+
+        return (source.isPrimitive() && target.isPrimitive()) &&
+                ((source.hasTag(BYTE) && !target.hasTag(CHAR) ||
+                (source.hasTag(SHORT) && (target.hasTag(INT) || target.hasTag(LONG) || target.hasTag(FLOAT) || target.hasTag(DOUBLE)))||
+                (source.hasTag(CHAR)  && (target.hasTag(INT) || target.hasTag(LONG) || target.hasTag(FLOAT) || target.hasTag(DOUBLE))) ||
+                (source.hasTag(LONG) && (target.hasTag(LONG))) ||
+                (source.hasTag(INT) && (target.hasTag(DOUBLE) || target.hasTag(LONG))) ||
+                (source.hasTag(FLOAT) && (target.hasTag(DOUBLE)))));
+    }
+
     /** Check that a qualified name is in canonical form (for import decls).
      */
     public void checkCanonical(JCTree tree) {
@@ -4406,8 +4450,10 @@ public class Check {
         }
     }
 
-    void checkSwitchCaseLabelDominated(List<JCCase> cases) {
+    void checkSwitchCaseLabelDominated(JCCaseLabel unconditionalCaseLabel, List<JCCase> cases) {
         List<JCCaseLabel> caseLabels = List.nil();
+        boolean unconditionalFound = false;
+
         for (List<JCCase> l = cases; l.nonEmpty(); l = l.tail) {
             JCCase c = l.head;
             for (JCCaseLabel label : c.labels) {
@@ -4417,10 +4463,11 @@ public class Check {
                 Type currentType = labelType(label);
                 for (JCCaseLabel testCaseLabel : caseLabels) {
                     Type testType = labelType(testCaseLabel);
-                    if (types.isSubtype(currentType, testType) &&
+                    boolean dominated = false;
+                    if (unconditionalCaseLabel == testCaseLabel) unconditionalFound = true;
+                    if (checkUnconditionallyExact(currentType, testType) &&
                         !currentType.hasTag(ERROR) && !testType.hasTag(ERROR)) {
                         //the current label is potentially dominated by the existing (test) label, check:
-                        boolean dominated = false;
                         if (label instanceof JCConstantCaseLabel) {
                             dominated |= !(testCaseLabel instanceof JCConstantCaseLabel);
                         } else if (label instanceof JCPatternCaseLabel patternCL &&
@@ -4429,9 +4476,15 @@ public class Check {
                             dominated = patternDominated(testPatternCaseLabel.pat,
                                                          patternCL.pat);
                         }
-                        if (dominated) {
-                            log.error(label.pos(), Errors.PatternDominated);
-                        }
+                    }
+
+                    // Domination can occur even when we have not an unconditional pair between case labels.
+                    if (unconditionalFound && unconditionalCaseLabel != label) {
+                        dominated = true;
+                    }
+
+                    if (dominated) {
+                        log.error(label.pos(), Errors.PatternDominated);
                     }
                 }
                 caseLabels = caseLabels.prepend(label);
@@ -4449,16 +4502,12 @@ public class Check {
         private boolean patternDominated(JCPattern existingPattern, JCPattern currentPattern) {
             Type existingPatternType = types.erasure(existingPattern.type);
             Type currentPatternType = types.erasure(currentPattern.type);
-            if (existingPatternType.isPrimitive() ^ currentPatternType.isPrimitive()) {
+
+            boolean unconditionallyExact = checkUnconditionallyExact(currentPatternType, existingPatternType);
+            if (!unconditionallyExact) {
                 return false;
             }
-            if (existingPatternType.isPrimitive()) {
-                return types.isSameType(existingPatternType, currentPatternType);
-            } else {
-                if (!types.isSubtype(currentPatternType, existingPatternType)) {
-                    return false;
-                }
-            }
+
             while (existingPattern instanceof JCParenthesizedPattern parenthesized) {
                 existingPattern = parenthesized.pattern;
             }

@@ -26,10 +26,7 @@
 package com.sun.tools.javac.jvm;
 
 import java.io.*;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.LinkedHashSet;
+import java.util.*;
 import java.util.function.ToIntFunction;
 
 import javax.tools.JavaFileManager;
@@ -929,7 +926,19 @@ public class ClassWriter extends ClassFile {
      */
     void writeBootstrapMethods() {
         int alenIdx = writeAttr(names.BootstrapMethods);
-        databuf.appendChar(poolWriter.bootstrapMethods.size());
+        //ensure all bootstrap methods are entered into the map:
+        int size;
+        do {
+            size = poolWriter.bootstrapMethods.size();
+            for (BsmKey bsmKey : new HashSet<>(poolWriter.bootstrapMethods.keySet())) {
+                //ensure all static args are in pool:
+                LoadableConstant[] uniqueArgs = bsmKey.staticArgs;
+                for (LoadableConstant arg : uniqueArgs) {
+                    poolWriter.putConstant(arg);
+                }
+            }
+        } while (size != poolWriter.bootstrapMethods.size());
+        databuf.appendChar(size);
         for (BsmKey bsmKey : poolWriter.bootstrapMethods.keySet()) {
             //write BSM handle
             databuf.appendChar(poolWriter.putConstant(bsmKey.bsm));

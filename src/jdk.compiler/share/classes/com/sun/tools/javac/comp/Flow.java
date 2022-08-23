@@ -54,10 +54,9 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.BLOCK;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import com.sun.tools.javac.code.Type.TypeVar;
-import static com.sun.tools.javac.code.TypeTag.BOOLEAN;
-import static com.sun.tools.javac.code.TypeTag.NONE;
-import static com.sun.tools.javac.code.TypeTag.VOID;
 import com.sun.tools.javac.resources.CompilerProperties.Fragments;
+
+import static com.sun.tools.javac.code.TypeTag.*;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 import com.sun.tools.javac.util.JCDiagnostic.Fragment;
 
@@ -757,6 +756,19 @@ public class Flow {
                         Type primaryPatternType = TreeInfo.primaryPatternType((JCPattern) labelValue);
                         if (!primaryPatternType.hasTag(NONE)) {
                             coveredSymbols.add(primaryPatternType.tsym);
+                            if (primaryPatternType.tsym.type.isPrimitive()) {
+                                // if it is primitive, it covers its wrapper type
+                                coveredSymbols.add(types.boxedClass(primaryPatternType.tsym.type));
+                                // if the target is unconditionally exact to the pattern, target is covered
+                                if (chk.checkUnconditionallyExact(targetType, primaryPatternType.tsym.type)) {
+                                    coveredSymbols.add(targetType.tsym);
+                                } else if (types.isConvertible(targetType, primaryPatternType.tsym.type)) {
+                                    // cancelling out exactness criterion in case of (Wrapper, primitive)
+                                    coveredSymbols.add(targetType.tsym);
+                                }
+                            } else if (primaryPatternType.tsym.type.isReference() && targetType.isPrimitive() && types.isCastable(primaryPatternType.tsym.type, targetType)) {
+                                coveredSymbols.add(types.unboxedType(primaryPatternType).tsym);
+                            }
                         }
                     }
                     case RECORDPATTERN -> {
@@ -835,8 +847,8 @@ public class Flow {
                     }
                 }
                 for (Symbol currentType : coveredSymbolsForComponent) {
-                    if (types.isSubtype(types.erasure(currentType.type),
-                                        types.erasure(componentPatternType.type))) {
+                    if (chk.checkUnconditionallyExact(currentType.type, componentPatternType.type) ||
+                            types.isConvertible(currentType.type, componentPatternType.type)) {
                         coveredSymbol2Patterns.put(currentType,
                                                    coveredSymbol2Patterns.getOrDefault(currentType,
                                                                                        List.nil())

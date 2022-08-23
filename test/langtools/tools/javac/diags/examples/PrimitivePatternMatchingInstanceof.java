@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2019, 2020, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,16 +21,12 @@
  * questions.
  */
 
-// key: compiler.misc.not.applicable.types
-// key: compiler.err.prob.found.req
-// key: compiler.note.preview.filename
-// key: compiler.note.preview.recompile
-// options: --enable-preview --source ${jdk.version}
+// key: compiler.misc.feature.primitive.patterns
+// key: compiler.warn.preview.feature.use.plural
+// options: --enable-preview -source ${jdk.version} -Xlint:preview
 
-class NotApplicableTypes {
-    void t(int i) {
-        switch (i) {
-            case Integer j -> {}
-        }
+class PrimitivePatternMatchingInstanceof {
+    boolean m(Object o) {
+        return o instanceof int s;
     }
 }

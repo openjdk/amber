@@ -163,6 +163,7 @@ public class Symtab {
      */
     public final Type objectType;
     public final Type objectMethodsType;
+    public final Type exactnessMethodsType;
     public final Type objectsType;
     public final Type classType;
     public final Type classLoaderType;
@@ -222,6 +223,7 @@ public class Symtab {
     public final Type typeDescriptorType;
     public final Type recordType;
     public final Type switchBootstrapsType;
+    public final Type constantBootstrapsType;
     public final Type valueBasedType;
     public final Type valueBasedInternalType;
 
@@ -530,6 +532,7 @@ public class Symtab {
         // Enter predefined classes. All are assumed to be in the java.base module.
         objectType = enterClass("java.lang.Object");
         objectMethodsType = enterClass("java.lang.runtime.ObjectMethods");
+        exactnessMethodsType = enterClass("java.lang.runtime.ExactnessMethods");
         objectsType = enterClass("java.util.Objects");
         classType = enterClass("java.lang.Class");
         stringType = enterClass("java.lang.String");
@@ -598,6 +601,8 @@ public class Symtab {
         typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
         recordType = enterClass("java.lang.Record");
         switchBootstrapsType = enterClass("java.lang.runtime.SwitchBootstraps");
+        constantBootstrapsType = enterClass("java.lang.invoke.ConstantBootstraps");
+
         valueBasedType = enterClass("jdk.internal.ValueBased");
         valueBasedInternalType = enterSyntheticAnnotation("jdk.internal.ValueBased+Annotation");
         // For serialization lint checking

@@ -135,12 +135,6 @@ public class SwitchBootstraps {
         if (label == null) {
             throw new IllegalArgumentException("null label found");
         }
-        Class<?> labelClass = label.getClass();
-        if (labelClass != Class.class &&
-            labelClass != String.class &&
-            labelClass != Integer.class) {
-            throw new IllegalArgumentException("label with illegal type found: " + label.getClass());
-        }
     }
 
     private static int doTypeSwitch(Object target, int startIndex, Object[] labels) {
@@ -149,9 +143,45 @@ public class SwitchBootstraps {
 
         // Dumbest possible strategy
         Class<?> targetClass = target.getClass();
-        for (int i = startIndex; i < labels.length; i++) {
+
+        // The last item in the `labels` array is used to pass the selector type
+        Object selector = labels[labels.length - 1];
+
+        for (int i = startIndex; i < labels.length - 1; i++) {
             Object label = labels[i];
             if (label instanceof Class<?> c) {
+                if (c.isPrimitive()) {
+                    try {
+                        // selector instanceof p         // where selector: Object , p: primitive
+                        // =>
+                        // selector instanceof Primitive // where selector: Object , p: box of primitive
+                        if (((Class<?>) selector).isInstance(Object.class)) {
+                            if ((c.isAssignableFrom(byte.class) && target instanceof Byte) ||
+                                 (c.isAssignableFrom(short.class) && target instanceof Short) ||
+                                 (c.isAssignableFrom(char.class) && target instanceof Character) ||
+                                 (c.isAssignableFrom(int.class) && target instanceof Integer) ||
+                                 (c.isAssignableFrom(double.class) && target instanceof Double) ||
+                                 (c.isAssignableFrom(float.class) && target instanceof Float) ||
+                                 (c.isAssignableFrom(long.class) && target instanceof Long)) return i;
+                        }
+                        else if (!((Class<?>) selector).isPrimitive()) {
+                            if ((c.equals(byte.class) && target instanceof Byte) ||
+                                (c.equals(short.class) && target instanceof Short) ||
+                                (c.equals(char.class) && target instanceof Character) ||
+                                (c.equals(int.class) && target instanceof Integer) ||
+                                (c.equals(double.class) && target instanceof Double) ||
+                                (c.equals(float.class) && target instanceof Float)||
+                                (c.equals(long.class) && target instanceof Long))
+                                return i;
+                        } else {
+                            if (exactnessCheck(target, selector, c)) {
+                                return i;
+                            }
+                        }
+                    } catch (Throwable e) {
+                        throw new RuntimeException(e);
+                    }
+                }
                 if (c.isAssignableFrom(targetClass))
                     return i;
             } else if (label instanceof Integer constant) {
@@ -166,6 +196,17 @@ public class SwitchBootstraps {
         }
 
         return labels.length;
+    }
+
+    private static boolean exactnessCheck(Object target, Object selector, Class<?> c) throws Throwable {
+        // selector instanceof p    // where selector: p1 , p: p2
+        // =>
+        // ExactnessMethods.p1_p2()
+        String methodName = selector.toString().substring(selector.toString().lastIndexOf(".") + 1) + "_" + c;
+        MethodType methodType = MethodType.methodType(boolean.class, (Class<?>) selector);
+        MethodHandle meth = MethodHandles.lookup().findStatic(ExactnessMethods.class, methodName, methodType);
+        boolean ret = (boolean) meth.invoke(target);
+        return ret;
     }
 
     /**

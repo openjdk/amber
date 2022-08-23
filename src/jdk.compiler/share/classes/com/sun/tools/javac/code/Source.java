@@ -230,6 +230,7 @@ public enum Source {
         REDUNDANT_STRICTFP(JDK17),
         UNCONDITIONAL_PATTERN_IN_INSTANCEOF(JDK19, Fragments.FeatureUnconditionalPatternsInInstanceof, DiagKind.PLURAL),
         RECORD_PATTERNS(JDK19, Fragments.FeatureDeconstructionPatterns, DiagKind.PLURAL),
+        PRIMITIVE_PATTERNS(JDK20, Fragments.FeaturePrimitivePatterns, DiagKind.PLURAL),
         ;
 
         enum DiagKind {

@@ -26,6 +26,7 @@
 package com.sun.tools.javac.comp;
 
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.DefaultCaseLabelTree;
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Kinds;
@@ -68,6 +69,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.LinkedHashMap;
+import java.util.stream.Stream;
 
 import com.sun.tools.javac.code.Symbol.MethodSymbol;
 import com.sun.tools.javac.code.Symbol.RecordComponent;
@@ -478,12 +480,33 @@ public class TransPatterns extends TreeTranslator {
                                                                     List.of(new WildcardType(syms.objectType, BoundKind.UNBOUND,
                                                                                              syms.boundClass)),
                                                                     syms.classType.tsym)));
+
+            // The boolean flag `hasUnconditionalPattern` is true when either there
+            // is a default case or an unconditional pattern. Consequently, we
+            // disambiguate. The last should be the one before the unconditional or the default case.
+            Stream<JCCase> effectiveCases = null;
+            if (cases.stream().flatMap(c -> c.labels.stream()).noneMatch(p -> p.hasTag(Tag.DEFAULTCASELABEL))) {
+                effectiveCases = cases.stream()
+                        .limit(hasUnconditionalPattern ? cases.size() - 1 : cases.size());
+            } else {
+                effectiveCases = cases.stream()
+                        .limit(cases.size());
+            }
+
             LoadableConstant[] staticArgValues =
-                    cases.stream()
+                    effectiveCases
                          .flatMap(c -> c.labels.stream())
                          .map(l -> toLoadableConstant(l, seltype))
                          .filter(c -> c != null)
-                         .toArray(s -> new LoadableConstant[s]);
+                         .toArray(s -> new LoadableConstant[s + 1]);
+
+            // The last item in the `labels` array is used to pass the selector type (potentially primitive)
+            if (seltype.isPrimitive()) {
+                staticArgValues[staticArgValues.length - 1] = makePrimitive(tree.pos(), seltype);
+            }
+            else {
+                staticArgValues[staticArgValues.length - 1] = (LoadableConstant) seltype;
+            }
 
             boolean enumSelector = seltype.tsym.isEnum();
             Name bootstrapName = enumSelector ? names.enumSwitch : names.typeSwitch;
@@ -621,6 +644,61 @@ public class TransPatterns extends TreeTranslator {
         }
     }
 
+    private Symbol.DynamicVarSymbol makePrimitive(DiagnosticPosition pos, Type primitiveType) {
+        Assert.checkNonNull(currentClass);
+
+        List<Type> bsm_staticArgs = List.of(syms.methodHandleLookupType,
+                syms.stringType,
+                new ClassType(syms.classType.getEnclosingType(),
+                        List.of(syms.constantBootstrapsType),
+                        syms.classType.tsym));
+
+        Name bootstrapName = names.fromString("primitiveClass");
+        MethodSymbol bsm = rs.resolveInternalMethod(pos, env, syms.constantBootstrapsType,
+                bootstrapName, bsm_staticArgs, List.nil());
+
+        PrimitiveGenerator primitiveGenerator = new PrimitiveGenerator();
+        primitiveGenerator.assembleSig(primitiveType);
+        return new Symbol.DynamicVarSymbol(names.fromString(primitiveGenerator.sb.toString()),
+                syms.noSymbol,
+                new Symbol.MethodHandleSymbol(bsm),
+                syms.classType,
+                new LoadableConstant[]{});
+    }
+
+    private class PrimitiveGenerator extends Types.SignatureGenerator {
+
+        /**
+         * An output buffer for type signatures.
+         */
+        StringBuilder sb = new StringBuilder();
+
+        PrimitiveGenerator() {
+            super(types);
+        }
+
+        @Override
+        protected void append(char ch) {
+            sb.append(ch);
+        }
+
+        @Override
+        protected void append(byte[] ba) {
+            sb.append(new String(ba));
+        }
+
+        @Override
+        protected void append(Name name) {
+            sb.append(name.toString());
+        }
+
+        @Override
+        public String toString() {
+            return sb.toString();
+        }
+    }
+
+
     JCMethodInvocation makeApply(JCExpression selector, Name name, List<JCExpression> args) {
         MethodSymbol method = rs.resolveInternalMethod(
                 currentClassTree.pos(), env,
@@ -641,16 +719,23 @@ public class TransPatterns extends TreeTranslator {
     }
 
     private Type principalType(JCTree p) {
+        if (p instanceof JCPattern jcp && jcp.type.isPrimitive()) {
+            return jcp.type;
+        }
         return types.boxedTypeOrType(types.erasure(TreeInfo.primaryPatternType(p)));
     }
 
     private LoadableConstant toLoadableConstant(JCCaseLabel l, Type selector) {
         if (l.hasTag(Tag.PATTERNCASELABEL)) {
             Type principalType = principalType(((JCPatternCaseLabel) l).pat);
-            if (types.isSubtype(selector, principalType)) {
-                return (LoadableConstant) selector;
+            if (((JCPatternCaseLabel) l).pat.type.isReference()) {
+                if (types.isSubtype(selector, principalType)) {
+                    return (LoadableConstant) selector;
+                } else {
+                    return (LoadableConstant) principalType;
+                }
             } else {
-                return (LoadableConstant) principalType;
+                return makePrimitive(l.pos(), principalType);
             }
         } else if (l.hasTag(Tag.CONSTANTCASELABEL)&& !TreeInfo.isNullCaseLabel(l)) {
             JCExpression expr = ((JCConstantCaseLabel) l).expr;
@@ -660,8 +745,10 @@ public class TransPatterns extends TreeTranslator {
                 Assert.checkNonNull(expr.type.constValue());
 
                 return switch (expr.type.getTag()) {
-                    case BYTE, CHAR,
-                         SHORT, INT -> LoadableConstant.Int((Integer) expr.type.constValue());
+                    case BYTE, CHAR, SHORT, INT, BOOLEAN -> LoadableConstant.Int((Integer) expr.type.constValue());
+                    case LONG -> LoadableConstant.Long((Long) expr.type.constValue());
+                    case FLOAT -> LoadableConstant.Float((Float) expr.type.constValue());
+                    case DOUBLE -> LoadableConstant.Double((Double) expr.type.constValue());
                     case CLASS -> LoadableConstant.String((String) expr.type.constValue());
                     default -> throw new AssertionError();
                 };

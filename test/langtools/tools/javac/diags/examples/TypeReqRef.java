@@ -25,6 +25,8 @@
 // key: compiler.err.type.found.req
 
 class TypeReqRef {
-    int i;
-    boolean b = (i instanceof Object);
+    {
+        int i;
+        synchronized (i) {}
+    }
 }
