@@ -25,6 +25,7 @@
 
 package com.sun.tools.javac.comp;
 
+import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Preview;
 import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Symbol;
@@ -573,6 +574,25 @@ public final class TransLiterals extends TreeTranslator {
             throw ex;
         } finally {
             make.at(prevPos);
+        }
+    }
+
+    public void visitVarDef(JCVariableDecl tree) {
+        MethodSymbol prevMethodSym = currentMethodSym;
+        try {
+            tree.mods = translate(tree.mods);
+            tree.vartype = translate(tree.vartype);
+            if (currentMethodSym == null) {
+                // A class or instance field initializer.
+                currentMethodSym =
+                        new MethodSymbol((tree.mods.flags& Flags.STATIC) | Flags.BLOCK,
+                                names.empty, null,
+                                currentClass);
+            }
+            if (tree.init != null) tree.init = translate(tree.init);
+            result = tree;
+        } finally {
+            currentMethodSym = prevMethodSym;
         }
     }
 
