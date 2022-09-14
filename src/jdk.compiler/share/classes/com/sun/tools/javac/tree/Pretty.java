@@ -26,7 +26,6 @@
 package com.sun.tools.javac.tree;
 
 import java.io.*;
-import java.util.stream.Collectors;
 
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
@@ -1446,23 +1445,6 @@ public class Pretty extends JCTree.Visitor {
                     print("\"" + Convert.quote(tree.value.toString()) + "\"");
                     break;
             }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    public void visitStringTemplate(JCStringTemplate tree) {
-        try {
-            JCExpression policy = tree.policy;
-            print("[");
-            if (policy != null) {
-                printExpr(policy);
-            }
-            print("]");
-            print("\"" + tree.fragments.stream().collect(Collectors.joining("\\{}")) + "\"");
-            print("(");
-            printExprs(tree.expressions);
-            print(")");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

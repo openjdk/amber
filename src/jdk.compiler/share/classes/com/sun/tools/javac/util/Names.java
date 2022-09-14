@@ -222,16 +222,6 @@ public class Names {
     public final Name typeSwitch;
     public final Name enumSwitch;
 
-    // templated string
-    public final Name apply;
-    public final Name concat;
-    public final Name fragments;
-    public final Name fragmentsUpper;
-    public final Name valuesUpper;
-    public final Name toList;
-    public final Name str;
-    public final Name templatedStringBSM;
-
     public final Name.Table table;
 
     public Names(Context context) {
@@ -404,16 +394,6 @@ public class Names {
         // sealed types
         permits = fromString("permits");
         sealed = fromString("sealed");
-
-        // templated string
-        apply = fromString("apply");
-        concat = fromString("concat");
-        fragments = fromString("fragments");
-        fragmentsUpper = fromString("FRAGMENTS");
-        valuesUpper = fromString("VALUES");
-        toList = fromString("toList");
-        str = fromString("STR");
-        templatedStringBSM = fromString("templatedStringBSM");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

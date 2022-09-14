@@ -64,7 +64,6 @@ public @interface PreviewFeature {
         RECORD_PATTERNS,
         VIRTUAL_THREADS,
         FOREIGN,
-        STRING_TEMPLATES,
         /**
          * A key for testing.
          */

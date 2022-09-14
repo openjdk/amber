@@ -176,11 +176,6 @@ public interface Tree {
         INSTANCE_OF(InstanceOfTree.class),
 
         /**
-         * Used for instances of {@link StringTemplateTree}.
-         */
-        TEMPLATE(StringTemplateTree.class),
-
-        /**
          * Used for instances of {@link LabeledStatementTree}.
          */
         LABELED_STATEMENT(LabeledStatementTree.class),
