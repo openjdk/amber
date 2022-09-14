@@ -199,17 +199,12 @@ public interface TemplatedString {
      */
     public static String toString(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString, "templatedString should not be null");
-
-        String string = "\"" +
-                        templatedString.fragments()
-                            .stream()
-                            .collect(Collectors.joining("\\{}")) +
-                        "\"(";
+        String fragments = "[\"" + String.join("\", \"", templatedString.fragments()) + "\"](";
 
         return templatedString.values()
                 .stream()
                 .map(v -> String.valueOf(v))
-                .collect(Collectors.joining(", ", string, ")"));
+                .collect(Collectors.joining(", ", fragments, ")"));
     }
 
     /**
