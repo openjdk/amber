@@ -23,15 +23,9 @@
  * questions.
  */
 
-import jdk.internal.javac.ParticipatesInPreview;
-
 /**
- * Defines non-final APIs for concurrent programming.
- * {@Incubating}
+ * Provides support for string templates and template processors.
  *
- * @moduleGraph
+ * @since 20
  */
-@ParticipatesInPreview
-module jdk.incubator.concurrent {
-    exports jdk.incubator.concurrent;
-}
+package java.lang.template;

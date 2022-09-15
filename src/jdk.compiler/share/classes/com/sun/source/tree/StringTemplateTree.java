@@ -23,15 +23,33 @@
  * questions.
  */
 
-import jdk.internal.javac.ParticipatesInPreview;
+package com.sun.source.tree;
+
+import java.util.List;
 
 /**
- * Defines non-final APIs for concurrent programming.
- * {@Incubating}
+ * A tree node for a string template expression.
  *
- * @moduleGraph
  */
-@ParticipatesInPreview
-module jdk.incubator.concurrent {
-    exports jdk.incubator.concurrent;
+public interface StringTemplateTree extends ExpressionTree {
+    /**
+     * Returns templated string processor (may be qualified) or null.
+     *
+     * @return templated string processor
+     */
+    ExpressionTree getProcessor();
+
+    /**
+     * Returns string fragments.
+     *
+     * @return string fragments
+     */
+    List<String> getFragments();
+
+    /**
+     * Returns list of expressions.
+     *
+     * @return list of expressions
+     */
+    List<? extends ExpressionTree> getExpressions();
 }

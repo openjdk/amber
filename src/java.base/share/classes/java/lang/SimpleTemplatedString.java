@@ -23,15 +23,16 @@
  * questions.
  */
 
-import jdk.internal.javac.ParticipatesInPreview;
+package java.lang;
+
+import java.util.List;
 
 /**
- * Defines non-final APIs for concurrent programming.
- * {@Incubating}
+ * Generic TemplatedString.
  *
- * @moduleGraph
+ * @param fragments  immutable list of string fragments from string template
+ * @param values     immutable list of expression values
  */
-@ParticipatesInPreview
-module jdk.incubator.concurrent {
-    exports jdk.incubator.concurrent;
-}
+record SimpleTemplatedString(List<String> fragments,
+                             List<Object> values
+) implements TemplatedString {}
