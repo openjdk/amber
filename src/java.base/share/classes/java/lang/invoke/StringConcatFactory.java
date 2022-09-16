@@ -32,6 +32,7 @@ import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
 import java.lang.invoke.MethodHandles.Lookup;
+import java.lang.template.TemplatedString;
 import java.util.*;
 
 import static java.lang.invoke.MethodType.methodType;

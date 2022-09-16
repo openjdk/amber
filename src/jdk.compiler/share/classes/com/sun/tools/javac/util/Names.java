@@ -224,7 +224,7 @@ public class Names {
 
     // templated string
     public final Name apply;
-    public final Name concat;
+    public final Name interpolate;
     public final Name fragments;
     public final Name fragmentsUpper;
     public final Name valuesUpper;
@@ -407,7 +407,7 @@ public class Names {
 
         // templated string
         apply = fromString("apply");
-        concat = fromString("concat");
+        interpolate = fromString("interpolate");
         fragments = fromString("fragments");
         fragmentsUpper = fromString("FRAGMENTS");
         valuesUpper = fromString("VALUES");

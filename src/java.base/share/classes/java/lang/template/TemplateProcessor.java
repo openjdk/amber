@@ -92,7 +92,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link TemplateProcessor} is a {@link FunctionalInterface}. This permits declaration of a
  * processor using lambda expressions;
  * {@snippet :
- * TemplateProcessor<String, RuntimeException> concatProcessor = ts -> {
+ * TemplateProcessor<String, RuntimeException> templateProcessor = ts -> {
  *             StringBuilder sb = new StringBuilder();
  *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
@@ -106,7 +106,7 @@ import jdk.internal.javac.PreviewFeature;
  * The {@link FunctionalInterface} {@link SimpleProcessor} is supplied to avoid
  * declaring checked exceptions;
  * {@snippet :
- * SimpleProcessor<String> concatProcessor = ts -> {
+ * SimpleProcessor<String> simpleProcessor = ts -> {
  *             StringBuilder sb = new StringBuilder();
  *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
@@ -120,7 +120,7 @@ import jdk.internal.javac.PreviewFeature;
  * The {@link FunctionalInterface} {@link StringProcessor} is supplied if
  * the processor returns {@link String};
  * {@snippet :
- * StringProcessor concatProcessor = ts -> {
+ * StringProcessor stringProcessor = ts -> {
  *             StringBuilder sb = new StringBuilder();
  *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {
@@ -131,26 +131,26 @@ import jdk.internal.javac.PreviewFeature;
  *            return sb.toString();
  *         };
  * }
- * The {@link TemplatedString#concat()} method is available for those processors that just need
- * to work with the concatenation;
+ * The {@link TemplatedString#interpolate()} method is available for those processors
+ * that just need to work with the interpolatation;
  * {@snippet :
- * StringProcessor concatProcessor = TemplateString::concat;
+ * StringProcessor simpleProcessor = TemplateString::interpolate;
  * }
- * or simply transform the string concatenation into something other than
+ * or simply transform the interpolatation into something other than
  * {@link String};
  * {@snippet :
- * SimpleProcessor<JSONObject> jsonProcessor = ts -> new JSONObject(ts.concat());
+ * SimpleProcessor<JSONObject> jsonProcessor = ts -> new JSONObject(ts.interpolate());
  * }
  * @implNote The Java compiler automatically imports
- * {@link java.lang.TemplatedString#STR} and {@link java.lang.TemplatedString#FMT}
+ * {@link TemplatedString#STR} and {@link TemplatedString#FMT}
  *
  * @param <R>  Processor's apply result type.
  * @param <E>  Exception thrown type.
  *
- * @see java.lang.TemplatedString
+ * @see java.lang.template.TemplatedString
  * @see java.lang.template.SimpleProcessor
  * @see java.lang.template.StringProcessor
- * @see java.lang.template.FormatterProcessor
+ * @see java.util.FormatProcessor
  *
  * @since 20
  */

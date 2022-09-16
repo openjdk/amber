@@ -23,16 +23,12 @@
  * questions.
  */
 
-package java.lang.runtime;
+package java.lang.template;
 
 import java.lang.invoke.*;
 import java.lang.reflect.Modifier;
-import java.lang.template.ProcessorLinkage;
-import java.lang.template.TemplateProcessor;
 import java.util.*;
 
-import jdk.internal.access.JavaLangAccess;
-import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -43,9 +39,6 @@ import jdk.internal.javac.PreviewFeature;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public final class TemplateRuntime {
-
-    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
-
     /**
      * Private constructor.
      */
@@ -178,7 +171,7 @@ public final class TemplateRuntime {
         private static Object defaultApply(List<String> fragments,
                                            TemplateProcessor<Object, Throwable> processor,
                                            Object[] values) throws Throwable {
-            return processor.apply(JLA.newTemplatedString(fragments, List.of(values)));
+            return processor.apply(new SimpleTemplatedString(fragments, List.of(values)));
         }
 
         /**

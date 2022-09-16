@@ -23,7 +23,7 @@
  * questions.
  */
 
-package java.lang;
+package java.lang.template;
 
 import java.util.List;
 

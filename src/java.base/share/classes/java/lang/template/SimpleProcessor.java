@@ -34,7 +34,7 @@ import jdk.internal.javac.PreviewFeature;
  * This interface simplifies declaration of {@link TemplateProcessor TemplateProcessors}
  * that do not throw checked exceptions. For example:
  * {@snippet :
- * SimpleProcessor<String> concatProcessor = ts -> {
+ * SimpleProcessor<String> simpleProcessor = ts -> {
  *             StringBuilder sb = new StringBuilder();
  *             Iterator<String> fragmentsIter = ts.fragments().iterator();
  *             for (Object value : ts.values()) {

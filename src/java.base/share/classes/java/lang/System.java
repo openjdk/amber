@@ -2516,11 +2516,6 @@ public final class System {
                 return sb.prepend(lengthCoder, buf);
             }
 
-            @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-            public TemplatedString newTemplatedString(List<String> fragments, List<Object> values) {
-                return new SimpleTemplatedString(fragments, values);
-            }
-
             public String join(String prefix, String suffix, String delimiter, String[] elements, int size) {
                 return String.join(prefix, suffix, delimiter, elements, size);
             }

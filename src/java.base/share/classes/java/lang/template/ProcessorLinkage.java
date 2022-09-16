@@ -29,8 +29,7 @@ import java.util.List;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.lang.template.FormatterProcessor;
-import java.lang.template.ProcessorLinkage;
+import java.util.FormatProcessor;
 
 import jdk.internal.javac.PreviewFeature;
 
@@ -46,7 +45,7 @@ import jdk.internal.javac.PreviewFeature;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public sealed interface ProcessorLinkage permits FormatterProcessor {
+public sealed interface ProcessorLinkage permits FormatProcessor {
 	/**
 	 * Construct a {@link MethodHandle} that constructs a result based on the
 	 * bootstrap method information.

@@ -343,8 +343,8 @@ public class TypeEnter implements Completer {
 
                 try {
                     String autoImports = """
-                            import static java.lang.TemplatedString.STR;
-                            import static java.lang.TemplatedString.FMT;
+                            import static java.lang.template.TemplatedString.STR;
+                            import static java.lang.template.TemplatedString.FMT;
                             """;
 
                     Parser parser = parserFactory.newParser(autoImports, false, false, false, false);

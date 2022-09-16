@@ -23,9 +23,8 @@
  * questions.
  */
 
-package java.lang;
+package java.lang.template;
 
-import java.lang.template.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,7 +68,7 @@ import jdk.internal.javac.PreviewFeature;
  * <p>
  * {@link TemplatedString TemplatedStrings} are primarily used in conjuction
  * with {@link TemplateProcessor} to produce meaningful results. For example, if a
- * user wants basic string concatenation, then they can use a string template
+ * user wants string interpolation, then they can use a string template
  * expression with the standard {@link TemplatedString#STR} processor.
  * {@snippet :
  * int x = 10;
@@ -87,14 +86,14 @@ import jdk.internal.javac.PreviewFeature;
  * {@link TemplatedString#of(String)} and {@link TemplatedString#of(List, List)}
  * can be used to construct {@link TemplatedString TemplatedStrings}. The
  * {@link TemplateBuilder} class can be used to construct
- * {@link java.lang.TemplatedString TemplatedStrings} from parts; string fragments,
+ * {@link TemplatedString TemplatedStrings} from parts; string fragments,
  * values and other {@link TemplatedString TemplatedStrings}.
  * <p>
- * The {@link TemplatedString#concat()} method provides a simple way to perform
- * basic string concatenation of the {@link TemplatedString}.
+ * The {@link TemplatedString#interpolate()} method provides a simple way to perform
+ * string interpolation of the {@link TemplatedString}.
  * <p>
- * {@link TemplateProcessor Template processors} typically use the following pattern to perform
- * concatenation:
+ * {@link TemplateProcessor Template processors} typically use the following code pattern
+ * to perform composition:
  * {@snippet :
  * StringBuilder sb = new StringBuilder();
  * Iterator<String> fragmentsIter = ts.fragments().iterator(); // @highlight substring="fragments()"
@@ -114,7 +113,7 @@ import jdk.internal.javac.PreviewFeature;
  * @see java.lang.template.TemplateProcessor
  * @see java.lang.template.SimpleProcessor
  * @see java.lang.template.StringProcessor
- * @see java.lang.template.FormatterProcessor
+ * @see java.util.FormatProcessor
  *
  * @since 20
  */
@@ -153,14 +152,14 @@ public interface TemplatedString {
 
 
     /**
-     * {@return the basic concatenation of fragments and values}
+     * {@return the interpolation of the TemplatedString}
      */
-    default String concat() {
-        return TemplatedString.concat(this);
+    default String interpolate() {
+        return TemplatedString.interpolate(this);
     }
 
     /**
-     * Returns the result of applying the specified processor to this {@link java.lang.TemplatedString}.
+     * Returns the result of applying the specified processor to this {@link TemplatedString}.
      * This method can be used as an alternative to string template expressions. For example,
      * {@snippet :
      * String result1 = STR."\{x} + \{y} = \{x + y}";
@@ -208,13 +207,13 @@ public interface TemplatedString {
     }
 
     /**
-     * {@return the basic concatenation of fragments and values}
+     * {@return an interpolatation of fragments and values}
      *
      * @param templatedString  the {@link TemplatedString} to process
      *
      * @throws NullPointerException if templatedString is null
      */
-    private static String concat(TemplatedString templatedString) {
+    private static String interpolate(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString, "templatedString must not be null");
 
         List<String> fragments = templatedString.fragments();
@@ -285,32 +284,38 @@ public interface TemplatedString {
     }
 
     /**
-     * Simple concatenation processor instance.
+     * Interpolation template processor instance.
      * Example: {@snippet :
      * int x = 10;
      * int y = 20;
      * String result = STR."\{x} + \{y} = \{x + y}"; // @highlight substring="STR"
      * }
-     * @implNote The result of concatenation is not interned.
+     * @implNote The result of interpolation is not interned.
      */
     public static final StringProcessor STR = new StringProcessor() {
         @Override
         public String apply(TemplatedString templatedString) {
             Objects.requireNonNull(templatedString);
 
-            return templatedString.concat();
+            return templatedString.interpolate();
         }
     };
 
     /**
-     * Predefined FormatterProcessor instance that uses Locale.US.
+     * This predefined FormatProcessor instance constructs a String result using {@link
+     * Formatter}. Unlike {@link Formatter}, FormatProcessor uses the value from
+     * the embedded expression that follows immediately after the
+     * <a href="../../util/Formatter.html#syntax">format specifier</a>.
+     * TemplatedString expressions without a preceeding specifier, use "%s" by
+
      * Example: {@snippet :
      * int x = 123;
      * int y = 987;
      * String result = FMT."%3d\{x} + %3d\{y} = %4d\{x + y}"; // @highlight substring="FMT"
      * }
+     * {@link FMT} uses the Locale.US {@link Locale}.
      */
-    public static final FormatterProcessor FMT = new FormatterProcessor(Locale.US);
+    public static final FormatProcessor FMT = new FormatProcessor(Locale.US);
 
     /**
      * Factory for creating a new {@link TemplateBuilder} instance.
@@ -328,7 +333,7 @@ public interface TemplatedString {
      * To use, construct a new {@link TemplateBuilder} using
      * {@link TemplatedString#builder}, then chain invokes of
      * {@link TemplateBuilder#fragment} or {@link TemplateBuilder#value} to
-     * build up the {@link java.lang.TemplatedString}.
+     * build up the {@link TemplatedString}.
      * {@link TemplateBuilder#template(TemplatedString)} can be used to add the
      * fragments and values from another {@link TemplatedString}.
      * {@link TemplateBuilder#build()} can be invoked at the end of the chain to

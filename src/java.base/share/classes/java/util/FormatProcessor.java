@@ -23,18 +23,12 @@
  * questions.
  */
 
-package java.lang.template;
+package java.util;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
+import java.lang.invoke.*;
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.invoke.MethodType;
-import java.util.Formatter;
-import java.util.IllegalFormatException;
-import java.util.List;
-import java.util.Locale;
-import java.util.MissingFormatArgumentException;
-import java.util.Objects;
+import java.lang.template.*;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,8 +36,9 @@ import jdk.internal.javac.PreviewFeature;
 
 /**
  * This {@link TemplateProcessor} constructs a String result using {@link
- * Formatter}. Unlike {@link Formatter}, FormatterProcessor locates values in
- * embedded expressions that follow immediately after the format specifier.
+ * Formatter}. Unlike {@link Formatter}, FormatProcessor uses the value from
+ * the embedded expression that follows immediately after the
+ * <a href="../util/Formatter.html#syntax">format specifier</a>.
  * TemplatedString expressions without a preceeding specifier, use "%s" by
  * default. Example:
  * {@snippet :
@@ -63,7 +58,7 @@ import jdk.internal.javac.PreviewFeature;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public final class FormatterProcessor implements StringProcessor, ProcessorLinkage {
+public final class FormatProcessor implements StringProcessor, ProcessorLinkage {
     /**
      * {@link Locale} used to format
      */
@@ -74,7 +69,7 @@ public final class FormatterProcessor implements StringProcessor, ProcessorLinka
      *
      * @param locale  {@link Locale} used to format
      */
-    public FormatterProcessor(Locale locale) {
+    public FormatProcessor(Locale locale) {
         this.locale = locale;
     }
 

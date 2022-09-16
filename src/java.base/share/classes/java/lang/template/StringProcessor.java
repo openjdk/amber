@@ -35,7 +35,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link java.lang.template.TemplateProcessor TemplateProcessors}
  * that do not throw checked exceptions and have a result type of {@link String}. For example:
  * {@snippet :
- * StringProcessor processor = ts -> ts.concat();
+ * StringProcessor processor = ts -> ts.interpolate();
  * }
  *
  * @since 20

@@ -96,7 +96,7 @@ import jdk.internal.javac.PreviewFeature;
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public class ProcessorBuilder {
 	/**
-	 * True if the processor is a simple concatenation processor. The default
+	 * True if the processor is a simple interpolatation processor. The default
 	 * is {@code true}. This field gets set to false if any of the state is
 	 * changed.
 	 */
@@ -316,7 +316,7 @@ public class ProcessorBuilder {
 		final String marker = this.marker;
 		final BiFunction<String, Object, String> formatValue = this.formatValue;
 
-		return isSimple ? ts -> ts.concat()
+		return isSimple ? ts -> ts.interpolate()
 				: ts -> {
 			ts = preliminary.apply(ts);
 			List<String> fragments = ts.fragments();

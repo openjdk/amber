@@ -237,7 +237,7 @@ public final class TransLiterals extends TreeTranslator {
         JCVariableDecl fragmentsVar;
         JCVariableDecl valuesVar;
         List<JCVariableDecl> fields;
-        MethodInfo concatMethod;
+        MethodInfo interpolateMethod;
 
         TransStringTemplate(JCStringTemplate tree) {
             this.tree = tree;
@@ -255,7 +255,7 @@ public final class TransLiterals extends TreeTranslator {
             this.fragmentsVar = null;
             this.valuesVar = null;
             this.fields = List.nil();
-            this.concatMethod = null;
+            this.interpolateMethod = null;
         }
 
         JCExpression concatExpression(List<String> fragments, List<JCExpression> expressions) {
@@ -394,10 +394,10 @@ public final class TransLiterals extends TreeTranslator {
             method.addStatement(make.Return(createApplyToList(createAccessors(), syms.objectType)));
         }
 
-        void createConcatMethod() {
-            concatMethod = createMethod(SYNTHETIC | PUBLIC, names.concat,
+        void createInterpolateMethod() {
+            interpolateMethod = createMethod(SYNTHETIC | PUBLIC, names.interpolate,
                     syms.stringType, List.nil(), templatedStringClass);
-            concatMethod.addStatement(make.Return(concatExpression(fragments, createAccessors())));
+            interpolateMethod.addStatement(make.Return(concatExpression(fragments, createAccessors())));
         }
 
         void createToStringMethod() {
@@ -449,7 +449,7 @@ public final class TransLiterals extends TreeTranslator {
                 } else {
                     createFields();
                     createValuesMethod();
-                    createConcatMethod();
+                    createInterpolateMethod();
                 }
 
                 createInitMethod();

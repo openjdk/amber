@@ -87,7 +87,7 @@ public class Basic {
         TemplatedString ts = "\{x} + \{y} = \{x + y}";
         ASSERT(ts.values(), List.of(x, y, x + y));
         ASSERT(ts.fragments(), List.of("", " + ", " = ", ""));
-        ASSERT(ts.concat(), x + " + " + y + " = " + (x + y));
+        ASSERT(ts.interpolate(), x + " + " + y + " = " + (x + y));
     }
 
     /*
@@ -114,7 +114,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              """;
         ASSERT(ts250.values().size(), 250);
-        ASSERT(ts250.concat(), """
+        ASSERT(ts250.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -150,7 +150,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}
              """;
         ASSERT(ts251.values().size(), 251);
-        ASSERT(ts251.concat(), """
+        ASSERT(ts251.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -186,7 +186,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}
              """;
         ASSERT(ts252.values().size(), 252);
-        ASSERT(ts252.concat(), """
+        ASSERT(ts252.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -222,7 +222,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}
              """;
         ASSERT(ts253.values().size(), 253);
-        ASSERT(ts253.concat(), """
+        ASSERT(ts253.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -258,7 +258,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}
              """;
         ASSERT(ts254.values().size(), 254);
-        ASSERT(ts254.concat(), """
+        ASSERT(ts254.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -294,7 +294,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}
              """;
         ASSERT(ts255.values().size(), 255);
-        ASSERT(ts255.concat(), """
+        ASSERT(ts255.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -330,7 +330,7 @@ public class Basic {
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}
              """;
         ASSERT(ts256.values().size(), 256);
-        ASSERT(ts256.concat(), """
+        ASSERT(ts256.interpolate(), """
                9999999999 9999999999
                9999999999 9999999999
                9999999999 9999999999
@@ -386,14 +386,14 @@ public class Basic {
 
         ASSERT(tsNoValues.values(), List.of());
         ASSERT(tsNoValues.fragments(), List.of("No Values"));
-        ASSERT(tsNoValues.concat(), STR."No Values");
+        ASSERT(tsNoValues.interpolate(), STR."No Values");
 
         int x = 10, y = 20;
         TemplatedString src = "\{x} + \{y} = \{x + y}";
         TemplatedString tsValues = TemplatedString.of(src.fragments(), src.values());
         ASSERT(tsValues.fragments(), List.of("", " + ", " = ", ""));
         ASSERT(tsValues.values(), List.of(x, y, x + y));
-        ASSERT(tsValues.concat(), x + " + " + y + " = " + (x + y));
+        ASSERT(tsValues.interpolate(), x + " + " + y + " = " + (x + y));
     }
 
     /*
@@ -481,7 +481,7 @@ public class Basic {
         return sb.toString();
     };
 
-    static StringProcessor processor4 = TemplatedString::concat;
+    static StringProcessor processor4 = TemplatedString::interpolate;
 
     static void templateProcessorCoverage() {
         try {
