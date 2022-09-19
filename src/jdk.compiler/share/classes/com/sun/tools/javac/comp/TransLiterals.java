@@ -529,7 +529,14 @@ public final class TransLiterals extends TreeTranslator {
         }
 
         boolean isSTRProcessor() {
-            return isProcessor(names.str);
+            if (processor instanceof JCIdent ident && ident.sym instanceof VarSymbol varSym) {
+                if (varSym.flags() == (PUBLIC | FINAL | STATIC) &&
+                        varSym.name == names.str &&
+                        types.isSameType(varSym.owner.type, syms.staticImportsType)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         boolean isLinkageProcessor() {

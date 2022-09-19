@@ -69,7 +69,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link TemplatedString TemplatedStrings} are primarily used in conjuction
  * with {@link TemplateProcessor} to produce meaningful results. For example, if a
  * user wants string interpolation, then they can use a string template
- * expression with the standard {@link TemplatedString#STR} processor.
+ * expression with the standard {@link StaticImports#STR} processor.
  * {@snippet :
  * int x = 10;
  * int y = 20;
@@ -282,40 +282,6 @@ public interface TemplatedString {
 
         return new SimpleTemplatedString(fragments, values);
     }
-
-    /**
-     * Interpolation template processor instance.
-     * Example: {@snippet :
-     * int x = 10;
-     * int y = 20;
-     * String result = STR."\{x} + \{y} = \{x + y}"; // @highlight substring="STR"
-     * }
-     * @implNote The result of interpolation is not interned.
-     */
-    public static final StringProcessor STR = new StringProcessor() {
-        @Override
-        public String apply(TemplatedString templatedString) {
-            Objects.requireNonNull(templatedString);
-
-            return templatedString.interpolate();
-        }
-    };
-
-    /**
-     * This predefined FormatProcessor instance constructs a String result using {@link
-     * Formatter}. Unlike {@link Formatter}, FormatProcessor uses the value from
-     * the embedded expression that follows immediately after the
-     * <a href="../../util/Formatter.html#syntax">format specifier</a>.
-     * TemplatedString expressions without a preceeding specifier, use "%s" by
-
-     * Example: {@snippet :
-     * int x = 123;
-     * int y = 987;
-     * String result = FMT."%3d\{x} + %3d\{y} = %4d\{x + y}"; // @highlight substring="FMT"
-     * }
-     * {@link FMT} uses the Locale.US {@link Locale}.
-     */
-    public static final FormatProcessor FMT = new FormatProcessor(Locale.US);
 
     /**
      * Factory for creating a new {@link TemplateBuilder} instance.

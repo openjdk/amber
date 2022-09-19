@@ -224,6 +224,7 @@ public class TypeEnter implements Completer {
             chk.checkImportedPackagesObservable(toplevel);
             toplevel.namedImportScope.finalizeScope();
             toplevel.starImportScope.finalizeScope();
+            toplevel.autoImportScope.finalizeScope();
         } catch (CompletionFailure cf) {
             chk.completionError(toplevel.pos(), cf);
         } finally {
@@ -337,22 +338,28 @@ public class TypeEnter implements Completer {
             importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false), javaLang, env);
         }
 
-        private void autoImports() {
-            if (preview.isEnabled() && preview.isPreview(Feature.STRING_TEMPLATES)) {
+        private void importJavaLang(JCCompilationUnit tree, Env<AttrContext> env, ImportFilter typeImportFilter) {
+            // Import-on-demand java.lang.
+            PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
+            if (javaLang.members().isEmpty() && !javaLang.exists()) {
+                log.error(Errors.NoJavaLang);
+                throw new Abort();
+            }
+            importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false), javaLang, env); // alternative
+            // JCImport imp = make.at(tree.pos()).Import(make.QualIdent(javaLang), false);
+            // env.toplevel.autoImportScope.importAll(types, javaLang.members(), typeImportFilter, imp, cfHandler);
+
+        }
+
+        private void staticImports(JCCompilationUnit tree, Env<AttrContext> env, ImportFilter staticImportFilter) {
+            // Import-static-on-demand java.lang.StaticImports.
+            if (preview.isEnabled() && preview.isPreview(Feature.STATIC_IMPORTS)) {
                 Lint prevLint = chk.setLint(lint.suppress(LintCategory.DEPRECATION, LintCategory.REMOVAL, LintCategory.PREVIEW));
 
                 try {
-                    String autoImports = """
-                            import static java.lang.template.TemplatedString.STR;
-                            import static java.lang.template.TemplatedString.FMT;
-                            """;
-
-                    Parser parser = parserFactory.newParser(autoImports, false, false, false, false);
-                    JCCompilationUnit importTree = parser.parseCompilationUnit();
-
-                    for (JCImport imp : importTree.getImports()) {
-                        doImport(imp);
-                    }
+                    TypeSymbol staticImportsTSym = syms.staticImportsType.tsym;
+                    JCImport imp = make.at(tree.pos()).Import(make.QualIdent(staticImportsTSym), true);
+                    env.toplevel.autoImportScope.importAll(types, staticImportsTSym.members(), staticImportFilter, imp, cfHandler);
                 } finally {
                     chk.setLint(prevLint);
                 }
@@ -381,8 +388,8 @@ public class TypeEnter implements Completer {
                         (origin, sym) -> sym.kind == TYP &&
                                          chk.importAccessible(sym, packge);
 
-                importJavaLang(tree, env);
-                autoImports();
+                importJavaLang(tree, env, typeImportFilter);
+                staticImports(tree, env, staticImportFilter);
 
                 JCModuleDecl decl = tree.getModuleDecl();
 
