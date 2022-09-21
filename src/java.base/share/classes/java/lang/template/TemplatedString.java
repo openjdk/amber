@@ -415,8 +415,7 @@ public interface TemplatedString {
          * @return a new TemplatedString
          */
         public TemplatedString build() {
-            return new SimpleTemplatedString(Collections.unmodifiableList(fragments),
-                                             Collections.unmodifiableList(values));
+            return TemplatedString.of(fragments, values);
         }
 
     }

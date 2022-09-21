@@ -191,7 +191,7 @@ public final class TemplateRuntime {
     }
 
     /**
-     * Collect nullable elements into a unmodifiable list.
+     * Collect nullable elements from an array into a unmodifiable list.
      *
      * @param elements  elements to place in list
      *
@@ -200,7 +200,7 @@ public final class TemplateRuntime {
      * @param <E>  type of elements
      *
      * @implNote Intended for use by {@link TemplatedString} implementations.
-     * Other usage may
+     * Other usage may lead to undesired effects.
      */
     @SuppressWarnings("unchecked")
     public static <E> List<E> toList(E... elements) {
