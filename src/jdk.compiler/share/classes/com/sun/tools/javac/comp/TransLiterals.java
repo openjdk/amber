@@ -532,7 +532,7 @@ public final class TransLiterals extends TreeTranslator {
             if (processor instanceof JCIdent ident && ident.sym instanceof VarSymbol varSym) {
                 if (varSym.flags() == (PUBLIC | FINAL | STATIC) &&
                         varSym.name == names.str &&
-                        types.isSameType(varSym.owner.type, syms.staticImportsType)) {
+                        types.isSameType(varSym.owner.type, syms.templatedStringType)) {
                     return true;
                 }
             }

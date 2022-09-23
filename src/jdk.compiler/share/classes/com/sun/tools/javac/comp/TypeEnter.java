@@ -357,7 +357,7 @@ public class TypeEnter implements Completer {
                 Lint prevLint = chk.setLint(lint.suppress(LintCategory.DEPRECATION, LintCategory.REMOVAL, LintCategory.PREVIEW));
 
                 try {
-                    TypeSymbol staticImportsTSym = syms.staticImportsType.tsym;
+                    TypeSymbol staticImportsTSym = syms.templatedStringType.tsym;
                     JCImport imp = make.at(tree.pos()).Import(make.QualIdent(staticImportsTSym), true);
                     env.toplevel.autoImportScope.importAll(types, staticImportsTSym.members(), staticImportFilter, imp, cfHandler);
                 } finally {
