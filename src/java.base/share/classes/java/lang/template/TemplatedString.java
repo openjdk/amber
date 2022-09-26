@@ -150,12 +150,11 @@ public interface TemplatedString {
      */
     List<Object> values();
 
-
     /**
      * {@return the interpolation of the TemplatedString}
      */
     default String interpolate() {
-        return TemplatedString.interpolate(this);
+        return TemplateRuntime.interpolate(this);
     }
 
     /**
@@ -204,36 +203,6 @@ public interface TemplatedString {
                 .stream()
                 .map(v -> String.valueOf(v))
                 .collect(Collectors.joining(", ", fragments, ")"));
-    }
-
-    /**
-     * {@return an interpolatation of fragments and values}
-     *
-     * @param templatedString  the {@link TemplatedString} to process
-     *
-     * @throws NullPointerException if templatedString is null
-     */
-    private static String interpolate(TemplatedString templatedString) {
-        Objects.requireNonNull(templatedString, "templatedString must not be null");
-
-        List<String> fragments = templatedString.fragments();
-        List<Object> values = templatedString.values();
-
-        if (fragments.size() == 1) {
-            return fragments.get(0);
-        }
-
-        Iterator<String> fragmentsIter = fragments.iterator();
-        StringBuilder sb = new StringBuilder();
-
-        for (Object value : values) {
-            sb.append(fragmentsIter.next());
-            sb.append(value);
-        }
-
-        sb.append(fragmentsIter.next());
-
-        return sb.toString();
     }
 
     /**

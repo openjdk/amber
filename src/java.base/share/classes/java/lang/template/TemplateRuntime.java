@@ -29,6 +29,8 @@ import java.lang.invoke.*;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
 
 /**
@@ -205,6 +207,52 @@ public final class TemplateRuntime {
     @SuppressWarnings("unchecked")
     public static <E> List<E> toList(E... elements) {
         return Collections.unmodifiableList(Arrays.asList(elements));
+    }
+
+    private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
+
+    /**
+     * {@return an interpolatation of fragments and values}
+     *
+     * @param templatedString  the {@link TemplatedString} to process
+     *
+     * @throws NullPointerException if templatedString is null
+     */
+    public static String interpolate(TemplatedString templatedString) {
+        Objects.requireNonNull(templatedString, "templatedString must not be null");
+        return interpolate(templatedString.fragments(), templatedString.values());
+    }
+
+    /**
+     * Creates a string that interleaves the elements of values between the
+     * elements of fragments.
+     *
+     * @param fragments  list of String fragments
+     * @param values     list of expression values
+     *
+     * @return String interpolation of fragments and values
+     */
+    public static String interpolate(List<String> fragments, List<Object> values) {
+        Objects.requireNonNull(fragments, "fragments must not be null");
+        Objects.requireNonNull(values, "values must not be null");
+        int fragmentsSize = fragments.size();
+        int valuesSize = values.size();
+        if (fragmentsSize != valuesSize + 1) {
+            throw new RuntimeException("fragments must have one more element than values");
+        }
+        if (fragmentsSize == 1) {
+            return fragments.get(0);
+        }
+        int size = fragmentsSize + valuesSize;
+        String[] strings = new String[size];
+        Iterator<String> fragmentsIter = fragments.iterator();
+        int i = 0;
+        for (Object value : values) {
+            strings[i++] = fragmentsIter.next();
+            strings[i++] = String.valueOf(value);
+        }
+        strings[i++] = fragmentsIter.next();
+        return JLA.join("", "", "", strings, size);
     }
 
 }
