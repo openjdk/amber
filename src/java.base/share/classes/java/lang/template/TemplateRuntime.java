@@ -278,8 +278,10 @@ public final class TemplateRuntime {
                     Field field = tsClass.getDeclaredField("x" + i);
                     result.add(field.getType());
                 }
-            } catch (ReflectiveOperationException ex) {
-                // done - do nothing
+            } catch (NoSuchFieldException ex) {
+                // End of fields
+            } catch (SecurityException ex) {
+                throw new InternalError(ex);
             }
 
             return result;
