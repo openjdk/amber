@@ -25,15 +25,10 @@
 
 package java.lang.template;
 
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.function.Supplier;
+import java.lang.invoke.*;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.function.*;
 
 import jdk.internal.javac.PreviewFeature;
 
@@ -42,7 +37,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@link StringProcessor} or {@link SimpleProcessor}.
  * <p>
  * The user starts by creating a new instance of this class
- * using {@link java.lang.template.TemplateProcessor#builder()}. When the user is finished
+ * using {@link TemplateProcessor#builder()}. When the user is finished
  * composing the processor then they should invoke {@link ProcessorBuilder#build()}
  * on the instance returning a new instance of {@link StringProcessor}.
  * <p>
@@ -54,10 +49,10 @@ import jdk.internal.javac.PreviewFeature;
  * {@link ProcessorBuilder}, so it is possible to chain the methods.
  * Example: {@snippet :
  *      StringProcessor processor = TemplateProcessor.builder()
- *          .fragment(f -> f.toUpperCase())
+ *          .fragment(String::toUpperCase)
  *          .value(v -> v instanceof Integer i ? Math.abs(i) : v)
  *          .build();
- * }
+ *}
  * The {@link ProcessorBuilder#preliminary} method allows the processor to validate
  * and map the source {@link TemplatedString}.
  * <p>
@@ -88,22 +83,70 @@ import jdk.internal.javac.PreviewFeature;
  *          .build(s -> new JSONObject(s));
  * }
  *
- * @implNote Due to the nature of lambdas, validating functions can only throw
- * unchecked exceptions, ex. {@link RuntimeException}.
+ * @param <R> type of processor result
  *
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public class ProcessorBuilder {
+public class ProcessorBuilder<R> {
 	/**
-	 * True if the processor is a simple interpolatation processor. The default
-	 * is {@code true}. This field gets set to false if any of the state is
-	 * changed.
+	 * {@link MethodHandle} to {@link Function#apply}.
 	 */
-	private boolean isSimple;
+	private static final MethodHandle FUNCTION_APPLY_MH;
 
 	/**
-	 * Function that can validate and map the source {@link TemplatedString}.
+	 * {@link MethodHandle} to {@link ProcessorBuilder#apply}.
+	 */
+	private static final MethodHandle LIST_APPLY_MH;
+
+	/**
+	 * {@link MethodHandle} to {@link TemplatedString#fragments}.
+	 */
+	private static final MethodHandle FRAGMENTS_MT;
+
+	/**
+	 * {@link MethodHandle} to {@link TemplatedString#values}.
+	 */
+	private static final MethodHandle VALUES_MT;
+
+	/**
+	 * {@link MethodHandle} to {@link TemplateRuntime#interpolate}.
+	 */
+	private static final MethodHandle INTERPOLATE_MH;
+
+	/**
+	 * {@link MethodHandle} to {@link ProcessorBuilder#format}.
+	 */
+	private static final MethodHandle FORMAT_MH;
+
+	/*
+	 * Initialize {@link MethodHandle MethodHandles}.
+	 */
+	static {
+		try {
+			MethodHandles.Lookup lookup = MethodHandles.lookup();
+
+			MethodType mt = MethodType.methodType(Object.class,
+					Object.class);
+			FUNCTION_APPLY_MH = lookup.findVirtual(Function.class, "apply", mt);
+			mt = MethodType.methodType(List.class, Function.class, List.class);
+			LIST_APPLY_MH = lookup.findStatic(ProcessorBuilder.class, "apply", mt);
+			mt = MethodType.methodType(List.class);
+			FRAGMENTS_MT = lookup.findVirtual(TemplatedString.class, "fragments", mt);
+			VALUES_MT = lookup.findVirtual(TemplatedString.class, "values", mt);
+			mt = MethodType.methodType(String.class,
+					List.class, List.class);
+			INTERPOLATE_MH = lookup.findStatic(TemplateRuntime.class, "interpolate", mt);
+			mt = MethodType.methodType(String.class,
+					String.class, BiFunction.class, List.class, List.class);
+			FORMAT_MH = lookup.findStatic(ProcessorBuilder.class, "format", mt);
+		} catch (ReflectiveOperationException ex) {
+			throw new AssertionError("template processor builder fail", ex);
+		}
+	}
+
+	/**
+	 * Function that can validate and map the {@link TemplatedString}.
 	 */
 	private Function<TemplatedString, TemplatedString> preliminary;
 
@@ -124,10 +167,10 @@ public class ProcessorBuilder {
 	private String marker;
 
 	/**
-	 * Binary function that can format the value using a user defined
+	 * A binary function that can format the value using a user defined
 	 * specifier.
 	 */
-	private BiFunction<String, Object, String> formatValue;
+	private BiFunction<String, Object, String> formatter;
 
 	/**
 	 * Package-private constructor.
@@ -141,13 +184,12 @@ public class ProcessorBuilder {
 	 *
 	 * @return this Builder
 	 */
-	public ProcessorBuilder clear() {
-		this.isSimple = true;
-		this.preliminary = Function.identity();
-		this.mapFragment = Function.identity();
-		this.mapValue = Function.identity();
+	public ProcessorBuilder<R> clear() {
+		this.preliminary = null;
+		this.mapFragment = null;
+		this.mapValue = null;
 		this.marker = "";
-		this.formatValue = (specifier, value) -> String.valueOf(value);
+		this.formatter = null;
 
 		return this;
 	}
@@ -158,25 +200,22 @@ public class ProcessorBuilder {
 	 * to the mapping, chaining the result from the previous function. The
 	 * initial function is the identity function.
 	 * Example: {@snippet :
-	 *     StringProcessor processor = TemplateProcessor.builder()
-	 *          .preliminary(ts -> {
-	 *               List<String> fragments = ts.fragments().map(s -> s.toUpperCase()).toList();
-	 *               List<Object> values = ts.values();
-	 *               return TemplatedString.of(fragments, values);
-	 *          })
-	 *          .build();
+	 * StringProcessor processor = TemplateProcessor.builder()
+	 *      .preliminary(ts -> {
+	 *           List<String> fragments = ts.fragments().map(s -> s.toUpperCase()).toList();
+	 *           List<Object> values = ts.values();
+	 *           return TemplatedString.of(fragments, values);
+	 *      })
+	 *      .build();
 	 * }
-	 *
-	 * @param preliminary  {@link Function} used to validate and map the source
-	 *                     {@link TemplatedString}.
+	 * @param function  {@link Function} used to validate and map the source
+	 *                  {@link TemplatedString}.
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder preliminary(Function<TemplatedString, TemplatedString> preliminary) {
-		Objects.requireNonNull(preliminary, "preliminary must not be null");
-		final Function<TemplatedString, TemplatedString> oldPreliminary = this.preliminary;
-		this.preliminary = ts -> preliminary.apply(oldPreliminary.apply(ts));
-		this.isSimple = false;
+	public ProcessorBuilder<R> preliminary(Function<TemplatedString, TemplatedString> function) {
+		Objects.requireNonNull(function, "function must not be null");
+		preliminary = preliminary == null ? function : function.compose(preliminary);
 
 		return this;
 	}
@@ -187,21 +226,17 @@ public class ProcessorBuilder {
 	 * to the mapping, chaining the result from the previous function. The
 	 * initial function is the identity function.
 	 * Example: {@snippet :
-	 *     StringProcessor processor = TemplateProcessor.builder()
-	 *          .fragment(f -> f.toUpperCase())
-	 *          .build();
-	 * }
-	 *
-	 * @param mapFragment {@link Function} used to validate and map the fragment
+	 * StringProcessor processor = TemplateProcessor.builder()
+	 *      .fragment(String::toUpperCase)
+	 *      .build();
+	 *}
+	 * @param function {@link Function} used to validate and map the fragment
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder fragment(Function<String, String> mapFragment) {
-		Objects.requireNonNull(mapFragment, "mapFragment must not be null");
-		final Function<String, String> oldMapFragment = this.mapFragment;
-		this.mapFragment = fragment ->
-				mapFragment.apply(oldMapFragment.apply(fragment));
-		this.isSimple = false;
+	public ProcessorBuilder<R> fragment(Function<String, String> function) {
+		Objects.requireNonNull(function, "function must not be null");
+		mapFragment = mapFragment == null ? function : function.compose(mapFragment);
 
 		return this;
 	}
@@ -216,16 +251,13 @@ public class ProcessorBuilder {
 	 *          .value(v -> v instanceof Integer i ? Math.abs(i) : v)
 	 *          .build();
 	 * }
-	 *
-	 * @param mapValue {@link Function} used to validate and map the fragment
+	 * @param function {@link Function} used to validate and map the fragment
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder value(Function<Object, Object> mapValue) {
-		Objects.requireNonNull(mapValue, "mapValue must not be null");
-		final Function<Object, Object> oldMapValue = this.mapValue;
-		this.mapValue = v -> mapValue.apply(oldMapValue.apply(v));
-		this.isSimple = false;
+	public ProcessorBuilder<R> value(Function<Object, Object> function) {
+		Objects.requireNonNull(function, "function must not be null");
+		mapValue = mapValue == null ? function : function.compose(mapValue);
 
 		return this;
 	}
@@ -240,29 +272,31 @@ public class ProcessorBuilder {
 	 *          .resolve()
 	 *          .build();
 	 * }
-	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 *
 	 * @implNote The resolving function will throw a {@link RuntimeException}
 	 * if a (@link Future} throws during resolution.
 	 */
-	public ProcessorBuilder resolve() {
-		return value(value -> {
-			if (value instanceof Future<?> future) {
-				if (future instanceof FutureTask<?> task) {
-					task.run();
-				}
+	public ProcessorBuilder<R> resolve() {
+		return value(value -> switch (value) {
+			case FutureTask<?> task -> {
+				task.run();
 
 				try {
-					return future.get();
+					yield task.get();
 				} catch (InterruptedException | ExecutionException e) {
 					throw new RuntimeException(e);
 				}
-			} else if (value instanceof Supplier<?> supplier) {
-				return supplier.get();
 			}
-
-			return value;
+			case Future<?> future -> {
+				try {
+					yield future.get();
+				} catch (InterruptedException | ExecutionException e) {
+					throw new RuntimeException(e);
+				}
+			}
+			case Supplier<?> supplier -> supplier.get();
+			default -> value;
 		});
 	}
 
@@ -274,10 +308,10 @@ public class ProcessorBuilder {
 	 * binary function along with the value. The {@code marker} is not
 	 * included in the specifier.
 	 * Example: {@snippet :
-	 *      StringProcessor processor = TemplateProcessor.builder()
-	 *          .format("%", (specifier, value) ->
-	 *                  justify(String.valueOf(value), Integer.parseInt(specifier)))
-	 *          .build();
+	 * StringProcessor processor = TemplateProcessor.builder()
+	 *     .format("%", (specifier, value) ->
+	 *             justify(String.valueOf(value), Integer.parseInt(specifier)))
+	 *     .build();
 	 * }
 	 *
 	 * @param marker       String used to mark the beginning of a format specifier
@@ -286,91 +320,197 @@ public class ProcessorBuilder {
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder format(String marker, BiFunction<String, Object, String> formatValue) {
+	public ProcessorBuilder<R> formatter(String marker, BiFunction<String, Object, String> formatValue) {
 		this.marker = Objects.requireNonNull(marker, "marker must not be null");
-		this.formatValue = Objects.requireNonNull(formatValue, "doFormat must not be null");
-		this.isSimple = false;
+		this.formatter = Objects.requireNonNull(formatValue, "doFormat must not be null");
+
+		if (marker.isEmpty()) {
+			throw new RuntimeException("marker must not be empty");
+		}
 
 		return this;
 	}
 
 	/**
-	 * Construct a new {@link StringProcessor} using elements added to the builder.
-	 * The processor will initially run the preliminary map function on the source
-	 * {@link TemplatedString}. The processor will then iterate through fragments
-	 * and values, applying the fragment map function and value map function
-	 * on each iteration. If a format function is supplied, the value will be
-	 * formatted before adding to the result. The result of the processor will
-	 * be a string composed the mapped fragments and values.
-	 * Example: {@snippet :
-	 *      StringProcessor processor = TemplateProcessor.builder()
-	 *          .build();
-	 * }
+	 * Apply a transform function to a list of elements.
 	 *
-	 * @return a new {@link StringProcessor} instance
+	 * @param function  transformation function
+	 * @param elements  elements to be transformed
+	 *
+	 * @return transformed list
+	 *
+	 * @param <T> type before transformation
+	 * @param <R> type after transformation
 	 */
-	public StringProcessor build() {
-		final Function<TemplatedString, TemplatedString> preliminary = this.preliminary;
-		final Function<String, String> mapFragment = this.mapFragment;
-		final Function<Object, Object> mapValue = this.mapValue;
-		final String marker = this.marker;
-		final BiFunction<String, Object, String> formatValue = this.formatValue;
-
-		return isSimple ? ts -> ts.interpolate()
-				: ts -> {
-			ts = preliminary.apply(ts);
-			List<String> fragments = ts.fragments();
-			List<Object> values = ts.values();
-			StringBuilder sb = new StringBuilder();
-			Iterator<String> fragmentIterator = fragments.iterator();
-			Iterator<Object> valuesIterator = values.iterator();
-
-			if (!marker.isEmpty()) {
-				while(valuesIterator.hasNext()) {
-					String fragment = mapFragment.apply(fragmentIterator.next());
-					Object value = mapValue.apply(valuesIterator.next());
-					int index = fragment.indexOf(marker);
-
-					if (index != -1) {
-						String specifier = fragment.substring(index + marker.length());
-						fragment = fragment.substring(0, index);
-						value = formatValue.apply(specifier, value);
-					}
-
-					sb.append(fragment);
-					sb.append(value);
-				}
-			} else {
-				while(valuesIterator.hasNext()) {
-					sb.append(mapFragment.apply(fragmentIterator.next()));
-					sb.append(mapValue.apply(valuesIterator.next()));
-				}
-			}
-
-			sb.append(mapFragment.apply(fragmentIterator.next()));
-
-			return sb.toString();
-		};
+	private static <T, R> List<R> apply(Function<T, R> function, List<T> elements) {
+		List<R> result = new ArrayList<>(elements.size());
+		for (T element : elements) {
+			result.add(function.apply(element));
+		}
+		return result;
 	}
 
 	/**
-	 * This version of build performs the same actions as
-	 * {@link ProcessorBuilder#build()} but always for a final transformation
-	 * step to convert the string result to a non-string result.
-	 * Example: {@snippet :
-	 * }
+	 * Format values based on a specification found in the fragment.
 	 *
+	 * @param marker       string indicating the beginning of a specification
+	 * @param formatValue  function that formats the value
+	 * @param fragments    source of specification
+	 * @param values       values to be formatted
+	 *
+	 * @return formatted interpolation
+	 */
+	private static String format(String marker, BiFunction<String, Object, String> formatValue,
+								 List<String> fragments, List<Object> values) {
+		int size = fragments.size();
+		List<String> newFragments = new ArrayList<>(size);
+		List<Object> newValues = new ArrayList<>(size - 1);
+		Iterator<String> fragmentsIter = fragments.iterator();
+
+		for (Object value : values) {
+			String fragment = fragmentsIter.next();
+			int index = fragment.lastIndexOf(marker);
+			String specifier = "";
+
+			if (index != -1) {
+				specifier = fragment.substring(index + marker.length());
+				fragment = fragment.substring(0, index);
+			}
+
+			value = formatValue.apply(specifier, value);
+			newFragments.add(fragment);
+			newValues.add(value);
+		}
+		newFragments.add(fragmentsIter.next());
+
+		return TemplateRuntime.interpolate(newFragments, newValues);
+	}
+
+	/**
+	 * {@return true if processor is simple enough to use interpolation.
+	 */
+	private boolean isSimple() {
+		return preliminary == null &&
+				mapFragment == null &&
+				mapValue == null &&
+				formatter == null;
+	}
+
+	/**
+	 * Build an apply {@link MethodHandle} for the processor.
+	 *
+	 * @param transform function to transform interpolation
+	 *
+	 * @return {@link MethodHandle} incorporating processor specifications.
+	 */
+	private MethodHandle applyMethodHandle(Function<String, R> transform) {
+		MethodType mt;
+		MethodHandle mh;
+
+		// Test for formatter presence.
+		if (formatter == null) {
+			// Just interpolation
+			mh = INTERPOLATE_MH;
+		} else {
+			// Formatting interpolation
+			mh = MethodHandles.insertArguments(FORMAT_MH, 0, marker, formatter);
+		}
+
+		// If transformation present then transform interpolation to final result.
+		if (transform != null) {
+			mt = MethodType.methodType(Object.class, String.class);
+			mh = MethodHandles.filterReturnValue(mh, FUNCTION_APPLY_MH.bindTo(transform).asType(mt));
+		}
+
+		// Map values if function present.
+		if (mapValue != null) {
+			mh = MethodHandles.filterArguments(mh, 1, LIST_APPLY_MH.bindTo(mapValue));
+		}
+
+		// Map fragments if function present.
+		if (mapFragment != null) {
+			mh = MethodHandles.filterArguments(mh, 0, LIST_APPLY_MH.bindTo(mapFragment));
+		}
+
+		// Get fragments and values from TemplatedString
+		mh = MethodHandles.filterArguments(mh, 0, FRAGMENTS_MT, VALUES_MT);
+
+		// Spread copies of TemplatedString to each getter.
+		mt = MethodType.methodType(mh.type().returnType(), TemplatedString.class);
+		mh = MethodHandles.permuteArguments(mh, mt, 0, 0);
+
+		// Preliminary processing if preliminary function present.
+		if (preliminary != null) {
+			mt = MethodType.methodType(TemplatedString.class, TemplatedString.class);
+			mh = MethodHandles.filterArguments(mh, 0,  FUNCTION_APPLY_MH.bindTo(preliminary).asType(mt));
+		}
+
+		return mh;
+	}
+
+	/**
+	 * Construct a new {@link SimpleProcessor} using elements added to the builder.
+	 * The processor will initially run the preliminary map functions on the source
+	 * {@link TemplatedString}. The processor will then iterate through fragments
+	 * and values, applying the fragment map functions and value map functions
+	 * on each iteration. If a formatter function is supplied, the value will be
+	 * formatted before adding to a string result. The string result will be
+	 * go through a final transformation with the transform function.
+	 * Example: {@snippet :
+	 *      SimpleProcessor<String> processor = TemplateProcessor.builder()
+	 *          .build(String::toUpperCase);
+	 *}
 	 * @param transform {@link Function} used to map the string result
 	 *                  to a non-string result.
 	 *
 	 * @return a new {@link SimpleProcessor} instance
-	 *
-	 * @param <R> type of result
 	 */
-	public <R> SimpleProcessor<R> build(Function<String, R> transform) {
+	@SuppressWarnings("unchecked")
+	public SimpleProcessor<R> build(Function<String, R> transform) {
 		Objects.requireNonNull(transform, "transform must not be null");
 
-		return ts -> transform.apply(build().apply(ts));
+		if (isSimple()) {
+			return ts-> transform.apply(ts.interpolate());
+		}
+
+		MethodHandle applyMH = applyMethodHandle(transform);
+
+		return ts -> {
+			try {
+				return (R)applyMH.invokeExact(ts);
+			} catch (Throwable ex) {
+				throw new RuntimeException(ex);
+			}
+		};
+	}
+
+	/**
+	 * Construct a new {@link StringProcessor} using elements added to the builder.
+	 * The processor will initially run the preliminary map functions on the source
+	 * {@link TemplatedString}. The processor will then iterate through fragments
+	 * and values, applying the fragment map functions and value map functions
+	 * on each iteration. If a formatter function is supplied, the value will be
+	 * formatted before adding to the string result.
+	 * Example: {@snippet :
+	 *      StringProcessor processor = TemplateProcessor.builder()
+	 *          .build();
+	 *}
+	 * @return a new {@link SimpleProcessor} instance
+	 */
+	public StringProcessor build() {
+		if (isSimple()) {
+			return TemplatedString.STR;
+		}
+
+		MethodHandle applyMH = applyMethodHandle(null);
+
+		return ts -> {
+			try {
+				return (String)applyMH.invokeExact(ts);
+			} catch (Throwable ex) {
+				throw new RuntimeException(ex);
+			}
+		};
 	}
 
 }
