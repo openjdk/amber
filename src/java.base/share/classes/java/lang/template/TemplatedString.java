@@ -186,6 +186,19 @@ public interface TemplatedString {
     }
 
     /**
+     * Return the types of a {@link TemplatedString TemplatedString's} values.
+     *
+     * @return list of value types
+     *
+     * @implNote The default method determines if the {@link TemplatedString}
+     * was synthesized by the compiler, then the types are precisely those of the
+     * embedded expressions, otherwise this method returns the values list types.
+     */
+    default public List<Class<?>> valueTypes() {
+        return TemplateRuntime.valueTypes(this);
+    }
+
+    /**
      * Produces a diagnostic string representing the supplied
      * {@link TemplatedString}.
      *

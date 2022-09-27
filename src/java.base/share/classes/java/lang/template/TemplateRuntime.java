@@ -26,6 +26,7 @@
 package java.lang.template;
 
 import java.lang.invoke.*;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.*;
 
@@ -253,6 +254,42 @@ public final class TemplateRuntime {
         }
         strings[i++] = fragmentsIter.next();
         return JLA.join("", "", "", strings, size);
+    }
+
+    /**
+     * Return the types of a {@link TemplatedString TemplatedString's} values.
+     *
+     * @param ts  TemplatedString to examine
+     *
+     * @return list of value types
+     *
+     * @implNote The default method determines if the {@link TemplatedString}
+     * was synthesized by the compiler, then the types are precisely those of the
+     * embedded expressions, otherwise this method returns the values list types.
+     */
+    public static List<Class<?>> valueTypes(TemplatedString ts) {
+        Objects.requireNonNull(ts, "ts must not be null");
+        List<Class<?>> result = new ArrayList<>();
+        Class<?> tsClass = ts.getClass();
+
+        if (tsClass.isSynthetic()) {
+            try {
+                for (int i = 0; ; i++) {
+                    Field field = tsClass.getDeclaredField("x" + i);
+                    result.add(field.getType());
+                }
+            } catch (ReflectiveOperationException ex) {
+                // done - do nothing
+            }
+
+            return result;
+        }
+
+        for (Object value : ts.values()) {
+            result.add(value == null ? Object.class : value.getClass());
+        }
+
+        return result;
     }
 
 }
