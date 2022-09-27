@@ -144,8 +144,8 @@ import jdk.internal.javac.PreviewFeature;
  * @implNote The Java compiler automatically imports
  * {@link TemplatedString#STR} and {@link TemplatedString#FMT}
  *
- * @param <R>  Processor's apply result type.
- * @param <E>  Exception thrown type.
+ * @param <R>  Processor's apply result type
+ * @param <E>  Exception thrown type
  *
  * @see java.lang.template.TemplatedString
  * @see java.lang.template.SimpleProcessor
@@ -215,9 +215,11 @@ public interface TemplateProcessor<R, E extends Throwable> {
      * Factory for creating a new {@link ProcessorBuilder} instance.
      *
      * @return a new {@link ProcessorBuilder} instance.
+     *
+     * @param <R>  Processor's apply result type
      */
-    public static ProcessorBuilder builder() {
-        return new ProcessorBuilder();
+    public static <R> ProcessorBuilder<R> builder() {
+        return new ProcessorBuilder<>();
     }
 
 }

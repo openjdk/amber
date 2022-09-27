@@ -278,25 +278,23 @@ public class ProcessorBuilder<R> {
 	 * if a (@link Future} throws during resolution.
 	 */
 	public ProcessorBuilder<R> resolve() {
-		return value(value -> switch (value) {
-			case FutureTask<?> task -> {
-				task.run();
+		return value(value -> {
+			if (value instanceof Future<?> future) {
+				if (future instanceof FutureTask<?> task) {
+					task.run();
+				}
 
 				try {
-					yield task.get();
+					return future.get();
 				} catch (InterruptedException | ExecutionException e) {
 					throw new RuntimeException(e);
 				}
+			} else if (value instanceof Supplier<?> supplier) {
+				return supplier.get();
 			}
-			case Future<?> future -> {
-				try {
-					yield future.get();
-				} catch (InterruptedException | ExecutionException e) {
-					throw new RuntimeException(e);
-				}
-			}
-			case Supplier<?> supplier -> supplier.get();
-			default -> value;
+
+			return value;
+
 		});
 	}
 
