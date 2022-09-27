@@ -215,11 +215,9 @@ public interface TemplateProcessor<R, E extends Throwable> {
      * Factory for creating a new {@link ProcessorBuilder} instance.
      *
      * @return a new {@link ProcessorBuilder} instance.
-     *
-     * @param <R>  Processor's apply result type
      */
-    public static <R> ProcessorBuilder<R> builder() {
-        return new ProcessorBuilder<>();
+    public static ProcessorBuilder builder() {
+        return new ProcessorBuilder();
     }
 
 }

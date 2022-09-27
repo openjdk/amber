@@ -83,12 +83,10 @@ import jdk.internal.javac.PreviewFeature;
  *          .build(s -> new JSONObject(s));
  * }
  *
- * @param <R> type of processor result
- *
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public class ProcessorBuilder<R> {
+public class ProcessorBuilder {
 	/**
 	 * {@link MethodHandle} to {@link Function#apply}.
 	 */
@@ -184,7 +182,7 @@ public class ProcessorBuilder<R> {
 	 *
 	 * @return this Builder
 	 */
-	public ProcessorBuilder<R> clear() {
+	public ProcessorBuilder clear() {
 		this.preliminary = null;
 		this.mapFragment = null;
 		this.mapValue = null;
@@ -213,7 +211,7 @@ public class ProcessorBuilder<R> {
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder<R> preliminary(Function<TemplatedString, TemplatedString> function) {
+	public ProcessorBuilder preliminary(Function<TemplatedString, TemplatedString> function) {
 		Objects.requireNonNull(function, "function must not be null");
 		preliminary = preliminary == null ? function : function.compose(preliminary);
 
@@ -234,7 +232,7 @@ public class ProcessorBuilder<R> {
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder<R> fragment(Function<String, String> function) {
+	public ProcessorBuilder fragment(Function<String, String> function) {
 		Objects.requireNonNull(function, "function must not be null");
 		mapFragment = mapFragment == null ? function : function.compose(mapFragment);
 
@@ -255,7 +253,7 @@ public class ProcessorBuilder<R> {
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder<R> value(Function<Object, Object> function) {
+	public ProcessorBuilder value(Function<Object, Object> function) {
 		Objects.requireNonNull(function, "function must not be null");
 		mapValue = mapValue == null ? function : function.compose(mapValue);
 
@@ -277,7 +275,7 @@ public class ProcessorBuilder<R> {
 	 * @implNote The resolving function will throw a {@link RuntimeException}
 	 * if a (@link Future} throws during resolution.
 	 */
-	public ProcessorBuilder<R> resolve() {
+	public ProcessorBuilder resolve() {
 		return value(value -> {
 			if (value instanceof Future<?> future) {
 				if (future instanceof FutureTask<?> task) {
@@ -318,7 +316,7 @@ public class ProcessorBuilder<R> {
 	 *
 	 * @return this {@link ProcessorBuilder} instance
 	 */
-	public ProcessorBuilder<R> formatter(String marker, BiFunction<String, Object, String> formatValue) {
+	public ProcessorBuilder formatter(String marker, BiFunction<String, Object, String> formatValue) {
 		this.marker = Objects.requireNonNull(marker, "marker must not be null");
 		this.formatter = Objects.requireNonNull(formatValue, "doFormat must not be null");
 
@@ -401,7 +399,7 @@ public class ProcessorBuilder<R> {
 	 *
 	 * @return {@link MethodHandle} incorporating processor specifications.
 	 */
-	private MethodHandle applyMethodHandle(Function<String, R> transform) {
+	private <R> MethodHandle applyMethodHandle(Function<String, R> transform) {
 		MethodType mt;
 		MethodHandle mh;
 
@@ -460,11 +458,12 @@ public class ProcessorBuilder<R> {
 	 *}
 	 * @param transform {@link Function} used to map the string result
 	 *                  to a non-string result.
+	 * @param <R> type of processor result
 	 *
 	 * @return a new {@link SimpleProcessor} instance
 	 */
 	@SuppressWarnings("unchecked")
-	public SimpleProcessor<R> build(Function<String, R> transform) {
+	public <R> SimpleProcessor<R> build(Function<String, R> transform) {
 		Objects.requireNonNull(transform, "transform must not be null");
 
 		if (isSimple()) {
