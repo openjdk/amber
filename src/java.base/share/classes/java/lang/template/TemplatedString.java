@@ -77,10 +77,10 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * {@code result} will be equivalent to <code>"10 + 20 = 30"</code>.
  * <p>
- * The {@link TemplatedString#apply} method supplies an alternative to using
+ * The {@link TemplatedString#process} method supplies an alternative to using
  * string template expressions.
  * {@snippet :
- * String result = "\{x} + \{y} = \{x + y}".apply(STR);
+ * String result = "\{x} + \{y} = \{x + y}".process(STR);
  * }
  * In addition to string template expressions, the factory methods
  * {@link TemplatedString#of(String)} and {@link TemplatedString#of(List, List)}
@@ -162,13 +162,13 @@ public interface TemplatedString {
      * This method can be used as an alternative to string template expressions. For example,
      * {@snippet :
      * String result1 = STR."\{x} + \{y} = \{x + y}";
-     * String result2 = "\{x} + \{y} = \{x + y}".apply(STR); // @highlight substring="apply"
+     * String result2 = "\{x} + \{y} = \{x + y}".process(STR); // @highlight substring="process"
      * }
      * produces an equivalent result for both {@code result1} and {@code result2}.
      *
-     * @param processor the {@link TemplateProcessor} instance to apply
+     * @param processor the {@link TemplateProcessor} instance to process
      *
-     * @param <R>  Processor's apply result type.
+     * @param <R>  Processor's process result type.
      * @param <E>  Exception thrown type.
      *
      * @return constructed object of type R
@@ -176,13 +176,13 @@ public interface TemplatedString {
      * @throws E exception thrown by the template processor when validation fails
      * @throws NullPointerException if templatedString is null
      *
-     * @implNote The default implementation simply invokes the processor's apply
-     * method {@code processor.apply(this)}.
+     * @implNote The default implementation simply invokes the processor's process
+     * method {@code processor.process(this)}.
      */
-    default <R, E extends Throwable> R apply(TemplateProcessor<R, E> processor) throws E {
+    default <R, E extends Throwable> R process(TemplateProcessor<R, E> processor) throws E {
         Objects.requireNonNull(processor, "processor should not be null");
 
-        return processor.apply(this);
+        return processor.process(this);
     }
 
     /**
@@ -296,7 +296,7 @@ public interface TemplatedString {
      *          .value(x)
      *          .template(" and \{y} equals \{x + y}")
      *          .build();
-     *      String result = STR.apply(ts);
+     *      String result = STR.process(ts);
      *  }
      *
      *  Result: "The result of adding 10 and 20 equals 30"

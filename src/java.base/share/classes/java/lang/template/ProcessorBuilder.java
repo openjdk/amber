@@ -67,7 +67,7 @@ import jdk.internal.javac.PreviewFeature;
  *          .build();
  *      int x = 10;
  *      int y = 12345;
- *      String result = processor.apply("%4\{x} + %4\{y} = %-5\{x + y}");
+ *      String result = processor.process("%4\{x} + %4\{y} = %-5\{x + y}");
  * }
  * Output: {@code "  10 + **** = 12355"}
  * <p>
@@ -393,13 +393,13 @@ public class ProcessorBuilder {
 	}
 
 	/**
-	 * Build an apply {@link MethodHandle} for the processor.
+	 * Build an process {@link MethodHandle} for the processor.
 	 *
 	 * @param transform function to transform interpolation
 	 *
 	 * @return {@link MethodHandle} incorporating processor specifications.
 	 */
-	private <R> MethodHandle applyMethodHandle(Function<String, R> transform) {
+	private <R> MethodHandle processMethodHandle(Function<String, R> transform) {
 		MethodType mt;
 		MethodHandle mh;
 
@@ -470,11 +470,11 @@ public class ProcessorBuilder {
 			return ts-> transform.apply(ts.interpolate());
 		}
 
-		MethodHandle applyMH = applyMethodHandle(transform);
+		MethodHandle processMH = processMethodHandle(transform);
 
 		return ts -> {
 			try {
-				return (R)applyMH.invokeExact(ts);
+				return (R)processMH.invokeExact(ts);
 			} catch (Throwable ex) {
 				throw new RuntimeException(ex);
 			}
@@ -499,11 +499,11 @@ public class ProcessorBuilder {
 			return TemplatedString.STR;
 		}
 
-		MethodHandle applyMH = applyMethodHandle(null);
+		MethodHandle processMH = processMethodHandle(null);
 
 		return ts -> {
 			try {
-				return (String)applyMH.invokeExact(ts);
+				return (String)processMH.invokeExact(ts);
 			} catch (Throwable ex) {
 				throw new RuntimeException(ex);
 			}

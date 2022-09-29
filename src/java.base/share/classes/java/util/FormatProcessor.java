@@ -84,7 +84,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
      * @see java.util.Formatter
      */
     @Override
-    public final String apply(TemplatedString templatedString) {
+    public final String process(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString);
         String format = templatedStringFormat(templatedString.fragments());
         Object[] values = templatedString.values().toArray(new Object[0]);
@@ -103,7 +103,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
      * @see java.util.Formatter
      */
     @Override
-    public MethodHandle applier(List<String> fragments, MethodType type) {
+    public MethodHandle linkage(List<String> fragments, MethodType type) {
         Objects.requireNonNull(fragments);
         Objects.requireNonNull(type);
         String format = templatedStringFormat(fragments);

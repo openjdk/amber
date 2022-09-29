@@ -59,7 +59,7 @@ public final class TemplateRuntime {
      * @param fragments       fragments from string template
      * @return {@link CallSite} to handle templated string processing
      * @throws NullPointerException if any of the arguments is null
-     * @throws Throwable            if applier fails
+     * @throws Throwable            if linkage fails
      */
     public static CallSite templatedStringBSM(
             MethodHandles.Lookup lookup,
@@ -78,7 +78,7 @@ public final class TemplateRuntime {
                 (TemplateProcessor<?, ? extends Throwable>)processorGetter.asType(processorGetterType).invokeExact();
         TemplateBootstrap bootstrap = new TemplateBootstrap(lookup, name, type, List.of(fragments), processor);
 
-        return bootstrap.applyWithProcessor();
+        return bootstrap.processWithProcessor();
     }
 
     /**
@@ -86,9 +86,9 @@ public final class TemplateRuntime {
      */
     private static class TemplateBootstrap {
         /**
-         * {@link MethodHandle} to {@link TemplateBootstrap#defaultApply}.
+         * {@link MethodHandle} to {@link TemplateBootstrap#defaultProcess}.
          */
-        private static final MethodHandle DEFAULT_APPLY_MH;
+        private static final MethodHandle DEFAULT_PROCESS_MH;
 
         /**
          * {@link MethodHandles.Lookup} passed to the bootstrap method.
@@ -96,7 +96,7 @@ public final class TemplateRuntime {
         private final MethodHandles.Lookup lookup;
 
         /**
-         * Name passed to the bootstrap method ("apply").
+         * Name passed to the bootstrap method ("process").
          */
         private final String name;
 
@@ -124,7 +124,7 @@ public final class TemplateRuntime {
 
                 MethodType mt = MethodType.methodType(Object.class,
                         List.class, TemplateProcessor.class, Object[].class);
-                DEFAULT_APPLY_MH = lookup.findStatic(TemplateBootstrap.class, "defaultApply", mt);
+                DEFAULT_PROCESS_MH = lookup.findStatic(TemplateBootstrap.class, "defaultProcess", mt);
             } catch (ReflectiveOperationException ex) {
                 throw new AssertionError("templated string bootstrap fail", ex);
             }
@@ -151,40 +151,40 @@ public final class TemplateRuntime {
         }
 
         /**
-         * Create callsite to invoke specialized processor apply method.
+         * Create callsite to invoke specialized processor process method.
          *
-         * @return {@link CallSite} for handling apply processor templated strings.
-         * @throws Throwable if applier fails
+         * @return {@link CallSite} for processing templated strings.
+         * @throws Throwable if linkage fails
          */
-        private CallSite applyWithProcessor() throws Throwable {
+        private CallSite processWithProcessor() throws Throwable {
             MethodHandle mh = processor instanceof ProcessorLinkage processorLinkage ?
-                    processorLinkage.applier(fragments, type) : defaultApplyMethodHandle();
+                    processorLinkage.linkage(fragments, type) : defaultProcessMethodHandle();
 
             return new ConstantCallSite(mh);
         }
 
         /**
-         * Creates a simple {@link TemplatedString} and then invokes the processor's apply method.
+         * Creates a simple {@link TemplatedString} and then invokes the processor's process method.
          *
          * @param fragments fragments from string template
-         * @param processor {@link TemplateProcessor} to apply
+         * @param processor {@link TemplateProcessor} to process
          * @param values    array of expression values
          * @return
          */
-        private static Object defaultApply(List<String> fragments,
-                                           TemplateProcessor<Object, Throwable> processor,
-                                           Object[] values) throws Throwable {
-            return processor.apply(new SimpleTemplatedString(fragments, List.of(values)));
+        private static Object defaultProcess(List<String> fragments,
+                                             TemplateProcessor<Object, Throwable> processor,
+                                             Object[] values) throws Throwable {
+            return processor.process(new SimpleTemplatedString(fragments, List.of(values)));
         }
 
         /**
          * Generate a {@link MethodHandle} which is effectively invokes
-         * {@code processor.apply(new TemplatedString(fragments, values...)}.
+         * {@code processor.process(new TemplatedString(fragments, values...)}.
          *
-         * @return default apply {@link MethodHandle}
+         * @return default process {@link MethodHandle}
          */
-        private MethodHandle defaultApplyMethodHandle() {
-            MethodHandle mh = MethodHandles.insertArguments(DEFAULT_APPLY_MH, 0, fragments, processor);
+        private MethodHandle defaultProcessMethodHandle() {
+            MethodHandle mh = MethodHandles.insertArguments(DEFAULT_PROCESS_MH, 0, fragments, processor);
             mh = mh.withVarargs(true);
             mh = mh.asType(type);
 

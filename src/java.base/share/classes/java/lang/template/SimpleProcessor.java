@@ -46,7 +46,7 @@ import jdk.internal.javac.PreviewFeature;
  *         });
  * }
  *
- * @param <R>  Processor's apply result type.
+ * @param <R>  Processor's process result type.
  *
  * @since 20
  */
@@ -59,7 +59,7 @@ public interface SimpleProcessor<R> extends TemplateProcessor<R, RuntimeExceptio
 	 * The {@code tail} processors must return type {@link TemplatedString}.
 	 *
 	 * @param head  last {@link SimpleProcessor} to be applied, return type {@code R}
-	 * @param tail  first processors to apply, return type {@code TemplatedString}
+	 * @param tail  first processors to process, return type {@code TemplatedString}
 	 *
 	 * @return a new {@link SimpleProcessor} that applies the supplied processors
 	 *         from right to left
@@ -83,6 +83,6 @@ public interface SimpleProcessor<R> extends TemplateProcessor<R, RuntimeExceptio
 		TemplateProcessor<TemplatedString, RuntimeException> last =
 				TemplateProcessor.chain(tail[0], Arrays.copyOfRange(tail, 1, tail.length));
 
-		return ts -> head.apply(last.apply(ts));
+		return ts -> head.process(last.process(ts));
 	}
 }

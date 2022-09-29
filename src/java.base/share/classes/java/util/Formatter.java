@@ -4883,7 +4883,7 @@ public final class Formatter implements Closeable, Flushable {
      *
      * @param format  format string as described in <a href="#syntax">Format string
      *                syntax</a>
-     * @param locale  {@link java.util.Locale locale} to apply during
+     * @param locale  {@link java.util.Locale locale} to process during
      *                formatting.
      * @param ptypes  types of arguments
      *

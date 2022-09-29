@@ -36,7 +36,7 @@ import jdk.internal.javac.PreviewFeature;
 /**
  * Policies using this additional interface have the flexibility to specialize
  * the composition of the templated string by returning a customized
- * {@link CallSite CallSites} from {@link ProcessorLinkage#applier applier}.
+ * {@link CallSite CallSites} from {@link ProcessorLinkage#linkage linkage}.
  * These specializations are typically implemented to improve performance;
  * specializing value types or avoiding boxing and vararg arrays.
  *
@@ -57,5 +57,5 @@ public sealed interface ProcessorLinkage permits FormatProcessor {
 	 *
 	 * @throws NullPointerException if any of the arguments are null
 	 */
-	MethodHandle applier(List<String> fragments, MethodType type);
+	MethodHandle linkage(List<String> fragments, MethodType type);
 }

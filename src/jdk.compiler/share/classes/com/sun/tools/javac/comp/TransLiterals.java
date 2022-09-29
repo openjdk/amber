@@ -278,9 +278,9 @@ public final class TransLiterals extends TreeTranslator {
             MethodSymbol methodSym = lookupMethod(tree.pos(), name, owner, argTypes);
             method.sym = methodSym;
             method.type = types.erasure(methodSym.type);
-            JCMethodInvocation apply = makeApply(method, args);
-            apply.type = methodSym.getReturnType();
-            return apply;
+            JCMethodInvocation process = makeApply(method, args);
+            process.type = methodSym.getReturnType();
+            return process;
         }
 
         JCMethodInvocation createApply(Type owner, Name name, List<JCExpression> args) {
@@ -459,11 +459,11 @@ public final class TransLiterals extends TreeTranslator {
             }
         }
 
-        JCExpression createBSMProcessorApplyMethodCall() {
+        JCExpression createBSMProcessorPerformMethodCall() {
             List<JCExpression> args = expressions.prepend(processor);
             List<Type> argTypes = expressionTypes.prepend(processor.type);
             Name bootstrapName = names.templatedStringBSM;
-            Name methodName = names.apply;
+            Name methodName = names.process;
             VarSymbol processorSym = (VarSymbol)TreeInfo.symbol(processor);
             List<LoadableConstant> staticArgValues = List.of(processorSym.asMethodHandle(true));
             List<Type> staticArgsTypes =
@@ -486,18 +486,18 @@ public final class TransLiterals extends TreeTranslator {
             JCFieldAccess qualifier = make.Select(make.Type(syms.templateProcessorType), dynSym.name);
             qualifier.sym = dynSym;
             qualifier.type = tree.type;
-            JCExpression apply = make.Apply(List.nil(), qualifier, args);
-            apply.type = tree.type;
-            return apply;
+            JCExpression process = make.Apply(List.nil(), qualifier, args);
+            process.type = tree.type;
+            return process;
         }
 
-        JCExpression createProcessorApplyMethodCall(JCExpression templatedString) {
-            MethodSymbol appyMeth = lookupMethod(tree.pos(), names.apply,
+        JCExpression createProcessorPerformMethodCall(JCExpression templatedString) {
+            MethodSymbol appyMeth = lookupMethod(tree.pos(), names.process,
                     syms.templateProcessorType, List.of(syms.templatedStringType));
             JCExpression applySelect = make.Select(processor, appyMeth);
-            JCExpression apply = make.Apply(null, applySelect, List.of(templatedString))
+            JCExpression process = make.Apply(null, applySelect, List.of(templatedString))
                     .setType(syms.objectType);
-            JCTypeCast cast = make.TypeCast(tree.type, apply);
+            JCTypeCast cast = make.TypeCast(tree.type, process);
             return cast;
         }
 
@@ -558,9 +558,9 @@ public final class TransLiterals extends TreeTranslator {
             } else if (isSTRProcessor()) {
                 result = concatExpression(fragments, expressions);
             } else if (isLinkageProcessor()) {
-                result = createBSMProcessorApplyMethodCall();
+                result = createBSMProcessorPerformMethodCall();
             } else {
-                result = createProcessorApplyMethodCall(newTemplatedString());
+                result = createProcessorPerformMethodCall(newTemplatedString());
             }
 
             return result;

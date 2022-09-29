@@ -37,13 +37,13 @@ import jdk.internal.javac.PreviewFeature;
 
 /**
  * This interface describes the methods provided by a generalized string template processor. The
- * primary method {@link TemplateProcessor#apply} is used to validate and compose a result using
+ * primary method {@link TemplateProcessor#process} is used to validate and compose a result using
  * a {@link TemplatedString TemplatedString's} fragments and values lists. For example:
  *
  * {@snippet :
  * class MyProcessor implements TemplateProcessor<String, IllegalArgumentException> {
  *     @Override
- *     public String apply(TemplatedString ts) throws IllegalArgumentException {
+ *     public String process(TemplatedString ts) throws IllegalArgumentException {
  *          StringBuilder sb = new StringBuilder();
  *          Iterator<String> fragmentsIter = ts.fragments().iterator();
  *
@@ -144,7 +144,7 @@ import jdk.internal.javac.PreviewFeature;
  * @implNote The Java compiler automatically imports
  * {@link TemplatedString#STR} and {@link TemplatedString#FMT}
  *
- * @param <R>  Processor's apply result type
+ * @param <R>  Processor's process result type
  * @param <E>  Exception thrown type
  *
  * @see java.lang.template.TemplatedString
@@ -168,7 +168,7 @@ public interface TemplateProcessor<R, E extends Throwable> {
      *
      * @throws E exception thrown by the template processor when validation fails
      */
-    R apply(TemplatedString templatedString) throws E;
+    R process(TemplatedString templatedString) throws E;
 
     /**
      * Chain template processors to produce a new processor that applies the supplied
@@ -176,7 +176,7 @@ public interface TemplateProcessor<R, E extends Throwable> {
      * {@link TemplatedString}.
      *
      * @param head  last {@link TemplateProcessor} to be applied, return type {@code R}
-     * @param tail  first processors to apply, return type {@code TemplatedString}
+     * @param tail  first processors to process, return type {@code TemplatedString}
      *
      * @return a new {@link TemplateProcessor} that applies the supplied
      *         processors from right to left
@@ -203,12 +203,12 @@ public interface TemplateProcessor<R, E extends Throwable> {
         while (index != 0) {
             TemplateProcessor<TemplatedString, RuntimeException> second = tail[--index];
             TemplateProcessor<TemplatedString, RuntimeException> first = current;
-            current = ts -> second.apply(first.apply(ts));
+            current = ts -> second.process(first.process(ts));
         }
 
         TemplateProcessor<TemplatedString, RuntimeException> last = current;
 
-        return ts -> head.apply(last.apply(ts));
+        return ts -> head.process(last.process(ts));
     }
 
     /**

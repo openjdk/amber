@@ -223,7 +223,7 @@ public class Names {
     public final Name enumSwitch;
 
     // templated string
-    public final Name apply;
+    public final Name process;
     public final Name interpolate;
     public final Name fragments;
     public final Name fragmentsUpper;
@@ -406,7 +406,7 @@ public class Names {
         sealed = fromString("sealed");
 
         // templated string
-        apply = fromString("apply");
+        process = fromString("process");
         interpolate = fromString("interpolate");
         fragments = fromString("fragments");
         fragmentsUpper = fromString("FRAGMENTS");

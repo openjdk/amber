@@ -49,7 +49,7 @@ public interface StringProcessor extends SimpleProcessor<String> {
 	 * The {@code tail} processors must return type {@link TemplatedString}.
 	 *
 	 * @param head  last {@link StringProcessor} to be applied, return type {@link String}
-	 * @param tail  first processors to apply, return type {@code TemplatedString}
+	 * @param tail  first processors to process, return type {@code TemplatedString}
 	 *
 	 * @return a new {@link StringProcessor} that applies the supplied processors
 	 *         from right to left
@@ -71,6 +71,6 @@ public interface StringProcessor extends SimpleProcessor<String> {
 		TemplateProcessor<TemplatedString, RuntimeException> last =
 				TemplateProcessor.chain(tail[0], Arrays.copyOfRange(tail, 1, tail.length));
 
-		return ts -> head.apply(last.apply(ts));
+		return ts -> head.process(last.process(ts));
 	}
 }

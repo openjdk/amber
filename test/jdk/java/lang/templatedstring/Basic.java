@@ -71,10 +71,10 @@ public class Basic {
 
         ASSERT(STR."\{x} \{y}", x + " " + y);
         ASSERT(STR."\{x + y}", "" + (x + y));
-        ASSERT(STR.apply("\{x} \{y}"), x + " " + y);
-        ASSERT(STR.apply("\{x + y}"), "" + (x + y));
-        ASSERT(("\{x} \{y}").apply(STR), x + " " + y);
-        ASSERT(("\{x + y}").apply(STR), "" + (x + y));
+        ASSERT(STR.process("\{x} \{y}"), x + " " + y);
+        ASSERT(STR.process("\{x + y}"), "" + (x + y));
+        ASSERT(("\{x} \{y}").process(STR), x + " " + y);
+        ASSERT(("\{x + y}").process(STR), "" + (x + y));
     }
 
     /*
@@ -407,7 +407,7 @@ public class Basic {
                 .value(x)
                 .template(" and \{y} equals \{x + y}")
                 .build();
-        ASSERT(STR.apply(ts), "The result of adding 10 and 20 equals 30");
+        ASSERT(STR.process(ts), "The result of adding 10 and 20 equals 30");
 
         ts = TemplatedString.builder()
                 .fragment("x = ")
@@ -417,7 +417,7 @@ public class Basic {
                 .value(y)
                 .build();
 
-        ASSERT(STR.apply(ts), "y = 20");
+        ASSERT(STR.process(ts), "y = 20");
     }
 
     /*
@@ -426,7 +426,7 @@ public class Basic {
 
     static class Processor0 implements TemplateProcessor<String, IllegalArgumentException> {
         @Override
-        public String apply(TemplatedString templatedString) throws IllegalArgumentException {
+        public String process(TemplatedString templatedString) throws IllegalArgumentException {
             StringBuilder sb = new StringBuilder();
             Iterator<String> fragmentsIter = templatedString.fragments().iterator();
 
