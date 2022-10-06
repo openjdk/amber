@@ -42,35 +42,4 @@ import jdk.internal.javac.PreviewFeature;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 @FunctionalInterface
-public interface StringProcessor extends SimpleProcessor<String> {
-	/**
-	 * Chain template processors to produce a new processor that applies the supplied
-	 * processors from right to left. The {@code head} processor is a {@link StringProcessor}
-	 * The {@code tail} processors must return type {@link TemplatedString}.
-	 *
-	 * @param head  last {@link StringProcessor} to be applied, return type {@link String}
-	 * @param tail  first processors to process, return type {@code TemplatedString}
-	 *
-	 * @return a new {@link StringProcessor} that applies the supplied processors
-	 *         from right to left
-	 *
-	 * @throws NullPointerException if any of the arguments is null.
-	 */
-	@SuppressWarnings("varargs")
-	@SafeVarargs
-	public static StringProcessor
-	chain(StringProcessor head,
-		  TemplateProcessor<TemplatedString, RuntimeException>... tail) {
-		Objects.requireNonNull(head, "head must not be null");
-		Objects.requireNonNull(tail, "tail must not be null");
-
-		if (tail.length == 0) {
-			return head;
-		}
-
-		TemplateProcessor<TemplatedString, RuntimeException> last =
-				TemplateProcessor.chain(tail[0], Arrays.copyOfRange(tail, 1, tail.length));
-
-		return ts -> head.process(last.process(ts));
-	}
-}
+public interface StringProcessor extends SimpleProcessor<String> {}

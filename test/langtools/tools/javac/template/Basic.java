@@ -185,6 +185,7 @@ public class Basic {
      */
     static void compPass(String code) {
         String source = """
+            import java.lang.template.*;
             import java.util.*;
             public class TEST {
                 public static void main(String... arg) {
@@ -212,6 +213,7 @@ public class Basic {
      */
     static void compFail(String code) {
         String source = """
+            import java.lang.template.*;
             import java.util.*;
             public class TEST {
                 public static void main(String... arg) {

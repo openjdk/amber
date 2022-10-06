@@ -93,43 +93,34 @@ import jdk.internal.javac.PreviewFeature;
  * processor using lambda expressions;
  * {@snippet :
  * TemplateProcessor<String, RuntimeException> templateProcessor = ts -> {
- *             StringBuilder sb = new StringBuilder();
- *             Iterator<String> fragmentsIter = ts.fragments().iterator();
- *             for (Object value : ts.values()) {
- *                 sb.append(fragmentsIter.next());
- *                 sb.append(value);
- *             }
- *             sb.append(fragmentsIter.next());
- *            return sb.toString();
- *         };
+ *     List<String> fragments = ts.fragments();
+ *     List<Object> values = ts.values();
+ *     // check or manipulate the fragments and/or values
+ *     ...
+ *     return TemplateRuntime.interpolate(fragments, values);;
+ * };
  * }
  * The {@link FunctionalInterface} {@link SimpleProcessor} is supplied to avoid
  * declaring checked exceptions;
  * {@snippet :
  * SimpleProcessor<String> simpleProcessor = ts -> {
- *             StringBuilder sb = new StringBuilder();
- *             Iterator<String> fragmentsIter = ts.fragments().iterator();
- *             for (Object value : ts.values()) {
- *                 sb.append(fragmentsIter.next());
- *                 sb.append(value);
- *             }
- *             sb.append(fragmentsIter.next());
- *            return sb.toString();
- *         };
+ *     List<String> fragments = ts.fragments();
+ *     List<Object> values = ts.values();
+ *     // check or manipulate the fragments and/or values
+ *     ...
+ *     return TemplateRuntime.interpolate(fragments, values);
+ * };
  * }
  * The {@link FunctionalInterface} {@link StringProcessor} is supplied if
  * the processor returns {@link String};
  * {@snippet :
  * StringProcessor stringProcessor = ts -> {
- *             StringBuilder sb = new StringBuilder();
- *             Iterator<String> fragmentsIter = ts.fragments().iterator();
- *             for (Object value : ts.values()) {
- *                 sb.append(fragmentsIter.next());
- *                 sb.append(value);
- *             }
- *             sb.append(fragmentsIter.next());
- *            return sb.toString();
- *         };
+ *     List<String> fragments = ts.fragments();
+ *     List<Object> values = ts.values();
+ *     // check or manipulate the fragments and/or values
+ *     ...
+ *     return TemplateRuntime.interpolate(fragments, values);
+ * };
  * }
  * The {@link TemplatedString#interpolate()} method is available for those processors
  * that just need to work with the interpolatation;
@@ -169,55 +160,5 @@ public interface TemplateProcessor<R, E extends Throwable> {
      * @throws E exception thrown by the template processor when validation fails
      */
     R process(TemplatedString templatedString) throws E;
-
-    /**
-     * Chain template processors to produce a new processor that applies the supplied
-     * processors from right to left. The {@code tail} processors must return type
-     * {@link TemplatedString}.
-     *
-     * @param head  last {@link TemplateProcessor} to be applied, return type {@code R}
-     * @param tail  first processors to process, return type {@code TemplatedString}
-     *
-     * @return a new {@link TemplateProcessor} that applies the supplied
-     *         processors from right to left
-     *
-     * @param <R> return type of the head processor and resulting processor
-     * @param <E> exception thrown type by head processor and resulting processor
-     *
-     * @throws NullPointerException if any of the arguments is null.
-     */
-    @SafeVarargs
-    public static <R, E extends Throwable> TemplateProcessor<R, E>
-            chain(TemplateProcessor<R, E> head,
-              TemplateProcessor<TemplatedString, RuntimeException>... tail) {
-        Objects.requireNonNull(head, "head must not be null");
-        Objects.requireNonNull(tail, "tail must not be null");
-
-        if (tail.length == 0) {
-            return head;
-        }
-
-        int index = tail.length;
-        TemplateProcessor<TemplatedString, RuntimeException> current = tail[--index];
-
-        while (index != 0) {
-            TemplateProcessor<TemplatedString, RuntimeException> second = tail[--index];
-            TemplateProcessor<TemplatedString, RuntimeException> first = current;
-            current = ts -> second.process(first.process(ts));
-        }
-
-        TemplateProcessor<TemplatedString, RuntimeException> last = current;
-
-        return ts -> head.process(last.process(ts));
-    }
-
-    /**
-     * Factory for creating a new {@link ProcessorBuilder} instance.
-     *
-     * @return a new {@link ProcessorBuilder} instance.
-     */
-    public static ProcessorBuilder builder() {
-        return new ProcessorBuilder();
-    }
 
 }

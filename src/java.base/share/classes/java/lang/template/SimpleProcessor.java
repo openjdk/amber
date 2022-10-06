@@ -35,15 +35,12 @@ import jdk.internal.javac.PreviewFeature;
  * that do not throw checked exceptions. For example:
  * {@snippet :
  * SimpleProcessor<String> simpleProcessor = ts -> {
- *             StringBuilder sb = new StringBuilder();
- *             Iterator<String> fragmentsIter = ts.fragments().iterator();
- *             for (Object value : ts.values()) {
- *                 sb.append(fragmentsIter.next());
- *                 sb.append(value);
- *             }
- *             sb.append(fragmentsIter.next());
- *            return sb.toString();
- *         });
+ *     List<String> fragments = ts.fragments();
+ *     List<Object> values = ts.values();
+ *     // check or manipulate the fragments and/or values
+ *     ...
+ *     return TemplateRuntime.interpolate(fragments, values);
+ * };
  * }
  *
  * @param <R>  Processor's process result type.
@@ -52,37 +49,4 @@ import jdk.internal.javac.PreviewFeature;
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 @FunctionalInterface
-public interface SimpleProcessor<R> extends TemplateProcessor<R, RuntimeException> {
-	/**
-	 * Chain template processors to produce a new processor that applies the supplied
-	 * processors from right to left. The {@code head} processor is a {@link SimpleProcessor}
-	 * The {@code tail} processors must return type {@link TemplatedString}.
-	 *
-	 * @param head  last {@link SimpleProcessor} to be applied, return type {@code R}
-	 * @param tail  first processors to process, return type {@code TemplatedString}
-	 *
-	 * @return a new {@link SimpleProcessor} that applies the supplied processors
-	 *         from right to left
-	 *
-	 * @param <R> return type of the head processor and resulting processor
-	 *
-	 * @throws NullPointerException if any of the arguments is null.
-	 */
-	@SuppressWarnings("varargs")
-	@SafeVarargs
-	public static <R> SimpleProcessor<R>
-	chain(SimpleProcessor<R> head,
-		  TemplateProcessor<TemplatedString, RuntimeException>... tail) {
-		Objects.requireNonNull(head, "head must not be null");
-		Objects.requireNonNull(tail, "tail must not be null");
-
-		if (tail.length == 0) {
-			return head;
-		}
-
-		TemplateProcessor<TemplatedString, RuntimeException> last =
-				TemplateProcessor.chain(tail[0], Arrays.copyOfRange(tail, 1, tail.length));
-
-		return ts -> head.process(last.process(ts));
-	}
-}
+public interface SimpleProcessor<R> extends TemplateProcessor<R, RuntimeException> {}

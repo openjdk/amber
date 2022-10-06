@@ -84,35 +84,27 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * In addition to string template expressions, the factory methods
  * {@link TemplatedString#of(String)} and {@link TemplatedString#of(List, List)}
- * can be used to construct {@link TemplatedString TemplatedStrings}. The
- * {@link TemplateBuilder} class can be used to construct
- * {@link TemplatedString TemplatedStrings} from parts; string fragments,
- * values and other {@link TemplatedString TemplatedStrings}.
+ * can be used to construct {@link TemplatedString TemplatedStrings}.
  * <p>
- * The {@link TemplatedString#interpolate()} method provides a simple way to perform
+ * The {@link TemplatedString#interpolate()} method provides a simple way to produce a
  * string interpolation of the {@link TemplatedString}.
  * <p>
  * {@link TemplateProcessor Template processors} typically use the following code pattern
  * to perform composition:
  * {@snippet :
- * StringBuilder sb = new StringBuilder();
- * Iterator<String> fragmentsIter = ts.fragments().iterator(); // @highlight substring="fragments()"
- *
- * for (Object value : ts.values()) { // @highlight substring="values()"
- *     sb.append(fragmentsIter.next());
- *     sb.append(value);
- * }
- *
- * sb.append(fragmentsIter.next());
- * String result = sb.toString();
+ * List<String> fragments = ts.fragments();
+ * List<Object> values = ts.values();
+ * // check or manipulate the fragments and/or values
+ * ...
+ * String result = TemplateRuntime.interpolate(fragments, values);;
  * }
  *
  * @implSpec An instance of {@link TemplatedString} is immutatble. Also, the
  * fragment list size must be one more than the values list size.
  *
- * @see java.lang.template.TemplateProcessor
- * @see java.lang.template.SimpleProcessor
- * @see java.lang.template.StringProcessor
+ * @see TemplateProcessor
+ * @see SimpleProcessor
+ * @see StringProcessor
  * @see java.util.FormatProcessor
  *
  * @since 20
@@ -154,7 +146,7 @@ public interface TemplatedString {
      * {@return the interpolation of the TemplatedString}
      */
     default String interpolate() {
-        return TemplateRuntime.interpolate(this);
+        return TemplateRuntime.interpolate(fragments(), values());
     }
 
     /**
@@ -211,7 +203,6 @@ public interface TemplatedString {
     public static String toString(TemplatedString templatedString) {
         Objects.requireNonNull(templatedString, "templatedString should not be null");
         String fragments = "[\"" + String.join("\", \"", templatedString.fragments()) + "\"](";
-
         return templatedString.values()
                 .stream()
                 .map(v -> String.valueOf(v))
@@ -229,7 +220,6 @@ public interface TemplatedString {
      */
     public static TemplatedString of(String string) {
         Objects.requireNonNull(string, "string must not be null");
-
         return new SimpleTemplatedString(List.of(string), List.of());
     }
 
@@ -246,160 +236,56 @@ public interface TemplatedString {
      *
      * @throws IllegalArgumentException if fragments list size is not one more
      *         than values list size
-     * @throws NullPointerException if fragments or values is null
+     * @throws NullPointerException if fragments is null or values is null or if any fragment is null.
      *
      * @implNote Contents of both lists are copied to construct immutable lists.
      */
     public static TemplatedString of(List<String> fragments, List<Object> values) {
         Objects.requireNonNull(fragments, "fragments must not be null");
         Objects.requireNonNull(values, "values must not be null");
-
         if (values.size() + 1 != fragments.size()) {
             throw new IllegalArgumentException(
                     "fragments list size is not one more than values list size");
         }
-
+        for (String fragment : fragments) {
+            Objects.requireNonNull(fragment, "fragments elements must be non-null");
+        }
         fragments = Collections.unmodifiableList(new ArrayList<>(fragments));
         values = Collections.unmodifiableList(new ArrayList<>(values));
-
         return new SimpleTemplatedString(fragments, values);
     }
 
-    /**
-     * Factory for creating a new {@link TemplateBuilder} instance.
+     /**
+     * Creates a string that interleaves the elements of values between the
+     * elements of fragments.
      *
-     * @return a new {@link TemplateBuilder} instance.
+     * @param fragments  list of String fragments
+     * @param values     list of expression values
+     *
+     * @return String interpolation of fragments and values
+     *
+     * @throws NullPointerException fragments or values is null or if any of the fragments is null
      */
-    public static TemplateBuilder builder() {
-        return new TemplateBuilder();
+    public static String interpolate(List<String> fragments, List<Object> values) {
+        return TemplateRuntime.interpolate(fragments, values);
     }
 
     /**
-     * Instances of this class can be used to construct a new TemplatedString from
-     * string fragments, values and other {@link TemplatedString TemplatedStrings}.
-     * <p>
-     * To use, construct a new {@link TemplateBuilder} using
-     * {@link TemplatedString#builder}, then chain invokes of
-     * {@link TemplateBuilder#fragment} or {@link TemplateBuilder#value} to
-     * build up the {@link TemplatedString}.
-     * {@link TemplateBuilder#template(TemplatedString)} can be used to add the
-     * fragments and values from another {@link TemplatedString}.
-     * {@link TemplateBuilder#build()} can be invoked at the end of the chain to
-     * produce a new {@link TemplatedString} using the current state of the
-     * builder.
-     * <p>
-     * Example: {@snippet :
-     *      int x = 10;
-     *      int y = 20;
-     *      TemplatedString ts = TemplatedString.builder()
-     *          .fragment("The result of adding ")
-     *          .value(x)
-     *          .template(" and \{y} equals \{x + y}")
-     *          .build();
-     *      String result = STR.process(ts);
-     *  }
-     *
-     *  Result: "The result of adding 10 and 20 equals 30"
-     */
-    @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-    public static class TemplateBuilder {
-        /**
-         * {@link ArrayList} used to gather fragments.
-         */
-        private final List<String> fragments;
-
-        /**
-         * {@link ArrayList} used to gather values.
-         */
-        private final List<Object> values;
-
-        /**
-         * Private Constructor.
-         */
-        private TemplateBuilder() {
-            this.fragments = new ArrayList<>();
-            this.values = new ArrayList<>();
-
-            fragments.add("");
-        }
-
-        /**
-         * Add the supplied {@link TemplatedString TemplatedString's} fragments and
-         * values to the builder.
-         *
-         * @param templatedString existing TemplatedString
-         *
-         * @return this Builder
-         *
-         * @throws NullPointerException if templatedString is null
-         */
-        public TemplateBuilder template(TemplatedString templatedString) {
-            Objects.requireNonNull(templatedString, "templatedString must not be null");
-            List<String> otherFragments = templatedString.fragments();
-            List<Object> otherValues = templatedString.values();
-            fragment(otherFragments.get(0));
-            fragments.addAll(otherFragments.subList(1, otherFragments.size()));
-            values.addAll(otherValues);
-
-            return this;
-        }
-
-        /**
-         * Add a string fragment to the {@link TemplateBuilder Builder's} fragments.
-         *
-         * @param fragment  string fragment to be added
-         *
-         * @return this Builder
-         *
-         * @throws NullPointerException if string is null
-         */
-        public TemplateBuilder fragment(String fragment) {
-            Objects.requireNonNull(fragment, "string must not be null");
-
-            int i = fragments.size() - 1;
-            fragments.set(i, fragments.get(i) + fragment);
-
-            return this;
-        }
-
-        /**
-         * Add a value to the {@link TemplateBuilder}. This method will also advance the
-         * builder's last fragment.
-         *
-         * @param value value to be added
-         *
-         * @return this Builder
-         */
-        public TemplateBuilder value(Object value) {
-            values.add(value);
-            fragments.add("");
-
-            return this;
-        }
-
-        /**
-         * Resets the builder to the initial state; one empty fragment and empty values.
-         *
-         * @return this Builder
-         */
-        public TemplateBuilder clear() {
-            fragments.clear();
-            values.clear();
-            fragments.add("");
-
-            return this;
-        }
-
-        /**
-         * Returns a {@link TemplatedString} based on the current state of the
-         * {@link TemplateBuilder Builder's} fragments and values.
-         *
-         * @return a new TemplatedString
-         */
-        public TemplatedString build() {
-            return TemplatedString.of(fragments, values);
-        }
-
+      * Combine one or more {@link TemplatedString TemplatedStrings} to produce a combined {@link TemplatedString}.
+      * {@snippet :
+      * TemplatedString ts = TemplatedString.combine("\{a}", "\{b}", "\{c}");
+      * assert ts.interpolate().equals("\{a}\{b}\{c}");
+      * }
+      *
+      * @param tss  one or more {@link TemplatedString}
+      *
+      * @return combined {@link TemplatedString}
+      *
+      * @throws NullPointerException if tss is null or if any of the elements are null
+      * @throws RuntimeException if tss has zero elements
+      */
+    public static TemplatedString combine(TemplatedString... tss) {
+        return TemplateRuntime.combine(tss);
     }
 
     /**

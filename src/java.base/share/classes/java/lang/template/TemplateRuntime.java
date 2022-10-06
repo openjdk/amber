@@ -36,7 +36,7 @@ import jdk.internal.javac.PreviewFeature;
 
 /**
  * This class provides runtime support for string templates. The methods within
- * are intended for internal use.
+ * are intended for internal use only.
  *
  * @since 20
  */
@@ -213,65 +213,22 @@ public final class TemplateRuntime {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     /**
-     * {@return an interpolatation of fragments and values}
-     *
-     * @param templatedString  the {@link TemplatedString} to process
-     *
-     * @throws NullPointerException if templatedString is null
-     */
-    public static String interpolate(TemplatedString templatedString) {
-        Objects.requireNonNull(templatedString, "templatedString must not be null");
-        return interpolate(templatedString.fragments(), templatedString.values());
-    }
-
-    /**
-     * Creates a string that interleaves the elements of values between the
-     * elements of fragments.
-     *
-     * @param fragments  list of String fragments
-     * @param values     list of expression values
-     *
-     * @return String interpolation of fragments and values
-     */
-    public static String interpolate(List<String> fragments, List<Object> values) {
-        Objects.requireNonNull(fragments, "fragments must not be null");
-        Objects.requireNonNull(values, "values must not be null");
-        int fragmentsSize = fragments.size();
-        int valuesSize = values.size();
-        if (fragmentsSize != valuesSize + 1) {
-            throw new RuntimeException("fragments must have one more element than values");
-        }
-        if (fragmentsSize == 1) {
-            return fragments.get(0);
-        }
-        int size = fragmentsSize + valuesSize;
-        String[] strings = new String[size];
-        Iterator<String> fragmentsIter = fragments.iterator();
-        int i = 0;
-        for (Object value : values) {
-            strings[i++] = fragmentsIter.next();
-            strings[i++] = String.valueOf(value);
-        }
-        strings[i++] = fragmentsIter.next();
-        return JLA.join("", "", "", strings, size);
-    }
-
-    /**
      * Return the types of a {@link TemplatedString TemplatedString's} values.
      *
      * @param ts  TemplatedString to examine
      *
      * @return list of value types
      *
+     * @throws NullPointerException if ts is null
+     *
      * @implNote The default method determines if the {@link TemplatedString}
      * was synthesized by the compiler, then the types are precisely those of the
      * embedded expressions, otherwise this method returns the values list types.
      */
-    public static List<Class<?>> valueTypes(TemplatedString ts) {
+    static List<Class<?>> valueTypes(TemplatedString ts) {
         Objects.requireNonNull(ts, "ts must not be null");
         List<Class<?>> result = new ArrayList<>();
         Class<?> tsClass = ts.getClass();
-
         if (tsClass.isSynthetic()) {
             try {
                 for (int i = 0; ; i++) {
@@ -286,12 +243,87 @@ public final class TemplateRuntime {
 
             return result;
         }
-
         for (Object value : ts.values()) {
             result.add(value == null ? Object.class : value.getClass());
         }
-
         return result;
+    }
+
+    /**
+     * Creates a string that interleaves the elements of values between the
+     * elements of fragments.
+     *
+     * @param fragments  list of String fragments
+     * @param values     list of expression values
+     *
+     * @return String interpolation of fragments and values
+     *
+     * @throws NullPointerException fragments or values is null or if any of the fragments is null
+     */
+    static String interpolate(List<String> fragments, List<Object> values) {
+        Objects.requireNonNull(fragments, "fragments must not be null");
+        Objects.requireNonNull(values, "values must not be null");
+        int fragmentsSize = fragments.size();
+        int valuesSize = values.size();
+        if (fragmentsSize != valuesSize + 1) {
+            throw new RuntimeException("fragments must have one more element than values");
+        }
+        if (fragmentsSize == 1) {
+            String fragment = Objects.requireNonNull(fragments.get(0), "fragments must not have null elements");
+            return fragments.get(0);
+        }
+        int size = fragmentsSize + valuesSize;
+        String[] strings = new String[size];
+        Iterator<String> fragmentsIter = fragments.iterator();
+        int i = 0;
+        for (Object value : values) {
+            strings[i++] = Objects.requireNonNull(fragmentsIter.next(), "fragments must not have null elements");
+            strings[i++] = String.valueOf(value);
+        }
+        strings[i++] = Objects.requireNonNull(fragmentsIter.next(), "fragments must not have null elements");
+        return JLA.join("", "", "", strings, size);
+    }
+
+    /**
+     * Combine one or more {@link TemplatedString TemplatedStrings} to produce a combined {@link TemplatedString}.
+     * {@snippet :
+     * TemplatedString ts = TemplatedString.combine("\{a}", "\{b}", "\{c}");
+     * assert ts.interpolate().equals("\{a}\{b}\{c}");
+     * }
+     *
+     * @param tss  one or more {@link TemplatedString}
+     *
+     * @return combined {@link TemplatedString}
+     *
+     * @throws NullPointerException if tss is null
+     */
+    static TemplatedString combine(TemplatedString... tss) {
+        Objects.requireNonNull(tss, "tss must not be null");
+        if (tss.length == 0) {
+            TemplatedString.of("");
+        } else if (tss.length == 1) {
+            return tss[0];
+        }
+        int size = 0;
+        for (TemplatedString ts : tss) {
+            size += ts.values().size();
+        }
+        String[] fragments = new String[size + 1];
+        Object[] values = new Object[size];
+        int i = 0, j = 0;
+        fragments[0] = "";
+        for (TemplatedString ts : tss) {
+            Iterator<String> fragmentIter = ts.fragments().iterator();
+            fragments[i++] += fragmentIter.next();
+            while (fragmentIter.hasNext()) {
+                fragments[i++] = fragmentIter.next();
+            }
+            i--;
+            for (Object value : ts.values()) {
+                values[j++] = value;
+            }
+        }
+        return new SimpleTemplatedString(java.lang.template.TemplateRuntime.toList(fragments), java.lang.template.TemplateRuntime.toList(values));
     }
 
 }

@@ -41,9 +41,7 @@ public class Basic {
         limitsTests();
         processorTests();
         templatedStringCoverage();
-        templateBuilderCoverage();
         templateProcessorCoverage();
-        processorBuilderCoverage();
     }
 
     static void ASSERT(String a, String b) {
@@ -371,11 +369,16 @@ public class Basic {
         return TemplatedString.of(fragments, ts.values());
     };
 
+    public static final StringProcessor CHAIN = ts -> {
+        ts = STRINGIFY.process(ts);
+        ts = UPPER.process(ts);
+        return STR.process(ts);
+    };
+
     static void processorTests() {
         String name = "Joan";
         int age = 25;
-        StringProcessor processor = StringProcessor.chain(STR, UPPER, STRINGIFY);
-        ASSERT(processor."\{name} is \{age} years old", "Joan IS 25 YEARS OLD");
+        ASSERT(CHAIN."\{name} is \{age} years old", "Joan IS 25 YEARS OLD");
     }
 
     /*
@@ -394,30 +397,12 @@ public class Basic {
         ASSERT(tsValues.fragments(), List.of("", " + ", " = ", ""));
         ASSERT(tsValues.values(), List.of(x, y, x + y));
         ASSERT(tsValues.interpolate(), x + " + " + y + " = " + (x + y));
-    }
+        ASSERT(TemplatedString.combine(src, src).interpolate(),
+                "\{x} + \{y} = \{x + y}\{x} + \{y} = \{x + y}".interpolate());
+        ASSERT(src.valueTypes().get(0), int.class);
+        ASSERT(src.valueTypes().get(1), int.class);
+        ASSERT(src.valueTypes().get(2), int.class);
 
-    /*
-     * TemplateBuilder coverage.
-     */
-    static void templateBuilderCoverage() {
-        int x = 10;
-        int y = 20;
-        TemplatedString ts = TemplatedString.builder()
-                .fragment("The result of adding ")
-                .value(x)
-                .template(" and \{y} equals \{x + y}")
-                .build();
-        ASSERT(STR.process(ts), "The result of adding 10 and 20 equals 30");
-
-        ts = TemplatedString.builder()
-                .fragment("x = ")
-                .value(x)
-                .clear()
-                .fragment("y = ")
-                .value(y)
-                .build();
-
-        ASSERT(STR.process(ts), "y = 20");
     }
 
     /*
@@ -448,40 +433,16 @@ public class Basic {
 
     static Processor0 processor0 = new Processor0();
 
-    static TemplateProcessor<String, RuntimeException> processor1 = ts -> {
-        StringBuilder sb = new StringBuilder();
-        Iterator<String> fragmentsIter = ts.fragments().iterator();
-        for (Object value : ts.values()) {
-            sb.append(fragmentsIter.next());
-            sb.append(value);
-        }
-        sb.append(fragmentsIter.next());
-        return sb.toString();
-    };
+    static TemplateProcessor<String, RuntimeException> processor1 =
+        ts -> ts.interpolate();
 
-    static SimpleProcessor<String> processor2 = ts -> {
-        StringBuilder sb = new StringBuilder();
-        Iterator<String> fragmentsIter = ts.fragments().iterator();
-        for (Object value : ts.values()) {
-            sb.append(fragmentsIter.next());
-            sb.append(value);
-        }
-        sb.append(fragmentsIter.next());
-        return sb.toString();
-    };
+    static SimpleProcessor<String> processor2 = ts -> ts.interpolate();
 
-    static StringProcessor processor3 = ts -> {
-        StringBuilder sb = new StringBuilder();
-        Iterator<String> fragmentsIter = ts.fragments().iterator();
-        for (Object value : ts.values()) {
-            sb.append(fragmentsIter.next());
-            sb.append(value);
-        }
-        sb.append(fragmentsIter.next());
-        return sb.toString();
-    };
+    static StringProcessor processor3 = ts -> ts.interpolate();
 
-    static StringProcessor processor4 = TemplatedString::interpolate;
+    static StringProcessor processor4 = ts ->
+        TemplatedString.interpolate(ts.fragments(), ts.values());
+
 
     static void templateProcessorCoverage() {
         try {
@@ -516,60 +477,4 @@ public class Basic {
         return string;
     }
 
-    /*
-     * ProcessorBuilder coverage.
-     */
-    static void processorBuilderCoverage() {
-        int x = 10;
-        int y = 12345;
-        int z = -123;
-
-        StringProcessor processor0 = TemplateProcessor.builder()
-                .preliminary(ts -> {
-                    List<String> fragments = ts.fragments()
-                            .stream()
-                            .map(String::toUpperCase)
-                            .toList();
-                    return TemplatedString.of(fragments, ts.values());
-                    })
-                .build();
-        ASSERT(processor0."Some lowercase", "SOME LOWERCASE");
-
-        StringProcessor processor1 = TemplateProcessor.builder()
-                .fragment(f -> f.toUpperCase())
-                .build();
-        ASSERT(processor1."Some lowercase", "SOME LOWERCASE");
-
-        StringProcessor processor2 = TemplateProcessor.builder()
-                .fragment(f -> f.toUpperCase())
-                .fragment(f -> f.toLowerCase())
-                .build();
-        ASSERT(processor2."Some lowercase", "some lowercase");
-
-        StringProcessor processor3 = TemplateProcessor.builder()
-                .value(v -> v instanceof Integer i ? Math.abs(i) : v)
-                .build();
-        ASSERT(processor3."\{z}", "123");
-
-        StringProcessor processor4 = TemplateProcessor.builder()
-                .format("%", (specifier, value) ->
-                        justify(String.valueOf(value), Integer.parseInt(specifier)))
-                .build();
-        ASSERT(processor4."%4\{x} + %4\{y} = %-5\{x + y}", "  10 + **** = 12355");
-
-        Supplier<String> supplier = () -> "x";
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        Future<String> future = executor.submit(() -> "y");
-        FutureTask<String> futureTask = new FutureTask<String>(() -> "z");
-
-        StringProcessor processor5 = TemplateProcessor.builder()
-                .resolve()
-                .build();
-        ASSERT(processor5."\{supplier} \{future} \{futureTask}", "x y z");
-        executor.shutdown();
-
-        SimpleProcessor<Integer> processor6 = TemplateProcessor.builder()
-                .build(s -> Integer.parseInt(s));
-        ASSERT(processor6."123".toString(), "123");
-    }
 }
