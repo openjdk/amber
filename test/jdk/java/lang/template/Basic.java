@@ -82,10 +82,10 @@ public class Basic {
         int x = 10;
         int y = 20;
 
-        TemplatedString ts = "\{x} + \{y} = \{x + y}";
-        ASSERT(ts.values(), List.of(x, y, x + y));
-        ASSERT(ts.fragments(), List.of("", " + ", " = ", ""));
-        ASSERT(ts.interpolate(), x + " + " + y + " = " + (x + y));
+        StringTemplate st = "\{x} + \{y} = \{x + y}";
+        ASSERT(st.values(), List.of(x, y, x + y));
+        ASSERT(st.fragments(), List.of("", " + ", " = ", ""));
+        ASSERT(st.interpolate(), x + " + " + y + " = " + (x + y));
     }
 
     /*
@@ -94,7 +94,7 @@ public class Basic {
     static void limitsTests() {
         int x = 9;
 
-        TemplatedString ts250 = """
+        StringTemplate ts250 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -130,7 +130,7 @@ public class Basic {
                9999999999
                """);
 
-        TemplatedString ts251 = """
+        StringTemplate ts251 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -166,7 +166,7 @@ public class Basic {
                9999999999 9
                """);
 
-        TemplatedString ts252 = """
+        StringTemplate ts252 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -202,7 +202,7 @@ public class Basic {
                9999999999 99
                """);
 
-        TemplatedString ts253 = """
+        StringTemplate ts253 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -238,7 +238,7 @@ public class Basic {
                9999999999 999
                """);
 
-        TemplatedString ts254 = """
+        StringTemplate ts254 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -274,7 +274,7 @@ public class Basic {
                9999999999 9999
                """);
 
-        TemplatedString ts255 = """
+        StringTemplate ts255 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -310,7 +310,7 @@ public class Basic {
                9999999999 99999
                """);
 
-        TemplatedString ts256 = """
+        StringTemplate ts256 = """
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
              \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x} \{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}\{x}
@@ -351,28 +351,28 @@ public class Basic {
     /*
      * Processor tests.
      */
-    public static final SimpleProcessor<TemplatedString> STRINGIFY = ts -> {
-        List<Object> values = ts.values()
+    public static final SimpleProcessor<StringTemplate> STRINGIFY = st -> {
+        List<Object> values = st.values()
                 .stream()
                 .map(v -> (Object)String.valueOf(v))
                 .toList();
 
-        return TemplatedString.of(ts.fragments(), values);
+        return StringTemplate.of(st.fragments(), values);
     };
 
-    public static final SimpleProcessor<TemplatedString> UPPER = ts -> {
-        List<String> fragments = ts.fragments()
+    public static final SimpleProcessor<StringTemplate> UPPER = st -> {
+        List<String> fragments = st.fragments()
                 .stream()
                 .map(String::toUpperCase)
                 .toList();
 
-        return TemplatedString.of(fragments, ts.values());
+        return StringTemplate.of(fragments, st.values());
     };
 
-    public static final StringProcessor CHAIN = ts -> {
-        ts = STRINGIFY.process(ts);
-        ts = UPPER.process(ts);
-        return STR.process(ts);
+    public static final StringProcessor CHAIN = st -> {
+        st = STRINGIFY.process(st);
+        st = UPPER.process(st);
+        return STR.process(st);
     };
 
     static void processorTests() {
@@ -382,22 +382,22 @@ public class Basic {
     }
 
     /*
-     *  TemplatedString coverage
+     *  StringTemplate coverage
      */
     static void templatedStringCoverage() {
-        TemplatedString tsNoValues = TemplatedString.of("No Values");
+        StringTemplate tsNoValues = StringTemplate.of("No Values");
 
         ASSERT(tsNoValues.values(), List.of());
         ASSERT(tsNoValues.fragments(), List.of("No Values"));
         ASSERT(tsNoValues.interpolate(), STR."No Values");
 
         int x = 10, y = 20;
-        TemplatedString src = "\{x} + \{y} = \{x + y}";
-        TemplatedString tsValues = TemplatedString.of(src.fragments(), src.values());
+        StringTemplate src = "\{x} + \{y} = \{x + y}";
+        StringTemplate tsValues = StringTemplate.of(src.fragments(), src.values());
         ASSERT(tsValues.fragments(), List.of("", " + ", " = ", ""));
         ASSERT(tsValues.values(), List.of(x, y, x + y));
         ASSERT(tsValues.interpolate(), x + " + " + y + " = " + (x + y));
-        ASSERT(TemplatedString.combine(src, src).interpolate(),
+        ASSERT(StringTemplate.combine(src, src).interpolate(),
                 "\{x} + \{y} = \{x + y}\{x} + \{y} = \{x + y}".interpolate());
         ASSERT(src.valueTypes().get(0), int.class);
         ASSERT(src.valueTypes().get(1), int.class);
@@ -411,7 +411,7 @@ public class Basic {
 
     static class Processor0 implements TemplateProcessor<String, IllegalArgumentException> {
         @Override
-        public String process(TemplatedString templatedString) throws IllegalArgumentException {
+        public String process(StringTemplate templatedString) throws IllegalArgumentException {
             StringBuilder sb = new StringBuilder();
             Iterator<String> fragmentsIter = templatedString.fragments().iterator();
 
@@ -434,14 +434,14 @@ public class Basic {
     static Processor0 processor0 = new Processor0();
 
     static TemplateProcessor<String, RuntimeException> processor1 =
-        ts -> ts.interpolate();
+        st -> st.interpolate();
 
-    static SimpleProcessor<String> processor2 = ts -> ts.interpolate();
+    static SimpleProcessor<String> processor2 = st -> st.interpolate();
 
-    static StringProcessor processor3 = ts -> ts.interpolate();
+    static StringProcessor processor3 = st -> st.interpolate();
 
-    static StringProcessor processor4 = ts ->
-        TemplatedString.interpolate(ts.fragments(), ts.values());
+    static StringProcessor processor4 = st ->
+        StringTemplate.interpolate(st.fragments(), st.values());
 
 
     static void templateProcessorCoverage() {

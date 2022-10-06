@@ -32,7 +32,7 @@ import jdk.internal.vm.annotation.Stable;
 import sun.invoke.util.Wrapper;
 
 import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.template.TemplatedString;
+import java.lang.template.StringTemplate;
 import java.util.*;
 
 import static java.lang.invoke.MethodType.methodType;
@@ -1030,7 +1030,7 @@ public final class StringConcatFactory {
     }
 
     /**
-     * {@link TemplatedString} allows more slots because of controlled usage.
+     * {@link StringTemplate} allows more slots because of controlled usage.
      */
     public static final int MAX_TEMPLATE_CONCAT_ARG_SLOTS = 253;
 
@@ -1062,7 +1062,7 @@ public final class StringConcatFactory {
     }
 
     /**
-     * Simplified concatenation method to facilitate {@link TemplatedString}
+     * Simplified concatenation method to facilitate {@link StringTemplate}
      * concatenation. This method returns a single concatenation method that
      * interleaves fragments and values. fragment|value|fragment|value|...|value|fragment.
      * The number of fragments must be one more that the number of ptypes.

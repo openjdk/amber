@@ -62,7 +62,7 @@ public class Basic {
             "float",
             "double"
         }) {
-            compPass(type + " x = 10; " + type + "  y = 20; TemplatedString result = \"\\{x} + \\{y} = \\{x + y}\";");
+            compPass(type + " x = 10; " + type + "  y = 20; StringTemplate result = \"\\{x} + \\{y} = \\{x + y}\";");
         }
     }
 
@@ -72,23 +72,23 @@ public class Basic {
     static void missingPartsTest() {
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{x";
+            StringTemplate result = "\\{x";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{{x}";
+            StringTemplate result = "\\{{x}";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{x + }";
+            StringTemplate result = "\\{x + }";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{ * x }";
+            StringTemplate result = "\\{ * x }";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{ (x + x }";
+            StringTemplate result = "\\{ (x + x }";
         """);
     }
 
@@ -99,21 +99,21 @@ public class Basic {
         compPass("""
             int x = 10;
             int[] y = new int[] { 10, 20, 30 };
-            TemplatedString result1 = "\\{x + 1}";
-            TemplatedString result2 = "\\{x + x}";
-            TemplatedString result3 = "\\{x - x}";
-            TemplatedString result4 = "\\{x * x}";
-            TemplatedString result5 = "\\{x / x}";
-            TemplatedString result6 = "\\{x % x}";
-            TemplatedString result7 = "\\{x + (x + x)}";
-            TemplatedString result8 = "\\{y[x - 9]}";
-            TemplatedString result9 = "\\{System.out}";
-            TemplatedString result10 = \"""
+            StringTemplate result1 = "\\{x + 1}";
+            StringTemplate result2 = "\\{x + x}";
+            StringTemplate result3 = "\\{x - x}";
+            StringTemplate result4 = "\\{x * x}";
+            StringTemplate result5 = "\\{x / x}";
+            StringTemplate result6 = "\\{x % x}";
+            StringTemplate result7 = "\\{x + (x + x)}";
+            StringTemplate result8 = "\\{y[x - 9]}";
+            StringTemplate result9 = "\\{System.out}";
+            StringTemplate result10 = \"""
                     \\{ "a string" }
                     \""";
                     """);
         compPass("""
-            TemplatedString result = \"""
+            StringTemplate result = \"""
                  \\{
                      new Collection<String>() {
                           @Override public int size() { return 0; }
@@ -141,22 +141,22 @@ public class Basic {
     static void invalidExpressionsTest() {
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{ (x == x }";
+            StringTemplate result = "\\{ (x == x }";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{ true ?  : x - 1 }";
+            StringTemplate result = "\\{ true ?  : x - 1 }";
         """);
         compFail("""
              String result = "\\{ 'a }";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{ Math.min(, x - 1) }";
+            StringTemplate result = "\\{ Math.min(, x - 1) }";
         """);
         compFail("""
             int x = 10;
-            TemplatedString result = "\\{ \\tx }";
+            StringTemplate result = "\\{ \\tx }";
         """);
     }
 

@@ -39,7 +39,7 @@ import jdk.internal.javac.PreviewFeature;
  * Formatter}. Unlike {@link Formatter}, FormatProcessor uses the value from
  * the embedded expression that follows immediately after the
  * <a href="../util/Formatter.html#syntax">format specifier</a>.
- * TemplatedString expressions without a preceeding specifier, use "%s" by
+ * StringTemplate expressions without a preceeding specifier, use "%s" by
  * default. Example:
  * {@snippet :
  * int x = 10;
@@ -49,7 +49,7 @@ import jdk.internal.javac.PreviewFeature;
  * result is: <code>00010 + 00020 = 00030</code>
  *
  * @implNote When used in conjunction with a compiler generated {@link
- * TemplatedString} this {@link TemplateProcessor} will use the format
+ * StringTemplate} this {@link TemplateProcessor} will use the format
  * specifiers in the fragments and types of the values in the value list
  * to produce a more performant formatter.
  *
@@ -84,7 +84,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
      * @see java.util.Formatter
      */
     @Override
-    public final String process(TemplatedString templatedString) {
+    public final String process(StringTemplate templatedString) {
         Objects.requireNonNull(templatedString);
         String format = templatedStringFormat(templatedString.fragments());
         Object[] values = templatedString.values().toArray(new Object[0]);
@@ -150,7 +150,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
     }
 
     /**
-     * Convert a {@link TemplatedString} fragments, containing format specifications,
+     * Convert a {@link StringTemplate} fragments, containing format specifications,
      * to a form that can be passed on to {@link Formatter}. The method scans each fragment,
      * matching up formatter specifications with the following expression. If no
      * specification is found, the method inserts "%s".

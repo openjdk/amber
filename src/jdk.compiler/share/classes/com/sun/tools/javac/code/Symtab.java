@@ -626,7 +626,7 @@ public class Symtab {
         synthesizeBoxTypeIfMissing(voidType);
 
         // For string templates
-        templatedStringType = enterClass("java.lang.template.TemplatedString");
+        templatedStringType = enterClass("java.lang.template.StringTemplate");
         templateRuntimeType = enterClass("java.lang.template.TemplateRuntime");
         templateProcessorType = enterClass("java.lang.template.TemplateProcessor");
         processorLinkage = enterClass("java.lang.template.ProcessorLinkage");

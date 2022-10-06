@@ -28,11 +28,11 @@ package java.lang.template;
 import java.util.List;
 
 /**
- * Generic TemplatedString.
+ * Generic StringTemplate.
  *
  * @param fragments  immutable list of string fragments from string template
  * @param values     immutable list of expression values
  */
-record SimpleTemplatedString(List<String> fragments,
+record SimpleStringTemplate(List<String> fragments,
                              List<Object> values
-) implements TemplatedString {}
+) implements StringTemplate {}

@@ -31,29 +31,29 @@ import java.util.stream.Collectors;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * The Java compiler produces implementations of {@link TemplatedString} to
+ * The Java compiler produces implementations of {@link StringTemplate} to
  * represent string templates and text block templates. Libraries may produce
- * {@link TemplatedString} instances as long as they conform to the requirements
- * of this interface. Like {@link String}, instances of {@link TemplatedString}
+ * {@link StringTemplate} instances as long as they conform to the requirements
+ * of this interface. Like {@link String}, instances of {@link StringTemplate}
  * implementations are considered immutable.
  * <p>
  * Implementations of this interface must minimally implement the methods
- * {@link TemplatedString#fragments()} and {@link TemplatedString#values()}.
+ * {@link StringTemplate#fragments()} and {@link StringTemplate#values()}.
  * <p>
- * The {@link TemplatedString#fragments()} method must return an immutable
+ * The {@link StringTemplate#fragments()} method must return an immutable
  * {@code List<String>} consistent with the string template body. The list
  * contains the string of characters preceeding each of the embedded expressions
  * plus the string of characters following the last embedded expression. The order
  * of the strings is left to right as they appear in the string template.
  * For example; {@snippet :
- * TemplatedString ts = "The \{name} and \{address} of the resident.";
- * List<String> fragments = ts.fragments();
+ * StringTemplate st = "The \{name} and \{address} of the resident.";
+ * List<String> fragments = st.fragments();
  * }
  * {@code fragments} will be equivalent to <code>List.of("The ", " and ", " of the resident.")</code>.
  * <p>
- * The {@link TemplatedString#values()} method returns an immutable {@code
+ * The {@link StringTemplate#values()} method returns an immutable {@code
  * List<Object>} of values accumulated by evaluating embedded expressions prior
- * to instantiating the {@link TemplatedString}. The values are accumulated left
+ * to instantiating the {@link StringTemplate}. The values are accumulated left
  * to right. The first element of the list is the result of the leftmost
  * embedded expression. The last element of the list is the result of the
  * rightmost embedded expression.
@@ -61,15 +61,15 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * int x = 10;
  * int y = 20;
- * TemplatedString ts = "\{x} + \{y} = \{x + y}";
- * List<Object> values = ts.values();
+ * StringTemplate st = "\{x} + \{y} = \{x + y}";
+ * List<Object> values = st.values();
  * }
  * {@code values} will be the equivalent of <code>List.of(x, y, x + y)</code>.
  * <p>
- * {@link TemplatedString TemplatedStrings} are primarily used in conjuction
+ * {@link StringTemplate StringTemplates} are primarily used in conjuction
  * with {@link TemplateProcessor} to produce meaningful results. For example, if a
  * user wants string interpolation, then they can use a string template
- * expression with the standard {@link TemplatedString#STR} processor.
+ * expression with the standard {@link StringTemplate#STR} processor.
  * {@snippet :
  * int x = 10;
  * int y = 20;
@@ -77,29 +77,29 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * {@code result} will be equivalent to <code>"10 + 20 = 30"</code>.
  * <p>
- * The {@link TemplatedString#process} method supplies an alternative to using
+ * The {@link StringTemplate#process} method supplies an alternative to using
  * string template expressions.
  * {@snippet :
  * String result = "\{x} + \{y} = \{x + y}".process(STR);
  * }
  * In addition to string template expressions, the factory methods
- * {@link TemplatedString#of(String)} and {@link TemplatedString#of(List, List)}
- * can be used to construct {@link TemplatedString TemplatedStrings}.
+ * {@link StringTemplate#of(String)} and {@link StringTemplate#of(List, List)}
+ * can be used to construct {@link StringTemplate StringTemplates}.
  * <p>
- * The {@link TemplatedString#interpolate()} method provides a simple way to produce a
- * string interpolation of the {@link TemplatedString}.
+ * The {@link StringTemplate#interpolate()} method provides a simple way to produce a
+ * string interpolation of the {@link StringTemplate}.
  * <p>
  * {@link TemplateProcessor Template processors} typically use the following code pattern
  * to perform composition:
  * {@snippet :
- * List<String> fragments = ts.fragments();
- * List<Object> values = ts.values();
+ * List<String> fragments = st.fragments();
+ * List<Object> values = st.values();
  * // check or manipulate the fragments and/or values
  * ...
  * String result = TemplateRuntime.interpolate(fragments, values);;
  * }
  *
- * @implSpec An instance of {@link TemplatedString} is immutatble. Also, the
+ * @implSpec An instance of {@link StringTemplate} is immutatble. Also, the
  * fragment list size must be one more than the values list size.
  *
  * @see TemplateProcessor
@@ -110,14 +110,14 @@ import jdk.internal.javac.PreviewFeature;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public interface TemplatedString {
+public interface StringTemplate {
     /**
      * Returns an immutable list of string fragments consisting of the string
      * of characters preceeding each of the embedded expressions plus the
      * string of characters following the last embedded expression. In the
      * example: {@snippet :
-     * TemplatedString ts = "The student \{student} is in \{teacher}'s class room.";
-     * List<String> fragments = ts.fragments(); // @highlight substring="fragments()"
+     * StringTemplate st = "The student \{student} is in \{teacher}'s class room.";
+     * List<String> fragments = st.fragments(); // @highlight substring="fragments()"
      * }
      * <code>fragments</code> will be equivalent to
      * <code>List.of("The student ", " is in ", "'s class room.")</code>
@@ -131,7 +131,7 @@ public interface TemplatedString {
     /**
      * Returns an immutable list of embedded expression results. In the example:
      * {@snippet :
-     * TemplatedString templatedString = "\{x} + \{y} = \{x + y}";
+     * StringTemplate templatedString = "\{x} + \{y} = \{x + y}";
      * List<Object> values = templatedString.values(); // @highlight substring="values()"
      * }
      * <code>values</code> will be equivalent to <code>List.of(x, y, x + y)</code>
@@ -143,14 +143,14 @@ public interface TemplatedString {
     List<Object> values();
 
     /**
-     * {@return the interpolation of the TemplatedString}
+     * {@return the interpolation of the StringTemplate}
      */
     default String interpolate() {
         return TemplateRuntime.interpolate(fragments(), values());
     }
 
     /**
-     * Returns the result of applying the specified processor to this {@link TemplatedString}.
+     * Returns the result of applying the specified processor to this {@link StringTemplate}.
      * This method can be used as an alternative to string template expressions. For example,
      * {@snippet :
      * String result1 = STR."\{x} + \{y} = \{x + y}";
@@ -178,11 +178,11 @@ public interface TemplatedString {
     }
 
     /**
-     * Return the types of a {@link TemplatedString TemplatedString's} values.
+     * Return the types of a {@link StringTemplate StringTemplate's} values.
      *
      * @return list of value types
      *
-     * @implNote The default method determines if the {@link TemplatedString}
+     * @implNote The default method determines if the {@link StringTemplate}
      * was synthesized by the compiler, then the types are precisely those of the
      * embedded expressions, otherwise this method returns the values list types.
      */
@@ -192,15 +192,15 @@ public interface TemplatedString {
 
     /**
      * Produces a diagnostic string representing the supplied
-     * {@link TemplatedString}.
+     * {@link StringTemplate}.
      *
-     * @param templatedString  the {@link TemplatedString} to represent
+     * @param templatedString  the {@link StringTemplate} to represent
      *
      * @return diagnostic string representing the supplied templated string
      *
      * @throws NullPointerException if templatedString is null
      */
-    public static String toString(TemplatedString templatedString) {
+    public static String toString(StringTemplate templatedString) {
         Objects.requireNonNull(templatedString, "templatedString should not be null");
         String fragments = "[\"" + String.join("\", \"", templatedString.fragments()) + "\"](";
         return templatedString.values()
@@ -210,21 +210,21 @@ public interface TemplatedString {
     }
 
     /**
-     * Returns a TemplatedString composed from a string.
+     * Returns a StringTemplate composed from a string.
      *
      * @param string  single string fragment
      *
-     * @return TemplatedString composed from string
+     * @return StringTemplate composed from string
      *
      * @throws NullPointerException if string is null
      */
-    public static TemplatedString of(String string) {
+    public static StringTemplate of(String string) {
         Objects.requireNonNull(string, "string must not be null");
-        return new SimpleTemplatedString(List.of(string), List.of());
+        return new SimpleStringTemplate(List.of(string), List.of());
     }
 
     /**
-     * Returns a TemplatedString composed from fragments and values.
+     * Returns a StringTemplate composed from fragments and values.
      *
      * @implSpec The {@code fragments} list size must be one more that the
      * {@code values} list size.
@@ -232,7 +232,7 @@ public interface TemplatedString {
      * @param fragments list of string fragments
      * @param values    list of expression values
      *
-     * @return TemplatedString composed from string
+     * @return StringTemplate composed from string
      *
      * @throws IllegalArgumentException if fragments list size is not one more
      *         than values list size
@@ -240,7 +240,7 @@ public interface TemplatedString {
      *
      * @implNote Contents of both lists are copied to construct immutable lists.
      */
-    public static TemplatedString of(List<String> fragments, List<Object> values) {
+    public static StringTemplate of(List<String> fragments, List<Object> values) {
         Objects.requireNonNull(fragments, "fragments must not be null");
         Objects.requireNonNull(values, "values must not be null");
         if (values.size() + 1 != fragments.size()) {
@@ -252,7 +252,7 @@ public interface TemplatedString {
         }
         fragments = Collections.unmodifiableList(new ArrayList<>(fragments));
         values = Collections.unmodifiableList(new ArrayList<>(values));
-        return new SimpleTemplatedString(fragments, values);
+        return new SimpleStringTemplate(fragments, values);
     }
 
      /**
@@ -271,21 +271,21 @@ public interface TemplatedString {
     }
 
     /**
-      * Combine one or more {@link TemplatedString TemplatedStrings} to produce a combined {@link TemplatedString}.
+      * Combine one or more {@link StringTemplate StringTemplates} to produce a combined {@link StringTemplate}.
       * {@snippet :
-      * TemplatedString ts = TemplatedString.combine("\{a}", "\{b}", "\{c}");
-      * assert ts.interpolate().equals("\{a}\{b}\{c}");
+      * StringTemplate st = StringTemplate.combine("\{a}", "\{b}", "\{c}");
+      * assert st.interpolate().equals("\{a}\{b}\{c}");
       * }
       *
-      * @param tss  one or more {@link TemplatedString}
+      * @param sts  one or more {@link StringTemplate}
       *
-      * @return combined {@link TemplatedString}
+      * @return combined {@link StringTemplate}
       *
-      * @throws NullPointerException if tss is null or if any of the elements are null
-      * @throws RuntimeException if tss has zero elements
+      * @throws NullPointerException if sts is null or if any of the elements are null
+      * @throws RuntimeException if sts has zero elements
       */
-    public static TemplatedString combine(TemplatedString... tss) {
-        return TemplateRuntime.combine(tss);
+    public static StringTemplate combine(StringTemplate... sts) {
+        return TemplateRuntime.combine(sts);
     }
 
     /**
@@ -297,14 +297,14 @@ public interface TemplatedString {
      * }
      * @implNote The result of interpolation is not interned.
      */
-    public static final StringProcessor STR = ts -> ts.interpolate();
+    public static final StringProcessor STR = st -> st.interpolate();
 
     /**
      * This predefined FormatProcessor instance constructs a String result using {@link
      * Formatter}. Unlike {@link Formatter}, FormatProcessor uses the value from
      * the embedded expression that follows immediately after the
      * <a href="../../util/Formatter.html#syntax">format specifier</a>.
-     * TemplatedString expressions without a preceeding specifier, use "%s" by
+     * StringTemplate expressions without a preceeding specifier, use "%s" by
 
      * Example: {@snippet :
      * int x = 123;

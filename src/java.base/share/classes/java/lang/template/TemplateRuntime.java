@@ -164,7 +164,7 @@ public final class TemplateRuntime {
         }
 
         /**
-         * Creates a simple {@link TemplatedString} and then invokes the processor's process method.
+         * Creates a simple {@link StringTemplate} and then invokes the processor's process method.
          *
          * @param fragments fragments from string template
          * @param processor {@link TemplateProcessor} to process
@@ -174,12 +174,12 @@ public final class TemplateRuntime {
         private static Object defaultProcess(List<String> fragments,
                                              TemplateProcessor<Object, Throwable> processor,
                                              Object[] values) throws Throwable {
-            return processor.process(new SimpleTemplatedString(fragments, List.of(values)));
+            return processor.process(new SimpleStringTemplate(fragments, List.of(values)));
         }
 
         /**
          * Generate a {@link MethodHandle} which is effectively invokes
-         * {@code processor.process(new TemplatedString(fragments, values...)}.
+         * {@code processor.process(new StringTemplate(fragments, values...)}.
          *
          * @return default process {@link MethodHandle}
          */
@@ -202,7 +202,7 @@ public final class TemplateRuntime {
      *
      * @param <E>  type of elements
      *
-     * @implNote Intended for use by {@link TemplatedString} implementations.
+     * @implNote Intended for use by {@link StringTemplate} implementations.
      * Other usage may lead to undesired effects.
      */
     @SuppressWarnings("unchecked")
@@ -213,22 +213,22 @@ public final class TemplateRuntime {
     private static final JavaLangAccess JLA = SharedSecrets.getJavaLangAccess();
 
     /**
-     * Return the types of a {@link TemplatedString TemplatedString's} values.
+     * Return the types of a {@link StringTemplate StringTemplate's} values.
      *
-     * @param ts  TemplatedString to examine
+     * @param st  StringTemplate to examine
      *
      * @return list of value types
      *
-     * @throws NullPointerException if ts is null
+     * @throws NullPointerException if st is null
      *
-     * @implNote The default method determines if the {@link TemplatedString}
+     * @implNote The default method determines if the {@link StringTemplate}
      * was synthesized by the compiler, then the types are precisely those of the
      * embedded expressions, otherwise this method returns the values list types.
      */
-    static List<Class<?>> valueTypes(TemplatedString ts) {
-        Objects.requireNonNull(ts, "ts must not be null");
+    static List<Class<?>> valueTypes(StringTemplate st) {
+        Objects.requireNonNull(st, "st must not be null");
         List<Class<?>> result = new ArrayList<>();
-        Class<?> tsClass = ts.getClass();
+        Class<?> tsClass = st.getClass();
         if (tsClass.isSynthetic()) {
             try {
                 for (int i = 0; ; i++) {
@@ -243,7 +243,7 @@ public final class TemplateRuntime {
 
             return result;
         }
-        for (Object value : ts.values()) {
+        for (Object value : st.values()) {
             result.add(value == null ? Object.class : value.getClass());
         }
         return result;
@@ -285,45 +285,45 @@ public final class TemplateRuntime {
     }
 
     /**
-     * Combine one or more {@link TemplatedString TemplatedStrings} to produce a combined {@link TemplatedString}.
+     * Combine one or more {@link StringTemplate StringTemplates} to produce a combined {@link StringTemplate}.
      * {@snippet :
-     * TemplatedString ts = TemplatedString.combine("\{a}", "\{b}", "\{c}");
-     * assert ts.interpolate().equals("\{a}\{b}\{c}");
+     * StringTemplate st = StringTemplate.combine("\{a}", "\{b}", "\{c}");
+     * assert st.interpolate().equals("\{a}\{b}\{c}");
      * }
      *
-     * @param tss  one or more {@link TemplatedString}
+     * @param sts  one or more {@link StringTemplate}
      *
-     * @return combined {@link TemplatedString}
+     * @return combined {@link StringTemplate}
      *
-     * @throws NullPointerException if tss is null
+     * @throws NullPointerException if sts is null
      */
-    static TemplatedString combine(TemplatedString... tss) {
-        Objects.requireNonNull(tss, "tss must not be null");
-        if (tss.length == 0) {
-            TemplatedString.of("");
-        } else if (tss.length == 1) {
-            return tss[0];
+    static StringTemplate combine(StringTemplate... sts) {
+        Objects.requireNonNull(sts, "sts must not be null");
+        if (sts.length == 0) {
+            StringTemplate.of("");
+        } else if (sts.length == 1) {
+            return sts[0];
         }
         int size = 0;
-        for (TemplatedString ts : tss) {
-            size += ts.values().size();
+        for (StringTemplate st : sts) {
+            size += st.values().size();
         }
         String[] fragments = new String[size + 1];
         Object[] values = new Object[size];
         int i = 0, j = 0;
         fragments[0] = "";
-        for (TemplatedString ts : tss) {
-            Iterator<String> fragmentIter = ts.fragments().iterator();
+        for (StringTemplate st : sts) {
+            Iterator<String> fragmentIter = st.fragments().iterator();
             fragments[i++] += fragmentIter.next();
             while (fragmentIter.hasNext()) {
                 fragments[i++] = fragmentIter.next();
             }
             i--;
-            for (Object value : ts.values()) {
+            for (Object value : st.values()) {
                 values[j++] = value;
             }
         }
-        return new SimpleTemplatedString(java.lang.template.TemplateRuntime.toList(fragments), java.lang.template.TemplateRuntime.toList(values));
+        return new SimpleStringTemplate(java.lang.template.TemplateRuntime.toList(fragments), java.lang.template.TemplateRuntime.toList(values));
     }
 
 }

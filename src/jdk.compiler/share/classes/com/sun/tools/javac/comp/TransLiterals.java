@@ -408,7 +408,7 @@ public final class TransLiterals extends TreeTranslator {
             toStringMethod.addStatement(make.Return(applytoString));
         }
 
-        private JCClassDecl newTemplatedStringClass() {
+        private JCClassDecl newStringTemplateClass() {
             long flags = PUBLIC | FINAL | SYNTHETIC;
 
             if (currentMethodSym.isStatic()) {
@@ -434,12 +434,12 @@ public final class TransLiterals extends TreeTranslator {
             return cDecl;
         }
 
-        void createTemplatedStringClass() {
+        void createStringTemplateClass() {
             ClassSymbol saveCurrentClass = currentClass;
 
             try {
                 Type templatedStringType = syms.templatedStringType;
-                templatedStringClass = newTemplatedStringClass();
+                templatedStringClass = newStringTemplateClass();
                 currentClass = templatedStringClass.sym;
                 createFragmentsListAndMethod();
                 createToStringMethod();
@@ -501,8 +501,8 @@ public final class TransLiterals extends TreeTranslator {
             return cast;
         }
 
-        JCExpression newTemplatedString() {
-            createTemplatedStringClass();
+        JCExpression newStringTemplate() {
+            createStringTemplateClass();
             List<JCExpression> args = expressions;
             List<Type> argTypes = expressionTypes;
             JCExpression encl = currentMethodSym.isStatic() ? null :
@@ -554,13 +554,13 @@ public final class TransLiterals extends TreeTranslator {
             make.at(tree.pos);
 
             if (processor == null) {
-                result = newTemplatedString();
+                result = newStringTemplate();
             } else if (isSTRProcessor()) {
                 result = concatExpression(fragments, expressions);
             } else if (isLinkageProcessor()) {
                 result = createBSMProcessorPerformMethodCall();
             } else {
-                result = createProcessorPerformMethodCall(newTemplatedString());
+                result = createProcessorPerformMethodCall(newStringTemplate());
             }
 
             return result;

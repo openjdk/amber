@@ -1908,7 +1908,7 @@ public class JavacParserTest extends TestCase {
     }
 
     @Test
-    void testTemplatedString1() throws IOException {
+    void testStringTemplate1() throws IOException {
         String code = """
                       package test;
                       public class Test {
@@ -1931,7 +1931,7 @@ public class JavacParserTest extends TestCase {
     }
 
     @Test
-    void testTemplatedString2() throws IOException {
+    void testStringTemplate2() throws IOException {
         String code = """
                       package test;
                       public class Test {

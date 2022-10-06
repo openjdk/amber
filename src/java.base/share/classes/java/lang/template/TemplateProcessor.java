@@ -38,16 +38,16 @@ import jdk.internal.javac.PreviewFeature;
 /**
  * This interface describes the methods provided by a generalized string template processor. The
  * primary method {@link TemplateProcessor#process} is used to validate and compose a result using
- * a {@link TemplatedString TemplatedString's} fragments and values lists. For example:
+ * a {@link StringTemplate StringTemplate's} fragments and values lists. For example:
  *
  * {@snippet :
  * class MyProcessor implements TemplateProcessor<String, IllegalArgumentException> {
  *     @Override
- *     public String process(TemplatedString ts) throws IllegalArgumentException {
+ *     public String process(StringTemplate st) throws IllegalArgumentException {
  *          StringBuilder sb = new StringBuilder();
- *          Iterator<String> fragmentsIter = ts.fragments().iterator();
+ *          Iterator<String> fragmentsIter = st.fragments().iterator();
  *
- *          for (Object value : ts.values()) {
+ *          for (Object value : st.values()) {
  *              sb.append(fragmentsIter.next());
  *
  *              if (value instanceof Boolean) {
@@ -92,37 +92,37 @@ import jdk.internal.javac.PreviewFeature;
  * {@link TemplateProcessor} is a {@link FunctionalInterface}. This permits declaration of a
  * processor using lambda expressions;
  * {@snippet :
- * TemplateProcessor<String, RuntimeException> templateProcessor = ts -> {
- *     List<String> fragments = ts.fragments();
- *     List<Object> values = ts.values();
+ * TemplateProcessor<String, RuntimeException> templateProcessor = st -> {
+ *     List<String> fragments = st.fragments();
+ *     List<Object> values = st.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplatedString.interpolate(fragments, values);;
+ *     return StringTemplate.interpolate(fragments, values);;
  * };
  * }
  * The {@link FunctionalInterface} {@link SimpleProcessor} is supplied to avoid
  * declaring checked exceptions;
  * {@snippet :
- * SimpleProcessor<String> simpleProcessor = ts -> {
- *     List<String> fragments = ts.fragments();
- *     List<Object> values = ts.values();
+ * SimpleProcessor<String> simpleProcessor = st -> {
+ *     List<String> fragments = st.fragments();
+ *     List<Object> values = st.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplatedString.interpolate(fragments, values);
+ *     return StringTemplate.interpolate(fragments, values);
  * };
  * }
  * The {@link FunctionalInterface} {@link StringProcessor} is supplied if
  * the processor returns {@link String};
  * {@snippet :
- * StringProcessor stringProcessor = ts -> {
- *     List<String> fragments = ts.fragments();
- *     List<Object> values = ts.values();
+ * StringProcessor stringProcessor = st -> {
+ *     List<String> fragments = st.fragments();
+ *     List<Object> values = st.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplatedString.interpolate(fragments, values);
+ *     return StringTemplate.interpolate(fragments, values);
  * };
  * }
- * The {@link TemplatedString#interpolate()} method is available for those processors
+ * The {@link StringTemplate#interpolate()} method is available for those processors
  * that just need to work with the interpolatation;
  * {@snippet :
  * StringProcessor simpleProcessor = TemplateString::interpolate;
@@ -130,15 +130,15 @@ import jdk.internal.javac.PreviewFeature;
  * or simply transform the interpolatation into something other than
  * {@link String};
  * {@snippet :
- * SimpleProcessor<JSONObject> jsonProcessor = ts -> new JSONObject(ts.interpolate());
+ * SimpleProcessor<JSONObject> jsonProcessor = st -> new JSONObject(st.interpolate());
  * }
  * @implNote The Java compiler automatically imports
- * {@link TemplatedString#STR} and {@link TemplatedString#FMT}
+ * {@link StringTemplate#STR} and {@link StringTemplate#FMT}
  *
  * @param <R>  Processor's process result type
  * @param <E>  Exception thrown type
  *
- * @see java.lang.template.TemplatedString
+ * @see java.lang.template.StringTemplate
  * @see java.lang.template.SimpleProcessor
  * @see java.lang.template.StringProcessor
  * @see java.util.FormatProcessor
@@ -151,14 +151,14 @@ public interface TemplateProcessor<R, E extends Throwable> {
 
     /**
      * Constructs a result based on the template string and values in the
-     * supplied {@link TemplatedString templatedString} object.
+     * supplied {@link StringTemplate templatedString} object.
      *
-     * @param templatedString  a {@link TemplatedString} instance
+     * @param templatedString  a {@link StringTemplate} instance
      *
      * @return constructed object of type R
      *
      * @throws E exception thrown by the template processor when validation fails
      */
-    R process(TemplatedString templatedString) throws E;
+    R process(StringTemplate templatedString) throws E;
 
 }
