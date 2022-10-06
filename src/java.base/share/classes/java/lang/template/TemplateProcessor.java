@@ -97,7 +97,7 @@ import jdk.internal.javac.PreviewFeature;
  *     List<Object> values = ts.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplateRuntime.interpolate(fragments, values);;
+ *     return TemplatedString.interpolate(fragments, values);;
  * };
  * }
  * The {@link FunctionalInterface} {@link SimpleProcessor} is supplied to avoid
@@ -108,7 +108,7 @@ import jdk.internal.javac.PreviewFeature;
  *     List<Object> values = ts.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplateRuntime.interpolate(fragments, values);
+ *     return TemplatedString.interpolate(fragments, values);
  * };
  * }
  * The {@link FunctionalInterface} {@link StringProcessor} is supplied if
@@ -119,7 +119,7 @@ import jdk.internal.javac.PreviewFeature;
  *     List<Object> values = ts.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplateRuntime.interpolate(fragments, values);
+ *     return TemplatedString.interpolate(fragments, values);
  * };
  * }
  * The {@link TemplatedString#interpolate()} method is available for those processors
