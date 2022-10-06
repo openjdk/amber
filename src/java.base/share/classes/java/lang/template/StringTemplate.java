@@ -131,8 +131,8 @@ public interface StringTemplate {
     /**
      * Returns an immutable list of embedded expression results. In the example:
      * {@snippet :
-     * StringTemplate templatedString = "\{x} + \{y} = \{x + y}";
-     * List<Object> values = templatedString.values(); // @highlight substring="values()"
+     * StringTemplate stringTemplate = "\{x} + \{y} = \{x + y}";
+     * List<Object> values = stringTemplate.values(); // @highlight substring="values()"
      * }
      * <code>values</code> will be equivalent to <code>List.of(x, y, x + y)</code>
      *
@@ -166,7 +166,7 @@ public interface StringTemplate {
      * @return constructed object of type R
      *
      * @throws E exception thrown by the template processor when validation fails
-     * @throws NullPointerException if templatedString is null
+     * @throws NullPointerException if processor is null
      *
      * @implNote The default implementation simply invokes the processor's process
      * method {@code processor.process(this)}.
@@ -194,16 +194,16 @@ public interface StringTemplate {
      * Produces a diagnostic string representing the supplied
      * {@link StringTemplate}.
      *
-     * @param templatedString  the {@link StringTemplate} to represent
+     * @param stringTemplate  the {@link StringTemplate} to represent
      *
      * @return diagnostic string representing the supplied templated string
      *
-     * @throws NullPointerException if templatedString is null
+     * @throws NullPointerException if stringTemplate is null
      */
-    public static String toString(StringTemplate templatedString) {
-        Objects.requireNonNull(templatedString, "templatedString should not be null");
-        String fragments = "[\"" + String.join("\", \"", templatedString.fragments()) + "\"](";
-        return templatedString.values()
+    public static String toString(StringTemplate stringTemplate) {
+        Objects.requireNonNull(stringTemplate, "stringTemplate should not be null");
+        String fragments = "[\"" + String.join("\", \"", stringTemplate.fragments()) + "\"](";
+        return stringTemplate.values()
                 .stream()
                 .map(v -> String.valueOf(v))
                 .collect(Collectors.joining(", ", fragments, ")"));

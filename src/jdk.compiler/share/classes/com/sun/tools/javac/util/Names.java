@@ -230,7 +230,7 @@ public class Names {
     public final Name valuesUpper;
     public final Name toList;
     public final Name str;
-    public final Name templatedStringBSM;
+    public final Name stringTemplateBSM;
 
     public final Name.Table table;
 
@@ -413,7 +413,7 @@ public class Names {
         valuesUpper = fromString("VALUES");
         toList = fromString("toList");
         str = fromString("STR");
-        templatedStringBSM = fromString("templatedStringBSM");
+        stringTemplateBSM = fromString("stringTemplateBSM");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

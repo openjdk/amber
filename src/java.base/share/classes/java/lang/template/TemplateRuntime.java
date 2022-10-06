@@ -61,7 +61,7 @@ public final class TemplateRuntime {
      * @throws NullPointerException if any of the arguments is null
      * @throws Throwable            if linkage fails
      */
-    public static CallSite templatedStringBSM(
+    public static CallSite stringTemplateBSM(
             MethodHandles.Lookup lookup,
             String name,
             MethodType type,

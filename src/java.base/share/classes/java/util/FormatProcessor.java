@@ -84,10 +84,10 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
      * @see java.util.Formatter
      */
     @Override
-    public final String process(StringTemplate templatedString) {
-        Objects.requireNonNull(templatedString);
-        String format = templatedStringFormat(templatedString.fragments());
-        Object[] values = templatedString.values().toArray(new Object[0]);
+    public final String process(StringTemplate stringTemplate) {
+        Objects.requireNonNull(stringTemplate);
+        String format = stringTemplateFormat(stringTemplate.fragments());
+        Object[] values = stringTemplate.values().toArray(new Object[0]);
 
         return new Formatter(locale).format(format, values).toString();
     }
@@ -106,7 +106,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
     public MethodHandle linkage(List<String> fragments, MethodType type) {
         Objects.requireNonNull(fragments);
         Objects.requireNonNull(type);
-        String format = templatedStringFormat(fragments);
+        String format = stringTemplateFormat(fragments);
         Class<?>[] ptypes = type.dropParameterTypes(0, 1).parameterArray();
         MethodHandle mh = Formatter.formatterMethodHandle(format, locale, ptypes);
         mh = MethodHandles.dropArguments(mh, 0, type.parameterType(0));
@@ -159,7 +159,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
      *
      * @return  format string
      */
-    private static String templatedStringFormat(List<String> fragments) {
+    private static String stringTemplateFormat(List<String> fragments) {
         StringBuilder sb = new StringBuilder();
         int lastIndex = fragments.size() - 1;
         List<String> formats = fragments.subList(0, lastIndex);

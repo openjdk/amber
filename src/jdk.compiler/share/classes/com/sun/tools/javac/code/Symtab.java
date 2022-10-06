@@ -235,7 +235,7 @@ public class Symtab {
     public final Type externalizableType;
 
     // For string templates
-    public final Type templatedStringType;
+    public final Type stringTemplateType;
     public final Type templateRuntimeType;
     public final Type templateProcessorType;
     public final Type processorLinkage;
@@ -626,7 +626,7 @@ public class Symtab {
         synthesizeBoxTypeIfMissing(voidType);
 
         // For string templates
-        templatedStringType = enterClass("java.lang.template.StringTemplate");
+        stringTemplateType = enterClass("java.lang.template.StringTemplate");
         templateRuntimeType = enterClass("java.lang.template.TemplateRuntime");
         templateProcessorType = enterClass("java.lang.template.TemplateProcessor");
         processorLinkage = enterClass("java.lang.template.ProcessorLinkage");

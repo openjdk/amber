@@ -4963,7 +4963,7 @@ public class Attr extends JCTree.Visitor {
 
     public void visitStringTemplate(JCStringTemplate tree) {
         JCExpression processor = tree.processor;
-        Type resultType = syms.templatedStringType;
+        Type resultType = syms.stringTemplateType;
 
         if (processor != null) {
             resultType = attribTree(processor, env, new ResultInfo(KindSelector.VAL, Type.noType));

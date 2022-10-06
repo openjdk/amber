@@ -40,7 +40,7 @@ public class Basic {
         componentTests();
         limitsTests();
         processorTests();
-        templatedStringCoverage();
+        stringTemplateCoverage();
         templateProcessorCoverage();
     }
 
@@ -384,7 +384,7 @@ public class Basic {
     /*
      *  StringTemplate coverage
      */
-    static void templatedStringCoverage() {
+    static void stringTemplateCoverage() {
         StringTemplate tsNoValues = StringTemplate.of("No Values");
 
         ASSERT(tsNoValues.values(), List.of());
@@ -411,11 +411,11 @@ public class Basic {
 
     static class Processor0 implements TemplateProcessor<String, IllegalArgumentException> {
         @Override
-        public String process(StringTemplate templatedString) throws IllegalArgumentException {
+        public String process(StringTemplate stringTemplate) throws IllegalArgumentException {
             StringBuilder sb = new StringBuilder();
-            Iterator<String> fragmentsIter = templatedString.fragments().iterator();
+            Iterator<String> fragmentsIter = stringTemplate.fragments().iterator();
 
-            for (Object value : templatedString.values()) {
+            for (Object value : stringTemplate.values()) {
                 sb.append(fragmentsIter.next());
 
                 if (value instanceof Boolean) {

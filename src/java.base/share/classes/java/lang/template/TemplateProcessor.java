@@ -151,14 +151,14 @@ public interface TemplateProcessor<R, E extends Throwable> {
 
     /**
      * Constructs a result based on the template string and values in the
-     * supplied {@link StringTemplate templatedString} object.
+     * supplied {@link StringTemplate stringTemplate} object.
      *
-     * @param templatedString  a {@link StringTemplate} instance
+     * @param stringTemplate  a {@link StringTemplate} instance
      *
      * @return constructed object of type R
      *
      * @throws E exception thrown by the template processor when validation fails
      */
-    R process(StringTemplate templatedString) throws E;
+    R process(StringTemplate stringTemplate) throws E;
 
 }
