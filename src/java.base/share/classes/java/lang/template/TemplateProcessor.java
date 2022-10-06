@@ -125,7 +125,7 @@ import jdk.internal.javac.PreviewFeature;
  * The {@link StringTemplate#interpolate()} method is available for those processors
  * that just need to work with the interpolatation;
  * {@snippet :
- * StringProcessor simpleProcessor = TemplateString::interpolate;
+ * StringProcessor simpleProcessor = StringTemplate::interpolate;
  * }
  * or simply transform the interpolatation into something other than
  * {@link String};
