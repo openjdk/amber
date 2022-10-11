@@ -225,6 +225,7 @@ public class TypeEnter implements Completer {
             chk.checkImportedPackagesObservable(toplevel);
             toplevel.namedImportScope.finalizeScope();
             toplevel.starImportScope.finalizeScope();
+            toplevel.autoImportScope.finalizeScope();
         } catch (CompletionFailure cf) {
             chk.completionError(toplevel.pos(), cf);
         } finally {
@@ -328,6 +329,16 @@ public class TypeEnter implements Completer {
                 sym.owner.complete();
         }
 
+        private void importJavaLang(JCCompilationUnit tree, Env<AttrContext> env) {
+            // Import-on-demand java.lang.
+            PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
+            if (javaLang.members().isEmpty() && !javaLang.exists()) {
+                log.error(Errors.NoJavaLang);
+                throw new Abort();
+            }
+            importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false), javaLang, env);
+        }
+
         private void importJavaLang(JCCompilationUnit tree, Env<AttrContext> env, ImportFilter typeImportFilter) {
             // Import-on-demand java.lang.
             PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
@@ -339,12 +350,13 @@ public class TypeEnter implements Completer {
         }
 
         private void staticImports(JCCompilationUnit tree, Env<AttrContext> env, ImportFilter staticImportFilter) {
-             if (preview.isEnabled() && preview.isPreview(Feature.STRING_TEMPLATES)) {
+            // Import-static-on-demand java.lang.StaticImports.
+            if (preview.isEnabled() && preview.isPreview(Feature.STRING_TEMPLATES)) {
                 Lint prevLint = chk.setLint(lint.suppress(LintCategory.DEPRECATION, LintCategory.REMOVAL, LintCategory.PREVIEW));
 
                 try {
                     String autoImports = """
-                            import static java.lang.template.StringTemplate.STR;
+                            import static java.lang.template.TemplatedString.STR;
                             """;
                     Parser parser = parserFactory.newParser(autoImports, false, false, false, false);
                     JCCompilationUnit importTree = parser.parseCompilationUnit();

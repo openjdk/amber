@@ -65,7 +65,6 @@ public @interface PreviewFeature {
         VIRTUAL_THREADS,
         FOREIGN,
         STRING_TEMPLATES,
-        STATIC_IMPORTS,
         /**
          * A key for testing.
          */

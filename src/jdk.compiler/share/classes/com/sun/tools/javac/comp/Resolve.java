@@ -1526,7 +1526,7 @@ public class Resolve {
             return bestSoFar;
 
         Symbol origin = null;
-        for (Scope sc : new Scope[] { env.toplevel.namedImportScope, env.toplevel.starImportScope, env.toplevel.autoImportScope }) {
+        for (Scope sc : new Scope[] { env.toplevel.namedImportScope, env.toplevel.starImportScope }) {
             for (Symbol currentSymbol : sc.getSymbolsByName(name)) {
                 if (currentSymbol.kind != VAR)
                     continue;
@@ -2056,22 +2056,6 @@ public class Resolve {
                                        allowBoxing, useVarargs);
             }
         }
-        if (bestSoFar.exists())
-            return bestSoFar;
-
-        for (Symbol currentSym : env.toplevel.autoImportScope.getSymbolsByName(name)) {
-            Symbol origin = env.toplevel.autoImportScope.getOrigin(currentSym).owner;
-            if (currentSym.kind == MTH) {
-                if (currentSym.owner.type != origin.type)
-                    currentSym = currentSym.clone(origin);
-                if (!isAccessible(env, origin.type, currentSym))
-                    currentSym = new AccessError(env, origin.type, currentSym);
-                bestSoFar = selectBest(env, origin.type,
-                                       argtypes, typeargtypes,
-                                       currentSym, bestSoFar,
-                                       allowBoxing, useVarargs);
-            }
-        }
         return bestSoFar;
     }
 
@@ -2136,24 +2120,6 @@ public class Resolve {
 
     private final RecoveryLoadClass starImportScopeRecovery = (env, name) -> {
         Scope importScope = env.toplevel.starImportScope;
-        Symbol existing = importScope.findFirst(Convert.shortName(name),
-                                                sym -> sym.kind == TYP && sym.flatName() == name);
-
-        if (existing != null) {
-            try {
-                existing = finder.loadClass(existing.packge().modle, name);
-
-                return new InvisibleSymbolError(env, true, existing);
-            } catch (CompletionFailure cf) {
-                //ignore
-            }
-        }
-
-        return null;
-    };
-
-    private final RecoveryLoadClass autoImportScopeRecovery = (env, name) -> {
-        Scope importScope = env.toplevel.autoImportScope;
         Symbol existing = importScope.findFirst(Convert.shortName(name),
                                                 sym -> sym.kind == TYP && sym.flatName() == name);
 
@@ -2434,10 +2400,6 @@ public class Resolve {
             else bestSoFar = bestOf(bestSoFar, sym);
 
             sym = findGlobalType(env, env.toplevel.starImportScope, name, starImportScopeRecovery);
-            if (sym.exists()) return sym;
-            else bestSoFar = bestOf(bestSoFar, sym);
-
-            sym = findGlobalType(env, env.toplevel.autoImportScope, name, autoImportScopeRecovery);
             if (sym.exists()) return sym;
             else bestSoFar = bestOf(bestSoFar, sym);
         }

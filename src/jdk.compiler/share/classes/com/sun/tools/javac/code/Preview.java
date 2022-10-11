@@ -214,7 +214,6 @@ public class Preview {
             case STRING_TEMPLATES -> true;
             case UNCONDITIONAL_PATTERN_IN_INSTANCEOF -> true;
             case RECORD_PATTERNS -> true;
-            case STATIC_IMPORTS -> true;
 
             //Note: this is a backdoor which allows to optionally treat all features as 'preview' (for testing).
             //When real preview features will be added, this method can be implemented to return 'true'

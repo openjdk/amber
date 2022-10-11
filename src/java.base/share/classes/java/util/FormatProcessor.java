@@ -181,4 +181,20 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
         return sb.toString();
     }
 
+    /**
+     * This predefined FormatProcessor instance constructs a String result using {@link
+     * Formatter}. Unlike {@link Formatter}, FormatProcessor uses the value from
+     * the embedded expression that follows immediately after the
+     * <a href="../../util/Formatter.html#syntax">format specifier</a>.
+     * StringTemplate expressions without a preceeding specifier, use "%s" by
+
+     * Example: {@snippet :
+     * int x = 123;
+     * int y = 987;
+     * String result = FMT."%3d\{x} + %3d\{y} = %4d\{x + y}"; // @highlight substring="FMT"
+     * }
+     * {@link FMT} uses the Locale.US {@link Locale}.
+     */
+    public static final FormatProcessor FMT = new FormatProcessor(Locale.US);
+
 }

@@ -38,9 +38,6 @@ import com.sun.tools.javac.comp.Env;
 import com.sun.tools.javac.util.DefinedBy;
 import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.Assert;
-import com.sun.tools.javac.util.Iterators;
-import java.util.Iterator;
-import java.util.List;
 
 /**
  * Provides an implementation of Scope.
@@ -99,12 +96,7 @@ public class JavacScope implements com.sun.source.tree.Scope {
                 }
                 @DefinedBy(Api.COMPILER_TREE)
                 public Iterable<? extends Element> getLocalElements() {
-                    Iterable<Symbol> starSymbols = env.toplevel.starImportScope.getSymbols(VALIDATOR);
-                    Iterable<Symbol> autoSymbols = env.toplevel.autoImportScope.getSymbols(VALIDATOR);
-                    //XXX: can contain duplicate elements?
-                    return (Iterable<Symbol>) () -> Iterators.createCompoundIterator(List.of(starSymbols,
-                                                                                       autoSymbols),
-                                                                               Iterable::iterator);
+                    return env.toplevel.starImportScope.getSymbols(VALIDATOR);
                 }
             };
         }

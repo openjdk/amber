@@ -187,13 +187,6 @@ public class WorkArounds {
                     return (TypeElement)sym;
                 }
             }
-
-            s = compenv.toplevel.autoImportScope;
-            for (Symbol sym : s.getSymbolsByName(names.fromString(className))) {
-                if (sym.kind == TYP) {
-                    return (TypeElement)sym;
-                }
-            }
         }
 
         // finally, search by qualified name in all modules

@@ -132,8 +132,7 @@ import jdk.internal.javac.PreviewFeature;
  * {@snippet :
  * SimpleProcessor<JSONObject> jsonProcessor = st -> new JSONObject(st.interpolate());
  * }
- * @implNote The Java compiler automatically imports
- * {@link StringTemplate#STR} and {@link StringTemplate#FMT}
+ * @implNote The Java compiler automatically imports {@link StringTemplate#STR}
  *
  * @param <R>  Processor's process result type
  * @param <E>  Exception thrown type
