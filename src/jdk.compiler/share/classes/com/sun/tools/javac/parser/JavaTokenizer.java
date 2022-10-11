@@ -352,6 +352,7 @@ public class JavaTokenizer extends UnicodeReader {
     private void scanEmbeddedExpression(int pos, int endPos) {
         // If first embedded expression.
         if (!isStringTemplate) {
+            checkSourceLevel(pos, Feature.STRING_TEMPLATES);
             fragmentRanges = fragmentRanges.append(pos);
             isStringTemplate = true;
         }
@@ -395,10 +396,7 @@ public class JavaTokenizer extends UnicodeReader {
             }
         }
 
-        // If no closing brace.
-        if (token.kind != TokenKind.RBRACE) {
-            lexError(token.pos, Errors.UnclosedStringTemplateExpr);
-        }
+        // If no closing brace will be picked up as an unterminated string.
 
         // Set main tokenizer to continue at next position.
         reset(tokenizer.position());
@@ -557,7 +555,13 @@ public class JavaTokenizer extends UnicodeReader {
         }
 
         // String ended without close delimiter sequence.
-        lexError(pos, isTextBlock ? Errors.UnclosedTextBlock : Errors.UnclosedStrLit);
+        if (isStringTemplate) {
+            lexError(pos, isTextBlock ? Errors.UnclosedTextBlockTemplate
+                                      : Errors.UnclosedStringTemplate);
+        } else {
+            lexError(pos, isTextBlock ? Errors.UnclosedTextBlock
+                                      : Errors.UnclosedStrLit);
+        }
 
         if (firstEOLN  != NOT_FOUND) {
             // Reset recovery position to point after text block open delimiter sequence.

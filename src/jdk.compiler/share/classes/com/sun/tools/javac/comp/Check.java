@@ -4112,13 +4112,6 @@ public class Check {
 
             if (typeArguments.size() == 2) {
                 resultType = typeArguments.head;
-
-                if (!resultType.isPrimitiveOrVoid()) {
-                    return resultType;
-                } else {
-                    log.error(DiagnosticFlag.RESOLVE_ERROR, processor.pos,
-                            Errors.InvalidTemplateProcessorParameterTypes(processorType.tsym));
-                }
             } else {
                 log.error(DiagnosticFlag.RESOLVE_ERROR, processor.pos,
                         Errors.RawTemplateProcessorType(processorType.tsym));
