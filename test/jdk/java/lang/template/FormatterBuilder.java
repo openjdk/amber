@@ -32,6 +32,8 @@
 import java.lang.template.*;
 import java.util.*;
 
+import static java.util.FormatProcessor.FMT;
+
 public class FormatterBuilder {
     public static void main(String... args) {
         suite(FMT);
