@@ -77,7 +77,7 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * {@code result} will be equivalent to <code>"10 + 20 = 30"</code>.
  * <p>
- * The {@link StringTemplate#process} method supplies an alternative to using
+ * The {@link StringTemplate#process(TemplateProcessor)} method supplies an alternative to using
  * string template expressions.
  * {@snippet :
  * String result = "\{x} + \{y} = \{x + y}".process(STR);
