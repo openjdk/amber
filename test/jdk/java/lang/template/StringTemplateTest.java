@@ -32,7 +32,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import static java.lang.template.StringTemplate.STR;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Supplier;
@@ -53,7 +52,7 @@ public class StringTemplateTest {
     static final String[] BIGINTS = {};
     static final String[] FLOATS = {};
     static final String[] BIGFLOATS = {};
-    static final String[] DATES = {"java.util.Calendar.getInstance()"};
+    static final String[] DATES = {"java.util.Calendar.getInstance().getTime()"};
 
     final Random r = new Random(1);
 
@@ -171,12 +170,6 @@ public class StringTemplateTest {
         return r.nextBoolean() ? '.' + String.valueOf(shift + r.nextInt(range)) : "";
     }
 
-    public static void main(String... args) throws Exception {
-        var log = new ArrayList<String>();
-        new StringTemplateTest().compile().getMethod("run", List.class).invoke(null, log);
-        log.forEach(System.out::println);
-    }
-
     public Class<?> compile() throws Exception {
         var classes = new HashMap<String, byte[]>();
         var fileManager = new ForwardingJavaFileManager(ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null)) {
@@ -218,11 +211,14 @@ public class StringTemplateTest {
             var c = Category.values()[r.nextInt(Category.values().length)];
             var format = randomFormat(c);
             var value = randomValue(c);
-            sb.append("        test(FMT.\"" + format + "\\{" + value + "}\", \"" + format + "\", \"" + value.replace("\"", "\\\"") + "\", " + value + ", log);\n");
+            sb.append("        test(STR.\"" + format + "\\{" + value + "}\", FMT.\"" + format + "\\{" + value + "}\", \"" + format + "\", \"" + value.replace("\"", "\\\"") + "\", " + value + ", log);\n");
         }
         sb.append("""
                 }
-                static void test(String fmt, String format, String expression, Object value, java.util.List<String> log) {
+                static void test(String str, String fmt, String format, String expression, Object value, java.util.List<String> log) {
+                    var concat = format + String.valueOf(value);
+                    if (!str.equals(concat))
+                        log.add("concat expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(expression, value, concat, str));
                     var formatted = String.format(java.util.Locale.US, format, value);
                     if (!fmt.equals(formatted)) {
                         log.add("for format: '%s' expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(format, expression, value, formatted, fmt));
@@ -244,5 +240,12 @@ public class StringTemplateTest {
         } else {
             throw new AssertionError("compilation failed");
         }
+    }
+
+    public static void main(String... args) throws Exception {
+        var log = new ArrayList<String>();
+        new StringTemplateTest().compile().getMethod("run", List.class).invoke(null, log);
+        log.forEach(System.out::println);
+        if (!log.isEmpty()) throw new AssertionError(log);
     }
 }
