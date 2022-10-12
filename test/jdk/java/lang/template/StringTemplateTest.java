@@ -32,8 +32,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import static java.lang.template.StringTemplate.STR;
 import java.net.URI;
 import java.util.*;
+import java.util.function.Supplier;
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileManager;
@@ -43,72 +45,139 @@ import static javax.tools.StandardLocation.CLASS_OUTPUT;
 import javax.tools.ToolProvider;
 
 public class StringTemplateTest {
+    enum Category{GENERAL, CHARACTER, INTEGRAL, BIG_INT, FLOATING, BIG_FLOAT, DATE};
 
-    enum Category{GENERAL, CHARACTER, INTEGRAL, BIG, FLOATING, DATE, PERCENT, LINE};
+    static final String[] BOOLS = {"true", "false"};
+    static final String[] CHARS = {};
+    static final String[] INTS = {};
+    static final String[] BIGINTS = {};
+    static final String[] FLOATS = {};
+    static final String[] BIGFLOATS = {};
+    static final String[] DATES = {"java.util.Calendar.getInstance()"};
 
-    static String randomFormat(Category category, Random r) {
-        char c;
-        return "%" + switch (category) {
-            case GENERAL -> randomFlags("-", r) + randomWidth(r) + randomMax(r) + randomConversion("bBhHsS", r);
-            case CHARACTER -> randomFlags("-", r) + randomWidth(r) + randomConversion("cC", r);
-            case INTEGRAL -> switch (c = randomConversion("doxX", r)) {
-                case 'd'-> randomFlags("-+ 0,(", r);
-                default -> randomFlags("-#0", r);
-            } + randomWidth(r) + c;
-            case BIG -> switch (c = randomConversion("doxX", r)) {
-                case 'd' -> randomFlags("-+ 0,(", r);
-                default -> randomFlags("-#+ 0(", r);
-            } + randomWidth(r) + c;
-            case FLOATING -> switch (c = randomConversion("eEfgGaA", r)) {
-                case 'a', 'A' -> randomFlags("-#+ 0", r);
-                case 'g', 'G' -> randomFlags("-#+ 0,(", r) + randomMax(r);
-                default -> randomFlags("-#+ 0,(", r) + randomPrecision(r);
-            } + randomWidth(r) + c;
-            case DATE ->  randomFlags("-", r) + randomWidth(r) + randomConversion("tT", r);
-            case PERCENT ->  randomWidth(r) + '%';
-            case LINE -> 'n';
+    final Random r = new Random(1);
+
+    String randomValue(Category category) {
+        return switch (category) {
+            case GENERAL -> randomChoice(
+                    BOOLS,
+                    () -> "(Object)null",
+                    () -> randomValue(Category.CHARACTER),
+                    () -> randomValue(Category.INTEGRAL),
+                    () -> "\"" + randomString(r.nextInt(10)) + "\"");
+            case CHARACTER -> randomChoice(
+                    CHARS,
+                    () -> "\'" + randomString(1) + "\'");
+            case INTEGRAL -> randomChoice(
+                    INTS,
+                    () -> "(byte)" + String.valueOf(r.nextInt(Byte.MIN_VALUE, Byte.MAX_VALUE)),
+                    () -> "(short)" + String.valueOf(r.nextInt(Short.MIN_VALUE, Short.MAX_VALUE)),
+                    () -> String.valueOf(r.nextInt()),
+                    () -> r.nextLong() + "l");
+            case BIG_INT -> randomChoice(
+                    BIGINTS,
+                    () -> "new java.math.BigInteger(\"" + r.nextLong() + "\")");
+            case FLOATING -> randomChoice(
+                    FLOATS,
+                    () -> String.valueOf(r.nextDouble()),
+                    () -> r.nextFloat() + "f");
+            case BIG_FLOAT -> randomChoice(
+                    BIGFLOATS,
+                    () -> "new java.math.BigDecimal(" + r.nextDouble() + ")");
+            case DATE -> randomChoice(
+                    DATES,
+                    () -> "new java.util.Date(" + r.nextLong() + "l)",
+                    () -> r.nextLong() + "l");
         };
     }
 
-    static String randomFlags(String flags, Random r) {
-        var sb = new StringBuilder(flags.length());
-        for (var f : flags.toCharArray()) {
-            if (r.nextBoolean()) sb.append(f);
+    String randomChoice(Supplier<String>... suppl) {
+        return suppl[r.nextInt(suppl.length)].get();
+    }
+
+    String randomChoice(String... values) {
+        return values[r.nextInt(values.length)];
+    }
+
+    String randomChoice(String[] values, Supplier<String>... suppl) {
+        int i = r.nextInt(values.length + suppl.length);
+        return i < values.length ? values[i] : suppl[i - values.length].get();
+    }
+
+    String randomString(int length) {
+        var sb = new StringBuilder(length << 2);
+        while (length-- > 0) {
+            char ch = (char)r.nextInt(9, 128);
+            var s = switch (ch) {
+                case '\t' -> "\\t";
+                case '\'' -> "\\\'";
+                case '"' -> "\\\"";
+                case '\r' -> "\\r";
+                case '\\' -> "\\\\";
+                case '\n' -> "\\n";
+                case '\f' -> "\\f";
+                case '\b' -> "\\b";
+                default -> ch + "";
+            };
+            sb.append(s);
         }
         return sb.toString();
     }
 
-    static char randomConversion(String conversions, Random r) {
-        return conversions.charAt(r.nextInt(conversions.length()));
+    String randomFormat(Category category) {
+        char c;
+        return "%" + switch (category) {
+            case GENERAL -> randomWidth("-") + randomPrecision(10, 10) + randomChar("bBhHsS");
+            case CHARACTER -> randomWidth("-") + randomChar("cC");
+            case INTEGRAL -> switch (c = randomChar("doxX")) {
+                case 'd' -> randomFlags("+ ,(");
+                default -> randomFlags("");
+            } + randomWidth("-0") + c;
+            case BIG_INT -> switch (c = randomChar("doxX")) {
+                case 'd' -> randomFlags("+ ,(");
+                default -> randomFlags("+ (");
+            } + randomWidth("-0") + c;
+            case FLOATING -> switch (c = randomChar("eEfaAgG")) {
+                case 'a', 'A' -> randomFlags("+ ") + randomWidth("-0");
+                case 'e', 'E' -> randomFlags("+ (") + randomWidth("-0") + randomPrecision(0, 10);
+                default -> randomFlags("+ ,(") + randomWidth("-0") + randomPrecision(0, 10);
+            } + c;
+            case BIG_FLOAT -> switch (c = randomChar("eEfgG")) {
+                case 'e', 'E' -> randomFlags("+ (") + randomWidth("-0") + randomPrecision(0, 10);
+                default -> randomFlags("+ ,(") + randomWidth("-0") + randomPrecision(0, 10);
+            } + c;
+            case DATE ->  randomWidth("-") + randomChar("tT") + randomChar("BbhAaCYyjmdeRTrDFc");
+        };
     }
 
-    static String randomWidth(Random r) {
-        return r.nextBoolean() ? String.valueOf(r.nextInt(10)) : "";
+    String randomFlags(String flags) {
+        var sb = new StringBuilder(flags.length());
+        for (var f : flags.toCharArray()) {
+            if (r.nextBoolean() && (f != ' ' || sb.length() == 0 || sb.charAt(sb.length() - 1) != '+')) sb.append(f);
+        }
+        return sb.toString();
     }
 
-    static String randomPrecision(Random r) {
-        return r.nextBoolean() ? ',' + String.valueOf(r.nextInt(10)) : "";
+    char randomChar(String chars) {
+        return chars.charAt(r.nextInt(chars.length()));
     }
 
-    static String randomMax(Random r) {
-        return r.nextBoolean() ? ',' + String.valueOf(10 + r.nextInt(10)) : "";
+    String randomWidth(String flags) {
+        var f = r.nextInt(flags.length() + 1);
+        return f < flags.length() ? flags.charAt(f) + String.valueOf(r.nextInt(10) + 10) : "";
+    }
+
+    String randomPrecision(int shift, int range) {
+        return r.nextBoolean() ? '.' + String.valueOf(shift + r.nextInt(range)) : "";
     }
 
     public static void main(String... args) throws Exception {
-        var r = new Random(1);
-        for (int i = 0; i < 20; i++) {
-            System.out.println(randomFormat(Category.values()[r.nextInt(Category.values().length)], r));
-        }
-        var gen = compile("""
-            public static void run() {
-                var what = "ahoj";
-                var i = 15;
-                System.out.println(FMT."%s\\{what} %4d\\{i}");
-            }
-        """).getMethod("run").invoke(null);
+        var log = new ArrayList<String>();
+        new StringTemplateTest().compile().getMethod("run", List.class).invoke(null, log);
+        log.forEach(System.out::println);
     }
 
-    public static Class<?> compile(String sourceFragment) throws Exception {
+    public Class<?> compile() throws Exception {
         var classes = new HashMap<String, byte[]>();
         var fileManager = new ForwardingJavaFileManager(ToolProvider.getSystemJavaCompiler().getStandardFileManager(null, null, null)) {
             @Override
@@ -140,16 +209,35 @@ public class StringTemplateTest {
                 };
             }
         };
+        var sb = new StringBuilder(40000);
+        sb.append("""
+            public class StringTemplateTest$ {
+                public static void run(java.util.List<String> log) {
+            """);
+        for (int i = 0; i < 161; i++) {
+            var c = Category.values()[r.nextInt(Category.values().length)];
+            var format = randomFormat(c);
+            var value = randomValue(c);
+            sb.append("        test(FMT.\"" + format + "\\{" + value + "}\", \"" + format + "\", \"" + value.replace("\"", "\\\"") + "\", " + value + ", log);\n");
+        }
+        sb.append("""
+                }
+                static void test(String fmt, String format, String expression, Object value, java.util.List<String> log) {
+                    var formatted = String.format(java.util.Locale.US, format, value);
+                    if (!fmt.equals(formatted)) {
+                        log.add("for format: '%s' expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(format, expression, value, formatted, fmt));
+                    }
+                }
+            }
+            """);
+        System.out.println(sb.toString());
+        var source = sb.toString();
         if (ToolProvider.getSystemJavaCompiler().getTask(null, fileManager, null,
                 List.of("--enable-preview", "-source", String.valueOf(Runtime.version().feature())), null,
                 List.of(new SimpleJavaFileObject(URI.create("StringTemplateTest$.java"), JavaFileObject.Kind.SOURCE) {
             @Override
             public CharSequence getCharContent(boolean ignoreEncodingErrors) {
-                return STR."""
-                    public class StringTemplateTest$ {
-                        \{sourceFragment}
-                    }
-                    """;
+                return source;
             }
         })).call()) {
             return fileManager.getClassLoader(CLASS_OUTPUT).loadClass("StringTemplateTest$");
