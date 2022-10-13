@@ -150,7 +150,7 @@ class FormatItem {
             this.groupSize = groupSize;
             this.value = value;
             this.parentheses = parentheses && isNegative;
-            this.prefixSign = (byte)(isNegative ? (parentheses ? (sign == ' ' ? ' ' : '\0') : minusSign) : sign);
+            this.prefixSign = (byte)(isNegative ? (parentheses ? '\0' : minusSign) : sign);
         }
 
         private int signLength() {
