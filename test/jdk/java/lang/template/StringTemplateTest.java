@@ -221,11 +221,11 @@ public class StringTemplateTest {
     String genSource() {
         var delimiter = "\n        ";
         var fragments = new LinkedList<String>();
-        for (int i = 0; i < 161; i++) {
+        for (int i = 0; i < 1500; i++) {
             var c = Category.values()[r.nextInt(Category.values().length)];
             var format = randomFormat(c);
             var value = randomValue(c);
-            var qValue = value.replace("\"", "\\\"");
+            var qValue = value.replace("\\", "\\\\").replace("\"", "\\\"");
             fragments.add(STR."test(STR.\"\{format}\\{\{value}}\", FMT.\"\{format}\\{\{value}}\", \"\{format}\", \"\{qValue}\", \{value}, log);");
         }
         return STR."""
