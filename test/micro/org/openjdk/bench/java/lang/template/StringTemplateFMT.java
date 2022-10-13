@@ -34,6 +34,8 @@ import org.openjdk.jmh.annotations.Warmup;
 
 import java.util.concurrent.TimeUnit;
 
+import static java.util.FormatProcessor.FMT;
+
 /*
  * This benchmark measures StringTemplate.FMT FormatProcessor performance;
  * exactly mirroring {@link org.openjdk.bench.java.lang.StringFormat} benchmark
