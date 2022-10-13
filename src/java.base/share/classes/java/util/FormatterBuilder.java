@@ -122,8 +122,8 @@ final class FormatterBuilder {
 
     private static final MethodHandle FIDecimal_MH =
             findStringConcatItemConstructor(FormatItemDecimal.class,
-                    DecimalFormatSymbols.class, int.class, char.class, int.class,
-                    long.class);
+                    DecimalFormatSymbols.class, int.class, char.class, boolean.class,
+                    int.class, long.class);
 
     private static final MethodHandle FIHexadecimal_MH =
             findStringConcatItemConstructor(FormatItemHexadecimal.class,
@@ -334,14 +334,14 @@ final class FormatterBuilder {
                                                  PARENTHESES)) {
                         handled = true;
                         int zeroPad = isFlag(flags, ZERO_PAD) ? width : -1;
-                        char sign = isFlag(flags, PARENTHESES)   ? '(' :
-                                    isFlag(flags, PLUS)          ? '+' :
-                                    isFlag(flags, LEADING_SPACE) ? ' ' : '-';
+                        char sign = isFlag(flags, PLUS)          ? '+' :
+                                    isFlag(flags, LEADING_SPACE) ? ' ' : '\0';
+                        boolean parentheses = isFlag(flags, PARENTHESES);
                         int groupSize = isFlag(flags, GROUP) ?
                                 groupSize(locale, dfs) : 0;
                         mh = filterReturnValue(mh,
                                 insertArguments(FIDecimal_MH, 0, dfs, zeroPad,
-                                        sign, groupSize));
+                                        sign, parentheses, groupSize));
                     }
                 }
             }
