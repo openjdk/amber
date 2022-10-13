@@ -46,11 +46,11 @@ import javax.tools.ToolProvider;
 public class StringTemplateTest {
     enum Category{GENERAL, CHARACTER, INTEGRAL, BIG_INT, FLOATING, BIG_FLOAT, DATE};
 
-    static final String[] BOOLS = {"true", "false"};
-    static final String[] CHARS = {};
-    static final String[] INTS = {};
+    static final String[] GENERAL = {"true", "false", "(Object)null", "STR", "B", "BOOL"};
+    static final String[] CHARS = {"C", "CHAR"};
+    static final String[] INTS = {"L", "LONG", "I", "INT", "S", "SHORT", "Long.MAX_VALUE", "Long.MIN_VALUE"};
     static final String[] BIGINTS = {};
-    static final String[] FLOATS = {};
+    static final String[] FLOATS = {"F", "FLOAT", "D", "DOUBLE", "Double.NEGATIVE_INFINITY", "Double.NaN", "Double.MAX_VALUE"};
     static final String[] BIGFLOATS = {};
     static final String[] DATES = {"java.util.Calendar.getInstance().getTime()"};
 
@@ -59,10 +59,13 @@ public class StringTemplateTest {
     String randomValue(Category category) {
         return switch (category) {
             case GENERAL -> randomChoice(
-                    BOOLS,
-                    () -> "(Object)null",
+                    GENERAL,
                     () -> randomValue(Category.CHARACTER),
                     () -> randomValue(Category.INTEGRAL),
+                    () -> randomValue(Category.BIG_INT),
+                    () -> randomValue(Category.FLOATING),
+                    () -> randomValue(Category.BIG_FLOAT),
+                    () -> randomValue(Category.DATE),
                     () -> "\"" + randomString(r.nextInt(10)) + "\"");
             case CHARACTER -> randomChoice(
                     CHARS,
@@ -218,27 +221,69 @@ public class StringTemplateTest {
         }
     }
 
-    String genSource() {
-        var delimiter = "\n        ";
+    String genFragments(Category c) {
         var fragments = new LinkedList<String>();
         for (int i = 0; i < 1500; i++) {
-            var c = Category.values()[r.nextInt(Category.values().length)];
             var format = randomFormat(c);
             var value = randomValue(c);
             var qValue = value.replace("\\", "\\\\").replace("\"", "\\\"");
-            fragments.add(STR."test(STR.\"\{format}\\{\{value}}\", FMT.\"\{format}\\{\{value}}\", \"\{format}\", \"\{qValue}\", \{value}, log);");
+            fragments.add(STR."test(FMT.\"\{format}\\{\{value}}\", \"\{format}\", \"\{qValue}\", \{value}, log);");
         }
+        return String.join("\n        ", fragments);
+    }
+
+    String genSource() {
         return STR."""
             import static java.util.FormatProcessor.FMT;
 
             public class StringTemplateTest$ {
+                static String STR = "this is static String";
+                static char C = 'c';
+                static Character CHAR = 'C';
+                static long L = -12345678910l;
+                static Long LONG = 9876543210l;
+                static int I = 42;
+                static Integer INT = -49;
+                static boolean B = true;
+                static Boolean BOOL = null;
+                static short S = 13;
+                static Short SHORT = -17;
+                static float F = 4.789f;
+                static Float FLOAT = -0.000006f;
+                static double D = 6545745.6734654563;
+                static Double DOUBLE = -4323.7645676574;
+
                 public static void run(java.util.List<String> log) {
-                    \{String.join(delimiter, fragments)}
+                    runGeneral(log);
+                    runCharacter(log);
+                    runIntegral(log);
+                    runBigInt(log);
+                    runFloating(log);
+                    runBigFloat(log);
+                    runDate(log);
                 }
-                static void test(String str, String fmt, String format, String expression, Object value, java.util.List<String> log) {
-                    var concat = format + String.valueOf(value);
-                    if (!str.equals(concat))
-                        log.add("  concat expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(expression, value, concat, str));
+                public static void runGeneral(java.util.List<String> log) {
+                    \{genFragments(Category.GENERAL)}
+                }
+                public static void runCharacter(java.util.List<String> log) {
+                    \{genFragments(Category.CHARACTER)}
+                }
+                public static void runIntegral(java.util.List<String> log) {
+                    \{genFragments(Category.INTEGRAL)}
+                }
+                public static void runBigInt(java.util.List<String> log) {
+                    \{genFragments(Category.BIG_INT)}
+                }
+                public static void runFloating(java.util.List<String> log) {
+                    \{genFragments(Category.FLOATING)}
+                }
+                public static void runBigFloat(java.util.List<String> log) {
+                    \{genFragments(Category.BIG_FLOAT)}
+                }
+                public static void runDate(java.util.List<String> log) {
+                    \{genFragments(Category.DATE)}
+                }
+                static void test(String fmt, String format, String expression, Object value, java.util.List<String> log) {
                     var formatted = String.format(java.util.Locale.US, format, value);
                     if (!fmt.equals(formatted)) {
                         log.add("  format: '%s' expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(format, expression, value, formatted, fmt));
