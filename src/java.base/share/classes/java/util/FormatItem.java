@@ -195,7 +195,7 @@ class FormatItem {
                     if (groupIndex-- == 0) {
                         putCharMH.invokeExact(buffer, (int)--lengthCoder,
                                 (int)groupingSeparator);
-                        groupIndex = groupSize;
+                        groupIndex = groupSize - 1;
                     }
 
                     putCharMH.invokeExact(buffer, (int)--lengthCoder,
