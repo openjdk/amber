@@ -126,7 +126,7 @@ public class StringTemplateTest {
     String randomFormat(Category category) {
         char c;
         return "%" + switch (category) {
-            case GENERAL -> randomWidth("-") + randomPrecision(10, 10) + randomChar("bBhHsS");
+            case GENERAL -> randomWidth("-") + randomPrecision() + randomChar("bBhHsS");
             case CHARACTER -> randomWidth("-") + randomChar("cC");
             case INTEGRAL -> switch (c = randomChar("doxX")) {
                 case 'd' -> randomFlags("+ ,(");
@@ -138,12 +138,12 @@ public class StringTemplateTest {
             } + randomWidth("-0") + c;
             case FLOATING -> switch (c = randomChar("eEfaAgG")) {
                 case 'a', 'A' -> randomFlags("+ ") + randomWidth("-0");
-                case 'e', 'E' -> randomFlags("+ (") + randomWidth("-0") + randomPrecision(0, 10);
-                default -> randomFlags("+ ,(") + randomWidth("-0") + randomPrecision(0, 10);
+                case 'e', 'E' -> randomFlags("+ (") + randomWidth("-0") + randomPrecision();
+                default -> randomFlags("+ ,(") + randomWidth("-0") + randomPrecision();
             } + c;
             case BIG_FLOAT -> switch (c = randomChar("eEfgG")) {
-                case 'e', 'E' -> randomFlags("+ (") + randomWidth("-0") + randomPrecision(0, 10);
-                default -> randomFlags("+ ,(") + randomWidth("-0") + randomPrecision(0, 10);
+                case 'e', 'E' -> randomFlags("+ (") + randomWidth("-0") + randomPrecision();
+                default -> randomFlags("+ ,(") + randomWidth("-0") + randomPrecision();
             } + c;
             case DATE ->  randomWidth("-") + randomChar("tT") + randomChar("BbhAaCYyjmdeRTrDFc");
         };
@@ -163,11 +163,11 @@ public class StringTemplateTest {
 
     String randomWidth(String flags) {
         var f = r.nextInt(flags.length() + 1);
-        return f < flags.length() ? flags.charAt(f) + String.valueOf(r.nextInt(10) + 10) : "";
+        return r.nextBoolean() ? (r.nextBoolean() ? flags.charAt(r.nextInt(flags.length())) : "") + String.valueOf(r.nextInt(10) + 1) : "";
     }
 
-    String randomPrecision(int shift, int range) {
-        return r.nextBoolean() ? '.' + String.valueOf(shift + r.nextInt(range)) : "";
+    String randomPrecision() {
+        return r.nextBoolean() ? '.' + String.valueOf(r.nextInt(10) + 1) : "";
     }
 
     public Class<?> compile() throws Exception {
