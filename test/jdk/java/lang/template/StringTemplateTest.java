@@ -202,32 +202,8 @@ public class StringTemplateTest {
                 };
             }
         };
-        var sb = new StringBuilder(40000);
-        sb.append("""
-            public class StringTemplateTest$ {
-                public static void run(java.util.List<String> log) {
-            """);
-        for (int i = 0; i < 161; i++) {
-            var c = Category.values()[r.nextInt(Category.values().length)];
-            var format = randomFormat(c);
-            var value = randomValue(c);
-            sb.append("        test(STR.\"" + format + "\\{" + value + "}\", FMT.\"" + format + "\\{" + value + "}\", \"" + format + "\", \"" + value.replace("\"", "\\\"") + "\", " + value + ", log);\n");
-        }
-        sb.append("""
-                }
-                static void test(String str, String fmt, String format, String expression, Object value, java.util.List<String> log) {
-                    var concat = format + String.valueOf(value);
-                    if (!str.equals(concat))
-                        log.add("concat expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(expression, value, concat, str));
-                    var formatted = String.format(java.util.Locale.US, format, value);
-                    if (!fmt.equals(formatted)) {
-                        log.add("for format: '%s' expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(format, expression, value, formatted, fmt));
-                    }
-                }
-            }
-            """);
-        System.out.println(sb.toString());
-        var source = sb.toString();
+        var source = genSource();
+//        System.out.println(source);
         if (ToolProvider.getSystemJavaCompiler().getTask(null, fileManager, null,
                 List.of("--enable-preview", "-source", String.valueOf(Runtime.version().feature())), null,
                 List.of(new SimpleJavaFileObject(URI.create("StringTemplateTest$.java"), JavaFileObject.Kind.SOURCE) {
@@ -242,10 +218,42 @@ public class StringTemplateTest {
         }
     }
 
+    String genSource() {
+        var delimiter = "\n        ";
+        var fragments = new LinkedList<String>();
+        for (int i = 0; i < 161; i++) {
+            var c = Category.values()[r.nextInt(Category.values().length)];
+            var format = randomFormat(c);
+            var value = randomValue(c);
+            var qValue = value.replace("\"", "\\\"");
+            fragments.add(STR."test(STR.\"\{format}\\{\{value}}\", FMT.\"\{format}\\{\{value}}\", \"\{format}\", \"\{qValue}\", \{value}, log);");
+        }
+        return STR."""
+            import static java.util.FormatProcessor.FMT;
+
+            public class StringTemplateTest$ {
+                public static void run(java.util.List<String> log) {
+                    \{String.join(delimiter, fragments)}
+                }
+                static void test(String str, String fmt, String format, String expression, Object value, java.util.List<String> log) {
+                    var concat = format + String.valueOf(value);
+                    if (!str.equals(concat))
+                        log.add("  concat expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(expression, value, concat, str));
+                    var formatted = String.format(java.util.Locale.US, format, value);
+                    if (!fmt.equals(formatted)) {
+                        log.add("  format: '%s' expression: '%s' value: '%s' expected: '%s' found: '%s'".formatted(format, expression, value, formatted, fmt));
+                    }
+                }
+            }
+            """;
+    }
+
     public static void main(String... args) throws Exception {
-        var log = new ArrayList<String>();
+        var log = new LinkedList<String>();
         new StringTemplateTest().compile().getMethod("run", List.class).invoke(null, log);
-        log.forEach(System.out::println);
-        if (!log.isEmpty()) throw new AssertionError(log);
+        if (!log.isEmpty()) {
+            log.addFirst(STR."failed \{log.size()} tests:");
+            throw new AssertionError(String.join("\n", log));
+        }
     }
 }
