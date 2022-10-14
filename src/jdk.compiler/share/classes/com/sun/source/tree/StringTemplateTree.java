@@ -27,10 +27,13 @@ package com.sun.source.tree;
 
 import java.util.List;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * A tree node for a string template expression.
  *
  */
+@PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES, reflective=true)
 public interface StringTemplateTree extends ExpressionTree {
     /**
      * Returns templated string processor (may be qualified) or null.
