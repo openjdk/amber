@@ -131,12 +131,12 @@ class FormatItem {
         private final boolean isNegative;
         private final int width;
         private final byte prefixSign;
-        private final byte suffixSign;
         private final int groupSize;
         private final long value;
+        private final boolean parentheses;
 
         FormatItemDecimal(DecimalFormatSymbols dfs, int width, char sign,
-                          int groupSize, long value) throws Throwable {
+                          boolean parentheses, int groupSize, long value) throws Throwable {
             this.groupingSeparator = dfs.getGroupingSeparator();
             this.zeroDigit = dfs.getZeroDigit();
             this.minusSign = dfs.getMinusSign();
@@ -147,26 +147,14 @@ class FormatItem {
             this.isNegative = value < 0L;
             this.length = this.isNegative ? length - 1 : length;
             this.width = width;
-            this.prefixSign = (byte)prefixSign(sign, isNegative);
-            this.suffixSign = (byte)suffixSign(sign, isNegative);
             this.groupSize = groupSize;
             this.value = value;
-        }
-
-        private char prefixSign(char sign, boolean isNegative) {
-            if (isNegative) {
-                return sign == '(' ? '(' : minusSign;
-            } else {
-                return sign == '+' || sign == ' ' ? sign : '\0';
-            }
-        }
-
-        private char suffixSign(char sign, boolean isNegative) {
-            return isNegative && sign == '(' ? ')' : '\0';
+            this.parentheses = parentheses && isNegative;
+            this.prefixSign = (byte)(isNegative ? (parentheses ? '\0' : minusSign) : sign);
         }
 
         private int signLength() {
-            return (prefixSign != '\0' ? 1 : 0) + (suffixSign != '\0' ? 1 : 0);
+            return (prefixSign != '\0' ? 1 : 0) + (parentheses ? 2 : 0);
         }
 
         private int groupLength() {
@@ -184,8 +172,8 @@ class FormatItem {
         public long prepend(long lengthCoder, byte[] buffer) throws Throwable {
             MethodHandle putCharMH = selectPutChar(lengthCoder);
 
-            if (suffixSign != '\0') {
-                putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)suffixSign);
+            if (parentheses) {
+                putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)')');
             }
 
             if (0 < groupSize) {
@@ -195,7 +183,7 @@ class FormatItem {
                     if (groupIndex-- == 0) {
                         putCharMH.invokeExact(buffer, (int)--lengthCoder,
                                 (int)groupingSeparator);
-                        groupIndex = groupSize;
+                        groupIndex = groupSize - 1;
                     }
 
                     putCharMH.invokeExact(buffer, (int)--lengthCoder,
@@ -212,6 +200,9 @@ class FormatItem {
                 putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)'0');
             }
 
+            if (parentheses) {
+                putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)'(');
+            }
             if (prefixSign != '\0') {
                 putCharMH.invokeExact(buffer, (int)--lengthCoder, (int)prefixSign);
             }

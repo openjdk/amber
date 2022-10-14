@@ -266,7 +266,7 @@ public interface Digits {
             int digits = DIGITS[(int) (value & 0x3F)];
             putCharMH.invokeExact(buffer, --index, digits & 0xFF);
 
-            if (0xF < value) {
+            if (7 < value) {
                 putCharMH.invokeExact(buffer, --index, digits >> 8);
             }
 

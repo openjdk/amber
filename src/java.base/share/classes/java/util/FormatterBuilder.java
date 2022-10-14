@@ -122,8 +122,8 @@ final class FormatterBuilder {
 
     private static final MethodHandle FIDecimal_MH =
             findStringConcatItemConstructor(FormatItemDecimal.class,
-                    DecimalFormatSymbols.class, int.class, char.class, int.class,
-                    long.class);
+                    DecimalFormatSymbols.class, int.class, char.class, boolean.class,
+                    int.class, long.class);
 
     private static final MethodHandle FIHexadecimal_MH =
             findStringConcatItemConstructor(FormatItemHexadecimal.class,
@@ -241,20 +241,21 @@ final class FormatterBuilder {
         MethodHandle mh = identity(ptype);
         MethodType mt = mh.type();
 
-        if (ptype == byte.class || ptype == short.class ||
-            ptype == Byte.class || ptype == Short.class ||
-            ptype == Integer.class) {
-            mt = mt.changeReturnType(int.class);
-        } else if (ptype == Long.class) {
-            mt = mt.changeReturnType(long.class);
-        } else if (ptype == float.class || ptype == Float.class ||
-                   ptype == Double.class) {
-            mt = mt.changeReturnType(double.class);
-        } else if (ptype == Boolean.class) {
-            mt = mt.changeReturnType(boolean.class);
-        } else if (ptype == Character.class) {
-            mt = mt.changeReturnType(char.class);
-        }
+//cannot cast to primitive types as it breaks null values formatting
+//        if (ptype == byte.class || ptype == short.class ||
+//            ptype == Byte.class || ptype == Short.class ||
+//            ptype == Integer.class) {
+//            mt = mt.changeReturnType(int.class);
+//        } else if (ptype == Long.class) {
+//            mt = mt.changeReturnType(long.class);
+//        } else if (ptype == float.class || ptype == Float.class ||
+//                   ptype == Double.class) {
+//            mt = mt.changeReturnType(double.class);
+//        } else if (ptype == Boolean.class) {
+//            mt = mt.changeReturnType(boolean.class);
+//        } else if (ptype == Character.class) {
+//            mt = mt.changeReturnType(char.class);
+//        }
 
         Class<?> itype = mt.returnType();
 
@@ -290,7 +291,7 @@ final class FormatterBuilder {
                     }
                 }
 
-                if (validFlags(flags, LEFT_JUSTIFY | UPPERCASE)) {
+                if (validFlags(flags, LEFT_JUSTIFY | UPPERCASE) && precision == -1) {
                     if (itype == String.class) {
                         handled = true;
                         mh = filterReturnValue(mh, FIString_MH);
@@ -334,14 +335,14 @@ final class FormatterBuilder {
                                                  PARENTHESES)) {
                         handled = true;
                         int zeroPad = isFlag(flags, ZERO_PAD) ? width : -1;
-                        char sign = isFlag(flags, PARENTHESES)   ? '(' :
-                                    isFlag(flags, PLUS)          ? '+' :
-                                    isFlag(flags, LEADING_SPACE) ? ' ' : '-';
+                        char sign = isFlag(flags, PLUS)          ? '+' :
+                                    isFlag(flags, LEADING_SPACE) ? ' ' : '\0';
+                        boolean parentheses = isFlag(flags, PARENTHESES);
                         int groupSize = isFlag(flags, GROUP) ?
                                 groupSize(locale, dfs) : 0;
                         mh = filterReturnValue(mh,
                                 insertArguments(FIDecimal_MH, 0, dfs, zeroPad,
-                                        sign, groupSize));
+                                        sign, parentheses, groupSize));
                     }
                 }
             }
@@ -380,6 +381,13 @@ final class FormatterBuilder {
         }
 
         if (handled) {
+            if (!isPrimitive) {
+                MethodHandle test = NullCheck_MH.asType(
+                        NullCheck_MH.type().changeParameterType(0, ptype));
+                MethodHandle pass = dropArguments(FINull_MH, 0, ptype);
+                mh = guardWithTest(test, pass, mh);
+            }
+
             if (0 < width) {
                 if (isFlag(flags, LEFT_JUSTIFY)) {
                     mh = filterReturnValue(mh,
@@ -388,13 +396,6 @@ final class FormatterBuilder {
                     mh = filterReturnValue(mh,
                             insertArguments(FIFillLeft_MH, 0, width));
                 }
-            }
-
-            if (!isPrimitive) {
-                MethodHandle test = NullCheck_MH.asType(
-                        NullCheck_MH.type().changeParameterType(0, ptype));
-                MethodHandle pass = dropArguments(FINull_MH, 0, ptype);
-                mh = guardWithTest(test, pass, mh);
             }
 
             if (isFlag(flags, UPPERCASE)) {
