@@ -250,8 +250,6 @@ final class FormatterBuilder {
         } else if (ptype == float.class || ptype == Float.class ||
                    ptype == Double.class) {
             mt = mt.changeReturnType(double.class);
-        } else if (ptype == Boolean.class) {
-            mt = mt.changeReturnType(boolean.class);
         } else if (ptype == Character.class) {
             mt = mt.changeReturnType(char.class);
         }
@@ -290,7 +288,7 @@ final class FormatterBuilder {
                     }
                 }
 
-                if (validFlags(flags, LEFT_JUSTIFY | UPPERCASE)) {
+                if (validFlags(flags, LEFT_JUSTIFY | UPPERCASE) && precision == -1) {
                     if (itype == String.class) {
                         handled = true;
                         mh = filterReturnValue(mh, FIString_MH);
