@@ -241,8 +241,7 @@ final class FormatterBuilder {
         MethodHandle mh = identity(ptype);
         MethodType mt = mh.type();
 
-        if (ptype == byte.class || ptype == short.class ||
-            ptype == Short.class || ptype == Integer.class) {
+        if (ptype == Integer.class) {
             mt = mt.changeReturnType(int.class);
         } else if (ptype == Long.class) {
             mt = mt.changeReturnType(long.class);
