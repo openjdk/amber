@@ -241,14 +241,21 @@ final class FormatterBuilder {
         MethodHandle mh = identity(ptype);
         MethodType mt = mh.type();
 
-        if (ptype == Integer.class) {
-            mt = mt.changeReturnType(int.class);
-        } else if (ptype == Long.class) {
-            mt = mt.changeReturnType(long.class);
-        } else if (ptype == float.class || ptype == Float.class ||
-                   ptype == Double.class) {
-            mt = mt.changeReturnType(double.class);
-        }
+//cannot cast to primitive types as it breaks null values formatting
+//        if (ptype == byte.class || ptype == short.class ||
+//            ptype == Byte.class || ptype == Short.class ||
+//            ptype == Integer.class) {
+//            mt = mt.changeReturnType(int.class);
+//        } else if (ptype == Long.class) {
+//            mt = mt.changeReturnType(long.class);
+//        } else if (ptype == float.class || ptype == Float.class ||
+//                   ptype == Double.class) {
+//            mt = mt.changeReturnType(double.class);
+//        } else if (ptype == Boolean.class) {
+//            mt = mt.changeReturnType(boolean.class);
+//        } else if (ptype == Character.class) {
+//            mt = mt.changeReturnType(char.class);
+//        }
 
         Class<?> itype = mt.returnType();
 
