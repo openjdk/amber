@@ -46,13 +46,13 @@ import javax.tools.ToolProvider;
 public class StringTemplateTest {
     enum Category{GENERAL, CHARACTER, INTEGRAL, BIG_INT, FLOATING, BIG_FLOAT, DATE};
 
-    static final String[] GENERAL = {"true", "false", "(Object)null", "STR", "B", "BOOL"};
-    static final String[] CHARS = {"C", "CHAR"};
-    static final String[] INTS = {"L", "LONG", "I", "INT", "S", "SHORT", "Long.MAX_VALUE", "Long.MIN_VALUE"};
+    static final String[] GENERAL = {"true", "false", "(Object)null", "STR", "BO", "BOOL", "(Boolean)null"};
+    static final String[] CHARS = {"C", "CHAR", "(Character)null"};
+    static final String[] INTS = {"L", "LONG", "I", "INT", "S", "SHORT", "BY", "BYTE", "Long.MAX_VALUE", "Long.MIN_VALUE", "(Long)null", "(Integer)null", "(Short)null", "(Byte)null"};
     static final String[] BIGINTS = {};
-    static final String[] FLOATS = {"F", "FLOAT", "D", "DOUBLE", "Double.NEGATIVE_INFINITY", "Double.NaN", "Double.MAX_VALUE"};
+    static final String[] FLOATS = {"F", "FLOAT", "D", "DOUBLE", "Double.NEGATIVE_INFINITY", "Double.NaN", "Double.MAX_VALUE", "(Double)null", "(Float)null"};
     static final String[] BIGFLOATS = {};
-    static final String[] DATES = {"java.util.Calendar.getInstance().getTime()"};
+    static final String[] DATES = {};
 
     final Random r = new Random(1);
 
@@ -244,10 +244,12 @@ public class StringTemplateTest {
                 static Long LONG = 9876543210l;
                 static int I = 42;
                 static Integer INT = -49;
-                static boolean B = true;
-                static Boolean BOOL = null;
+                static boolean BO = true;
+                static Boolean BOOL = false;
                 static short S = 13;
                 static Short SHORT = -17;
+                static byte BY = -3;
+                static Byte BYTE = 12;
                 static float F = 4.789f;
                 static Float FLOAT = -0.000006f;
                 static double D = 6545745.6734654563;
@@ -297,8 +299,8 @@ public class StringTemplateTest {
         var log = new LinkedList<String>();
         new StringTemplateTest().compile().getMethod("run", List.class).invoke(null, log);
         if (!log.isEmpty()) {
-            log.addFirst(STR."failed \{log.size()} tests:");
-            throw new AssertionError(String.join("\n", log));
+            log.forEach(System.out::println);
+            throw new AssertionError(STR."failed \{log.size()} tests");
         }
     }
 }
