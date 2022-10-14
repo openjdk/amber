@@ -378,6 +378,13 @@ final class FormatterBuilder {
         }
 
         if (handled) {
+            if (!isPrimitive) {
+                MethodHandle test = NullCheck_MH.asType(
+                        NullCheck_MH.type().changeParameterType(0, ptype));
+                MethodHandle pass = dropArguments(FINull_MH, 0, ptype);
+                mh = guardWithTest(test, pass, mh);
+            }
+
             if (0 < width) {
                 if (isFlag(flags, LEFT_JUSTIFY)) {
                     mh = filterReturnValue(mh,
@@ -386,13 +393,6 @@ final class FormatterBuilder {
                     mh = filterReturnValue(mh,
                             insertArguments(FIFillLeft_MH, 0, width));
                 }
-            }
-
-            if (!isPrimitive) {
-                MethodHandle test = NullCheck_MH.asType(
-                        NullCheck_MH.type().changeParameterType(0, ptype));
-                MethodHandle pass = dropArguments(FINull_MH, 0, ptype);
-                mh = guardWithTest(test, pass, mh);
             }
 
             if (isFlag(flags, UPPERCASE)) {
