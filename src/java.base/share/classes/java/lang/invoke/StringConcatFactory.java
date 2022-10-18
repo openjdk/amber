@@ -1030,13 +1030,6 @@ public final class StringConcatFactory {
     }
 
     /**
-     * Maximum number of argument slots in makeConcatWithTemplate... call.
-     *
-     * {@link StringTemplate} concats allow for more slots than {@link MAX_INDY_CONCAT_ARG_SLOTS}.
-     */
-    public static final int MAX_TEMPLATE_CONCAT_ARG_SLOTS = 253;
-
-    /**
      * Implementations of this class provide information necessary to
      * assist {@link StringConcatFactory} perform optimal addition.
      */
@@ -1069,7 +1062,7 @@ public final class StringConcatFactory {
      * interleaves fragments and values. fragment|value|fragment|value|...|value|fragment.
      * The number of fragments must be one more that the number of ptypes.
      * The total number of slots used by the ptypes must be less than or equal
-     * to MAX_TEMPLATE_CONCAT_ARG_SLOTS.
+     * to MAX_INDY_CONCAT_ARG_SLOTS.
      *
      * @param fragments list of string fragments
      * @param ptypes    list of expression types
@@ -1106,9 +1099,9 @@ public final class StringConcatFactory {
         for (Class<?> ptype : ptypes) {
             slots += ptype == long.class || ptype == double.class ? 2 : 1;
 
-            if (MAX_TEMPLATE_CONCAT_ARG_SLOTS < slots) {
+            if (MAX_INDY_CONCAT_ARG_SLOTS < slots) {
                 throw new StringConcatException("Too many concat argument slots: " +
-                        slots + ", can only accept " + MAX_TEMPLATE_CONCAT_ARG_SLOTS);
+                        slots + ", can only accept " + MAX_INDY_CONCAT_ARG_SLOTS);
             }
 
             boolean isSpecialized = ptype.isPrimitive() ||
@@ -1199,7 +1192,7 @@ public final class StringConcatFactory {
      * @return List of {@link MethodHandle MethodHandles}
      *
      * @throws IllegalArgumentException If maxSlots is not between 1 and
-     *                                  MAX_TEMPLATE_CONCAT_ARG_SLOTS.
+     *                                  MAX_INDY_CONCAT_ARG_SLOTS.
      * @throws StringConcatException If any of the linkage invariants are violated.
      * @throws NullPointerException If any of the incoming arguments is null.
      *
@@ -1219,9 +1212,9 @@ public final class StringConcatFactory {
             throw new StringConcatException("fragments size not equal ptypes size plus one");
         }
 
-        if (maxSlots < 1 || MAX_TEMPLATE_CONCAT_ARG_SLOTS < maxSlots) {
+        if (maxSlots < 1 || MAX_INDY_CONCAT_ARG_SLOTS < maxSlots) {
             throw new StringConcatException("maxSlots must be between 1 and " +
-                    MAX_TEMPLATE_CONCAT_ARG_SLOTS);
+                    MAX_INDY_CONCAT_ARG_SLOTS);
 
         }
 
@@ -1274,7 +1267,7 @@ public final class StringConcatFactory {
      * @return {@link MethodHandle}
      *
      * @throws IllegalArgumentException If maxSlots is not between 1 and
-     *                                  MAX_TEMPLATE_CONCAT_ARG_SLOTS or if the
+     *                                  MAX_INDY_CONCAT_ARG_SLOTS or if the
      *                                  getters don't use the same argument type
      * @throws StringConcatException If any of the linkage invariants are violated
      * @throws NullPointerException If any of the incoming arguments is null
@@ -1295,9 +1288,9 @@ public final class StringConcatFactory {
             throw new StringConcatException("fragments size not equal getters size plus one");
         }
 
-        if (maxSlots < 1 || MAX_TEMPLATE_CONCAT_ARG_SLOTS < maxSlots) {
+        if (maxSlots < 1 || MAX_INDY_CONCAT_ARG_SLOTS < maxSlots) {
             throw new StringConcatException("maxSlots must be between 1 and " +
-                    MAX_TEMPLATE_CONCAT_ARG_SLOTS);
+                    MAX_INDY_CONCAT_ARG_SLOTS);
 
         }
 
