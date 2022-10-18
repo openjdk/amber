@@ -1030,7 +1030,9 @@ public final class StringConcatFactory {
     }
 
     /**
-     * {@link StringTemplate} allows more slots because of controlled usage.
+     * Maximum number of argument slots in makeConcatWithTemplate... call.
+     *
+     * {@link StringTemplate} concats allow for more slots than {@link MAX_INDY_CONCAT_ARG_SLOTS}.
      */
     public static final int MAX_TEMPLATE_CONCAT_ARG_SLOTS = 253;
 
