@@ -1104,7 +1104,6 @@ public class JavaTokenizer extends UnicodeReader {
                         }
                     }
                     break loop;
-                case '\\':
                 case '\"': // (Spec. 3.10)
                     scanString(pos);
                     break loop;
