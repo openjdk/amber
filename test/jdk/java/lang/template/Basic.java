@@ -374,7 +374,7 @@ public class Basic {
     /*
      * Processor tests.
      */
-    public static final SimpleProcessor<StringTemplate> STRINGIFY = st -> {
+    public static final TemplateProcessor<StringTemplate> STRINGIFY = st -> {
         List<Object> values = st.values()
                 .stream()
                 .map(v -> (Object)String.valueOf(v))
@@ -383,7 +383,7 @@ public class Basic {
         return StringTemplate.of(st.fragments(), values);
     };
 
-    public static final SimpleProcessor<StringTemplate> UPPER = st -> {
+    public static final TemplateProcessor<StringTemplate> UPPER = st -> {
         List<String> fragments = st.fragments()
                 .stream()
                 .map(String::toUpperCase)
@@ -432,7 +432,7 @@ public class Basic {
      * TemplateProcessor coverage.
      */
 
-    static class Processor0 implements TemplateProcessor<String, IllegalArgumentException> {
+    static class Processor0 implements TemplateProcessorWithException<String, IllegalArgumentException> {
         @Override
         public String process(StringTemplate stringTemplate) throws IllegalArgumentException {
             StringBuilder sb = new StringBuilder();
@@ -456,10 +456,10 @@ public class Basic {
 
     static Processor0 processor0 = new Processor0();
 
-    static TemplateProcessor<String, RuntimeException> processor1 =
+    static TemplateProcessorWithException<String, RuntimeException> processor1 =
         st -> st.interpolate();
 
-    static SimpleProcessor<String> processor2 = st -> st.interpolate();
+    static TemplateProcessor<String> processor2 = st -> st.interpolate();
 
     static StringProcessor processor3 = st -> st.interpolate();
 
