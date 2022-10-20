@@ -202,11 +202,50 @@ public interface StringTemplate {
      */
     public static String toString(StringTemplate stringTemplate) {
         Objects.requireNonNull(stringTemplate, "stringTemplate should not be null");
-        String fragments = "[\"" + String.join("\", \"", stringTemplate.fragments()) + "\"](";
-        return stringTemplate.values()
-                .stream()
-                .map(v -> String.valueOf(v))
-                .collect(Collectors.joining(", ", fragments, ")"));
+        return "StringTemplate{ fragments = [ \"" +
+                String.join("\", \"", stringTemplate.fragments()) +
+                "\" ], values = " +
+                stringTemplate.values() +
+                " }";
+    }
+
+    /**
+     * Produces a hash code for the supplied {@link StringTemplate}.
+     *
+     * @param stringTemplate the {@link StringTemplate} to hash
+     *
+     * @return hash code for the supplied {@link StringTemplate}
+     *
+     * @throws NullPointerException if stringTemplate is null
+     *
+     * @implSpec The hashCode is the bit XOR of the fragments hash code and
+     * the values hash code.
+     */
+    public static int hashCode(StringTemplate stringTemplate) {
+        Objects.requireNonNull(stringTemplate, "stringTemplate should not be null");
+        return Objects.hashCode(stringTemplate.fragments()) ^
+               Objects.hashCode(stringTemplate.values());
+    }
+
+    /**
+     * Tests for equality of two {@link StringTemplate}.
+     *
+     * @param a  first {@link StringTemplate}
+     * @param b  second {@link StringTemplate}
+     *
+     * @return true if the two {@link StringTemplate StringTemplates} are equivalent
+     *
+     * @throws NullPointerException if either @link StringTemplate} is null
+     *
+     * @implSpec Equality is determined by testing equality of the fragments and
+     * the values.
+     */
+    public static boolean equals(Object a, Object b) {
+        Objects.requireNonNull(a, "StringTemplate a should not be null");
+        Objects.requireNonNull(b, "StringTemplate b should not be null");
+        return a instanceof StringTemplate aST && b instanceof StringTemplate bST &&
+               Objects.equals(aST.fragments(), bST.fragments()) &&
+               Objects.equals(aST.values(), bST.values());
     }
 
     /**

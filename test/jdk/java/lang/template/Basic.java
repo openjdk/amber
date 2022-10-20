@@ -36,6 +36,7 @@ import java.util.function.*;
 
 public class Basic {
     public static void main(String... arg) {
+        equalsHashCode();
         concatenationTests();
         componentTests();
         limitsTests();
@@ -58,6 +59,28 @@ public class Basic {
             System.out.println(b);
             throw new RuntimeException("Test failed");
         }
+    }
+
+    /*
+     * equals and hashCode tests.
+     */
+    static void equalsHashCode() {
+        int x = 10;
+        int y = 20;
+        int a = 10;
+        int b = 20;
+
+        StringTemplate st0 = "\{x} + \{y} = \{x + y}";
+        StringTemplate st1 = "\{a} + \{b} = \{a + b}";
+        StringTemplate st2 = "\{x} + \{y} = \{x + y}!";
+        x++;
+        StringTemplate st3 = "\{x} + \{y} = \{x + y}";
+
+        if (!st0.equals(st1)) throw new RuntimeException("st0 != st1");
+        if (st0.equals(st2)) throw new RuntimeException("st0 == st2");
+        if (st0.equals(st3)) throw new RuntimeException("st0 == st3");
+
+        if (st0.hashCode() != st1.hashCode()) throw new RuntimeException("st0.hashCode() != st1.hashCode()");
     }
 
     /*
