@@ -108,7 +108,7 @@ public final class FormatProcessor implements StringProcessor, ProcessorLinkage 
         Objects.requireNonNull(type);
         String format = stringTemplateFormat(fragments);
         Class<?>[] ptypes = type.dropParameterTypes(0, 1).parameterArray();
-        MethodHandle mh = Formatter.formatterMethodHandle(format, locale, ptypes);
+        MethodHandle mh = new FormatterBuilder(format, locale, ptypes).build();
         mh = MethodHandles.dropArguments(mh, 0, type.parameterType(0));
 
         return mh;

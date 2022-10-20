@@ -39,7 +39,7 @@ import jdk.internal.javac.PreviewFeature;
  *     List<Object> values = st.values();
  *     // check or manipulate the fragments and/or values
  *     ...
- *     return TemplateRuntime.interpolate(fragments, values);
+ *     return StringTemplate.interpolate(fragments, values);
  * };
  * }
  *
