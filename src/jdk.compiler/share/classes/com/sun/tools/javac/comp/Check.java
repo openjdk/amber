@@ -2235,6 +2235,36 @@ public class Check {
         }
     }
 
+    public void checkHasMain(DiagnosticPosition pos, ClassSymbol c) {
+        boolean found = false;
+
+        for (Symbol sym : c.members().getSymbolsByName(names.main)) {
+            if (sym.kind == MTH && (sym.flags() & PRIVATE) == 0) {
+                MethodSymbol meth = (MethodSymbol)sym;
+                if (!types.isSameType(meth.getReturnType(), syms.voidType)) {
+                    continue;
+                }
+                if (meth.params.isEmpty()) {
+                    found = true;
+                    break;
+                }
+                if (meth.params.size() != 1) {
+                    continue;
+                }
+                if (!types.isSameType(meth.params.head.type, types.makeArrayType(syms.stringType))) {
+                    continue;
+                }
+
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            log.error(pos, Errors.UnnamedClassDoesNotHaveMainMethod);
+        }
+    }
+
     public void checkModuleName (JCModuleDecl tree) {
         Name moduleName = tree.sym.name;
         Assert.checkNonNull(moduleName);

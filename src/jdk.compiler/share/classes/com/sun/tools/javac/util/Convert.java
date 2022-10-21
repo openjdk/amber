@@ -313,8 +313,7 @@ public class Convert {
         if (start == 0 && end == name.length()) {
             return name;
         }
-        return name.subName(
-            name.lastIndexOf((byte)'.') + 1, name.getByteLength());
+        return name.subName(start, end);
     }
 
     /** Return the last part of a qualified name from its string representation

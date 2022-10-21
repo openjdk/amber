@@ -27,11 +27,17 @@ package jdk.internal.misc;
 
 import static java.lang.Thread.State.*;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import jdk.internal.access.JavaLangInvokeAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.vm.annotation.Stable;
 import sun.nio.ch.FileChannelImpl;
@@ -503,4 +509,61 @@ public class VM {
     public static List<BufferPool> getBufferPools() {
         return BufferPoolsHolder.BUFFER_POOLS;
     }
+
+    private static Method findMainMethod(Class<?> cls,
+                                     boolean needStatic, boolean needPublic,
+                                     String name, MethodType mt) {
+        JavaLangInvokeAccess jlia = SharedSecrets.getJavaLangInvokeAccess();
+        try {
+            MethodHandle mh = needStatic ? jlia.findStatic(cls, name, mt)
+                                         : jlia.findVirtual(cls, name, mt);
+            if (mh == null) {
+                return null;
+            }
+            Method method = MethodHandles.reflectAs(Method.class, mh);
+            int mods = method.getModifiers();
+            boolean isPrivate = Modifier.isPrivate(mods);
+            boolean isPublic = Modifier.isPublic(mods);
+            if (isPrivate || (needPublic && !isPublic)) {
+                return null;
+            }
+            if (!isPublic && !cls.getPackageName().isEmpty()) {
+                return null;
+            }
+            return method;
+        } catch (ReflectiveOperationException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Return the runtime main method.
+     *
+     * @param mainClass main class
+     *
+     * @return main method or null if not found
+     */
+    public static Method findMainMethod(Class<?> mainClass) {
+        String name = "main";
+        MethodType withArgsMT = MethodType.methodType(void.class, String[].class);
+        Method mainMethod = findMainMethod(mainClass, true, true, name, withArgsMT);
+        MethodType noArgsMT = MethodType.methodType(void.class);
+        if (mainMethod == null) {
+            mainMethod = findMainMethod(mainClass, true, true, name, noArgsMT);
+        }
+        if (mainMethod == null) {
+            mainMethod = findMainMethod(mainClass, true, false, name, withArgsMT);
+        }
+        if (mainMethod == null) {
+            mainMethod = findMainMethod(mainClass, true, false, name, noArgsMT);
+        }
+        if (mainMethod == null) {
+            mainMethod = findMainMethod(mainClass, false, false, name, withArgsMT);
+        }
+        if (mainMethod == null) {
+            mainMethod = findMainMethod(mainClass, false, false, name, noArgsMT);
+        }
+        return mainMethod;
+    }
+
 }

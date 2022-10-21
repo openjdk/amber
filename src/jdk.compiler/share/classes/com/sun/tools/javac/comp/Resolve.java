@@ -2431,7 +2431,9 @@ public class Resolve {
 
         if (kind.contains(KindSelector.TYP)) {
             sym = findType(env, name);
-
+            if ((sym.flags() & UNNAMED_CLASS) != 0) {
+                sym = typeNotFound;
+            }
             if (sym.exists()) return sym;
             else bestSoFar = bestOf(bestSoFar, sym);
         }
