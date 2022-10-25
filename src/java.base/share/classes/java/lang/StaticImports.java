@@ -25,7 +25,13 @@
 
 package java.lang;
 
+import jdk.internal.access.JavaLangAccess;
+import jdk.internal.access.SharedSecrets;
+
 import java.io.*;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
@@ -142,12 +148,76 @@ public final class StaticImports {
     }
 
     /**
+     * jline LineReader fetcher.
+     */
+    private class LineReader {
+        /**
+         * MethodHandle to LineReader::readLine.
+         */
+        private static final MethodHandle READ_LINE_MH;
+
+        /**
+         * Instance of LineReader.
+         */
+        private static final Object LINE_READER;
+
+        static {
+            MethodHandle readLineMH = null;
+            Object lineReader = null;
+
+            try {
+                Class<?> lrbClass = Class.forName("jdk.internal.org.jline.reader.LineReaderBuilder",
+                        false, ClassLoader.getSystemClassLoader());
+                Class<?> lrClass = Class.forName("jdk.internal.org.jline.reader.LineReader",
+                        false, ClassLoader.getSystemClassLoader());
+                Module lrbModule = lrbClass.getModule();
+                Module baseModule = Object.class.getModule();
+                baseModule.addReads(lrbModule);
+                MethodHandles.Lookup lookup = MethodHandles.lookup();
+                MethodHandle builderMH = lookup.findStatic(lrbClass, "builder", MethodType.methodType(lrbClass));
+                MethodHandle buildMH = lookup.findVirtual(lrbClass, "build", MethodType.methodType(lrClass));
+                readLineMH = lookup.findVirtual(lrClass, "readLine",
+                        MethodType.methodType(String.class, String.class));
+                Object builder = builderMH.invoke();
+                lineReader = buildMH.invoke(builder);
+            } catch (Throwable ex) {
+                readLineMH = null;
+                lineReader = null;
+            }
+
+            READ_LINE_MH = readLineMH;
+            LINE_READER = lineReader;
+        }
+
+        /**
+         * {@return true if LineReader is available.}
+         */
+        static boolean hasLineReader() {
+            return LINE_READER != null;
+        }
+
+        /**
+         * Invoke LineReader::readLine.
+         *
+         * @param prompt Read line prompt.
+         *
+         * @return Line read in.
+         */
+        static String readLine(String prompt) {
+            try {
+                return (String) READ_LINE_MH.invoke(LINE_READER, prompt);
+            } catch (Throwable ex) {
+                return null;
+            }
+        }
+    }
+
+    /**
      * Convenience method for readline the next line of input.
      * @return a string of characters read in from input.
      */
     public static String readln() {
-        Scanner input = new Scanner(System.in);
-        return input.hasNext() ? input.nextLine() : "";
+        return readln("");
     }
 
     /**
@@ -157,9 +227,12 @@ public final class StaticImports {
      */
     public static String readln(String prompt) {
         Objects.requireNonNull(prompt, "prompt must not be null");
-        print(prompt);
-        Scanner input = new Scanner(System.in);
-        return input.hasNext() ? input.nextLine() : "";
+
+        if (LineReader.hasLineReader()) {
+            return LineReader.readLine(prompt);
+        } else {
+            return System.console().readLine(prompt);
+        }
     }
 
     /**
