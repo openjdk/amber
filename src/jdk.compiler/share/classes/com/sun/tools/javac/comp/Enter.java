@@ -446,7 +446,7 @@ public class Enter extends JCTree.Visitor {
 
             ListBuffer<JCTree> topDefs = new ListBuffer<>();
 
-            JCExpression pid = make.QualIdent(syms.staticImportsType.tsym);
+            JCExpression pid = make.QualIdent(syms.ioImportsType.tsym);
             pid = make.Select(pid, names.asterisk);
             JCImport imp = make.Import(pid, true);
             topDefs.append(imp);
