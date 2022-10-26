@@ -83,7 +83,6 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import jdk.internal.misc.PreviewFeatures;
 import jdk.internal.misc.VM;
 import jdk.internal.module.ModuleBootstrap;
 import jdk.internal.module.Modules;
@@ -869,34 +868,28 @@ public final class LauncherHelper {
                 abort(null, "java.launcher.cls.error4", mainClass.getName(),
                         JAVAFX_APPLICATION_CLASS_NAME);
             }
-            boolean isPreview = PreviewFeatures.isEnabled();
-
-            if (isPreview) {
-                int mod = mainMethod.getModifiers();
-                boolean isPublic = Modifier.isStatic(mod);
-                boolean isStatic = Modifier.isStatic(mod);
-                if (isStatic && !isPublic && mainClass.getPackageName().isEmpty()) {
-                    abort(null, "java.launcher.cls.error2", "static",
-                            mainMethod.getDeclaringClass().getName());
-                }
-                if (!isStatic) {
-                    try {
-                        Constructor<?> constructor = mainClass.getDeclaredConstructor();
-                        if (Modifier.isPrivate(constructor.getModifiers())) {
-                            abort(null, "java.launcher.cls.error8",
-                                    mainMethod.getDeclaringClass().getName());
-                        }
-                    } catch (Throwable ex) {
+            int mod = mainMethod.getModifiers();
+            boolean isPublic = Modifier.isStatic(mod);
+            boolean isStatic = Modifier.isStatic(mod);
+            if (isStatic && !isPublic && mainClass.getPackageName().isEmpty()) {
+                abort(null, "java.launcher.cls.error2", "static",
+                        mainMethod.getDeclaringClass().getName());
+            }
+            if (!isStatic) {
+                try {
+                    Constructor<?> constructor = mainClass.getDeclaredConstructor();
+                    if (Modifier.isPrivate(constructor.getModifiers())) {
                         abort(null, "java.launcher.cls.error8",
                                 mainMethod.getDeclaringClass().getName());
                     }
+                } catch (Throwable ex) {
+                    abort(null, "java.launcher.cls.error8",
+                            mainMethod.getDeclaringClass().getName());
                 }
-                boolean hasArgs = mainMethod.getParameterCount() != 0;
-                mainType = (isStatic ? 0 : MAIN_NONSTATIC) |
-                           (hasArgs ? 0 : MAIN_WITHOUT_ARGS);
-            } else {
-                mainType = 0;
             }
+            boolean hasArgs = mainMethod.getParameterCount() != 0;
+            mainType = (isStatic ? 0 : MAIN_NONSTATIC) |
+                       (hasArgs ? 0 : MAIN_WITHOUT_ARGS);
         } catch (Throwable throwable) {
             if (mainClass.getModule().isNamed()) {
                 abort(throwable, "java.launcher.module.error5",

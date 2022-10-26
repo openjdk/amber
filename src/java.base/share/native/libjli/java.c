@@ -552,6 +552,16 @@ JavaMain(void* _args)
     int mainType = (*env)->CallStaticIntMethod(env, helperClass, getMainType);
     CHECK_EXCEPTION_LEAVE(mainType);
 
+    jclass ioClass = (*env)->FindClass(env, "java/lang/IO");
+    CHECK_EXCEPTION_NULL_LEAVE(ioClass);
+
+    jmethodID setArgsID = (*env)->GetStaticMethodID(env, ioClass, "setArgs",
+                                              "([Ljava/lang/String;)V");
+    CHECK_EXCEPTION_NULL_LEAVE(setArgsID);
+
+    (*env)->CallStaticVoidMethod(env, ioClass, setArgsID, mainArgs);
+    CHECK_EXCEPTION_NULL_LEAVE(setArgsID);
+
     switch (mainType) {
     case 0: {
         mainID = (*env)->GetStaticMethodID(env, mainClass, "main",

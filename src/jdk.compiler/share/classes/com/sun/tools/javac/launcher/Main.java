@@ -439,6 +439,13 @@ public class Main {
                 throw new Fault(Errors.CantFindMainMethod(mainClassName));
             }
             main.setAccessible(true);
+            try {
+                Class<?> ioClass = Class.forName("java.lang.IO");
+                Method setArgs = ioClass.getDeclaredMethod("setArgs", String[].class);
+                setArgs.invoke(ioClass, (Object) appArgs);
+            } catch (Throwable ex) {
+                // Older release.
+            }
             int mods = main.getModifiers();
             if ((mods & Modifier.STATIC) != 0) {
                 if (main.getParameterCount() == 0) {
