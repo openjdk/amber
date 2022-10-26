@@ -340,7 +340,7 @@ public interface StringTemplate {
 
     /**
      * No-op template processor. Used to highlight that non-processing of the StringTemplate
-     * was intentionally.
+     * was intentional.
      * {@snippet :
      * // The string template before interpolation
      * System.out.println(RAW."\{x} = \{y} = \{x + y}");
