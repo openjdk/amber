@@ -95,15 +95,6 @@ public final class IO {
     private static int lastError = 0;
 
     /**
-     * Set ARGS from the launcher.
-     *
-     * @param args arguments from the command line.
-     */
-    public static void setArgs(String[] args) {
-        ARGS = args;
-    }
-
-    /**
      * {@return the output, as a list of strings, from the last command or exec}
      */
     public static List<String> lastOutput() {
@@ -381,7 +372,7 @@ public final class IO {
     }
 
     /**
-     * Wwrite a formatted string to output stream
+     * Write a formatted string to output stream
      * using the specified format string and arguments.
      * Equivalent to invoking {@code System.out.printf(String, Object...)}.
      *

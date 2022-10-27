@@ -87,7 +87,6 @@ import com.sun.tools.javac.util.JCDiagnostic.Error;
 
 import jdk.internal.misc.VM;
 
-
 import static javax.tools.JavaFileObject.Kind.SOURCE;
 
 /**
@@ -418,6 +417,17 @@ public class Main {
         }
     }
 
+    private static void setIOArgs(String[] args) {
+        try {
+            Class<?> ioClass = Class.forName("java.lang.IO");
+            if (ioClass != null) {
+                ioClass.getDeclaredField("ARGS").set(ioClass, (Object) args);
+            }
+        } catch (ReflectiveOperationException ex) {
+            // Bootstrapping may cause IO to not be found.
+        }
+    }
+
     /**
      * Invokes the {@code main} method of a specified class, using a class loader that
      * will load recently compiled classes from memory.
@@ -439,13 +449,7 @@ public class Main {
                 throw new Fault(Errors.CantFindMainMethod(mainClassName));
             }
             main.setAccessible(true);
-            try {
-                Class<?> ioClass = Class.forName("java.lang.IO");
-                Method setArgs = ioClass.getDeclaredMethod("setArgs", String[].class);
-                setArgs.invoke(ioClass, (Object) appArgs);
-            } catch (Throwable ex) {
-                // Older release.
-            }
+            setIOArgs(appArgs);
             int mods = main.getModifiers();
             if ((mods & Modifier.STATIC) != 0) {
                 if (main.getParameterCount() == 0) {
