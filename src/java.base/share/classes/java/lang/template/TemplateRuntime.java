@@ -80,14 +80,18 @@ final class TemplateRuntime {
     }
 
     /**
-     * Generic StringTemplate.
+     * Generic {@link StringTemplate}.
      *
      * @param fragments  immutable list of string fragments from string template
      * @param values     immutable list of expression values
      */
-    record SimpleStringTemplate(List<String> fragments,
-                                 List<Object> values
-    ) implements StringTemplate {}
+    record SimpleStringTemplate(List<String> fragments, List<Object> values)
+            implements StringTemplate {
+        @Override
+        public java.lang.String toString() {
+            return StringTemplate.toString(this);
+        }
+    }
 
     /**
      * Creates a string that interleaves the elements of values between the

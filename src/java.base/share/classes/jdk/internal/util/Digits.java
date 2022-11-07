@@ -25,15 +25,15 @@
 
 package jdk.internal.util;
 
-import jdk.internal.javac.PreviewFeature;
-
 import java.lang.invoke.MethodHandle;
+
+import jdk.internal.javac.PreviewFeature;
 
 /**
  * Digits provides a fast methodology for converting integers and longs to
  * ASCII strings.
  *
- * @since 19
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public interface Digits {

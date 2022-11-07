@@ -46,7 +46,7 @@ import static java.lang.invoke.MethodType.methodType;
  * A specialized objects used by FormatterBuilder that knows how to insert
  * themselves into a concatenation performed by StringConcatFactory.
  *
- * @since 19
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 class FormatItem {

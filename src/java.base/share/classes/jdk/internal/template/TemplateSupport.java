@@ -41,43 +41,36 @@ import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * Manages the template creation and bootstrapping. These methods may be used, for example,
- * by Java compiler implementations to implement the bodies of Object methods for
- * {@link StringTemplate} classes.
+ * Manages string template bootstrapping and creation. These methods may be used, for example,
+ * by Java compiler implementations to implement the bodies of methods for {@link StringTemplate}
+ * objects.
+ * <p>
+ * Bootstraps in the form of {@code (Lookup, String, MethodType)(String[], Object[])} are used
+ * to create {@link StringTemplate StringTemplates} that have more than
+ * {@link java.lang.invoke.StringConcatFactory#MAX_INDY_CONCAT_ARG_SLOTS} values.
+ * <p>
+ * Bootstraps in the form of {@code (Lookup, String, MethodType, String...)(...)} are used to create
+ * optimized {@link StringTemplate StringTemplates} based on StringTemplateImpl.
+ * <p>
+ * Bootstraps in the for of (Lookup, String, MethodType, MethodHandle, String...)
+ * (VerifyingProcessor, ...) are used to implement specialized processors for
+ * {@link ProcessorLinkage} implementing processors.
+ *
+ * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public final class TemplateSupport {
+    private static final JavaUtilCollectionAccess JUCA = SharedSecrets.getJavaUtilCollectionAccess();
+
     /**
-     * {@link MethodHandle} to {@link TemplateBootstrap#defaultProcess}.
+     * {@link MethodHandle} to {@link TemplateSupport#defaultProcess}.
      */
     private static final MethodHandle DEFAULT_PROCESS_MH;
 
     /**
-     * {@link MethodHandles.Lookup} passed to the bootstrap method.
+     * {@link MethodHandle} to {@link TemplateSupport#fromArrays}.
      */
-    private final MethodHandles.Lookup lookup;
-
-    /**
-     * Name passed to the bootstrap method ("process").
-     */
-    private final String name;
-
-    /**
-     * {@link MethodType} passed to the bootstrap method.
-     */
-    private final MethodType type;
-
-    /**
-     * Fragments from string template.
-     */
-    private final List<String> fragments;
-
-    /**
-     * The static final processor that triggered the BSM generation.
-     */
-    private final ValidatingProcessor<?, ?> processor;
-
-    private static final JavaUtilCollectionAccess JUCA = SharedSecrets.getJavaUtilCollectionAccess();
+    private static final MethodHandle FROM_ARRAYS;
 
     /**
      * Initialize {@link MethodHandle MethodHandles}.
@@ -89,40 +82,86 @@ public final class TemplateSupport {
             MethodType mt = MethodType.methodType(Object.class,
                     List.class, ValidatingProcessor.class, Object[].class);
             DEFAULT_PROCESS_MH = lookup.findStatic(TemplateSupport.class, "defaultProcess", mt);
+
+            mt = MethodType.methodType(StringTemplate.class, String[].class, Object[].class);
+            FROM_ARRAYS = lookup.findStatic(TemplateSupport.class, "fromArrays", mt);
         } catch (ReflectiveOperationException ex) {
             throw new AssertionError("string bootstrap fail", ex);
         }
     }
 
     /**
-     * Constructor.
-     *
-     * @param lookup    method lookup
-     * @param name      method name
-     * @param type      method type
-     * @param fragments fragments from string template
-     * @param processor static final processor
+     * Private constructor.
      */
-    TemplateSupport(MethodHandles.Lookup lookup, String name, MethodType type,
-                    List<String> fragments,
-                    ValidatingProcessor<?, ?> processor) {
-        this.lookup = lookup;
-        this.name = name;
-        this.type = type;
-        this.fragments = fragments;
-        this.processor = processor;
-
+    private TemplateSupport() {
+        throw new AssertionError("private constructor");
     }
 
     /**
-     * Templated string bootstrap method.
+     * String template bootstrap method for creating large string templates.
+     *
+     * @param lookup          method lookup
+     * @param name            method name
+     * @param type            method type
+     *
+     * @return {@link CallSite} to handle create large string template
+     *
+     * @throws NullPointerException if any of the arguments is null
+     * @throws Throwable            if linkage fails
+     */
+    public static CallSite stringTemplateBSM(
+            MethodHandles.Lookup lookup,
+            String name,
+            MethodType type
+    ) throws Throwable {
+        Objects.requireNonNull(lookup, "lookup is null");
+        Objects.requireNonNull(name, "name is null");
+        Objects.requireNonNull(type, "type is null");
+
+        return new ConstantCallSite(FROM_ARRAYS.asType(type));
+    }
+
+    /**
+     * String template bootstrap method for creating string templates.
+     *
+     * @param lookup          method lookup
+     * @param name            method name
+     * @param type            method type
+     * @param fragments       fragments from string template
+     *
+     * @return {@link CallSite} to handle create string template
+     *
+     * @throws NullPointerException if any of the arguments is null
+     * @throws Throwable            if linkage fails
+     */
+    public static CallSite stringTemplateBSM(
+            MethodHandles.Lookup lookup,
+            String name,
+            MethodType type,
+            String... fragments
+    ) throws Throwable {
+        Objects.requireNonNull(lookup, "lookup is null");
+        Objects.requireNonNull(name, "name is null");
+        Objects.requireNonNull(type, "type is null");
+        Objects.requireNonNull(fragments, "fragments is null");
+
+        MethodHandle mh = StringTemplateImplFactory
+                .createStringTemplateImplMH(List.of(fragments), type).asType(type);
+
+        return new ConstantCallSite(mh);
+    }
+
+    /**
+     * String template bootstrap method for static final processors.
      *
      * @param lookup          method lookup
      * @param name            method name
      * @param type            method type
      * @param processorGetter {@link MethodHandle} to get static final processor
      * @param fragments       fragments from string template
-     * @return {@link CallSite} to handle templated string processing
+     *
+     * @return {@link CallSite} to handle string template processing
+     *
      * @throws NullPointerException if any of the arguments is null
      * @throws Throwable            if linkage fails
      */
@@ -131,7 +170,8 @@ public final class TemplateSupport {
             String name,
             MethodType type,
             MethodHandle processorGetter,
-            String... fragments) throws Throwable {
+            String... fragments
+    ) throws Throwable {
         Objects.requireNonNull(lookup, "lookup is null");
         Objects.requireNonNull(name, "name is null");
         Objects.requireNonNull(type, "type is null");
@@ -139,20 +179,9 @@ public final class TemplateSupport {
         Objects.requireNonNull(fragments, "fragments is null");
 
         ValidatingProcessor<?, ?> processor = (ValidatingProcessor<?, ?>)processorGetter.invoke();
-        TemplateSupport support = new TemplateSupport(lookup, name, type, List.of(fragments), processor);
-
-        return support.processWithProcessor();
-    }
-
-    /**
-     * Create callsite to invoke specialized processor process method.
-     *
-     * @return {@link CallSite} for processing templated strings.
-     * @throws Throwable if linkage fails
-     */
-    CallSite processWithProcessor() throws Throwable {
-        MethodHandle mh = processor instanceof ProcessorLinkage processorLinkage ?
-                processorLinkage.linkage(fragments, type) : defaultProcessMethodHandle();
+        MethodHandle mh = processor instanceof ProcessorLinkage processorLinkage
+                ? processorLinkage.linkage(List.of(fragments), type)
+                : defaultProcessMethodHandle(type, processor, List.of(fragments));
 
         return new ConstantCallSite(mh);
     }
@@ -163,11 +192,14 @@ public final class TemplateSupport {
      * @param fragments fragments from string template
      * @param processor {@link ValidatingProcessor} to process
      * @param values    array of expression values
-     * @return
+     *
+     * @return result of processing the string template
      */
-    private static Object defaultProcess(List<String> fragments,
-                                         ValidatingProcessor<Object, Throwable> processor,
-                                         Object[] values) throws Throwable {
+    private static Object defaultProcess(
+            List<String> fragments,
+            ValidatingProcessor<?, ?> processor,
+            Object[] values
+    ) throws Throwable {
         return processor.process(
             StringTemplate.of(fragments, JUCA.listFromTrustedArrayNullsAllowed(values)));
     }
@@ -178,25 +210,42 @@ public final class TemplateSupport {
      *
      * @return default process {@link MethodHandle}
      */
-    private MethodHandle defaultProcessMethodHandle() {
+    private static MethodHandle defaultProcessMethodHandle(
+            MethodType type,
+            ValidatingProcessor<?, ?> processor,
+            List<String> fragments
+    ) {
         MethodHandle mh = MethodHandles.insertArguments(DEFAULT_PROCESS_MH, 0, fragments, processor);
         return mh.asCollector(Object[].class, type.parameterCount()).asType(type);
     }
 
     /**
-     * Collect nullable elements from an array into a unmodifiable list.
+     * A {@link StringTemplate} where number of value slots exceeds
+     * {@link java.lang.invoke.StringConcatFactory#MAX_INDY_CONCAT_ARG_SLOTS}.
      *
-     * @param elements  elements to place in list
-     *
-     * @return unmodifiable list.
-     *
-     * @param <E>  type of elements
+     * @param fragments  immutable list of string fragments from string template
+     * @param values     immutable list of expression values
      */
-    @SafeVarargs
-    @SuppressWarnings({"unchecked", "varargs"})
-    public static <E> List<E> toList(E... elements) {
-        return JUCA.listFromTrustedArrayNullsAllowed(elements);
+    private record LargeStringTemplate(List<String> fragments, List<Object> values)
+            implements StringTemplate {
+        @Override
+        public java.lang.String toString() {
+            return StringTemplate.toString(this);
+        }
     }
 
+    /**
+     * Used to create a {@link StringTemplate} when number of value slots exceeds
+     * {@link java.lang.invoke.StringConcatFactory#MAX_INDY_CONCAT_ARG_SLOTS}.
+     *
+     * @param fragments  array of string fragments
+     * @param values     array of values
+     *
+     * @return new {@link StringTemplate}
+     */
+    private static StringTemplate fromArrays(String[] fragments, Object[] values) {
+        return new LargeStringTemplate(List.of(fragments),
+                                       JUCA.listFromTrustedArrayNullsAllowed(values));
+    }
 }
 
