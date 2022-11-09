@@ -23,10 +23,18 @@
  * questions.
  */
 
-package jdk.internal.util;
+package java.lang.template;
 
-import java.lang.ref.*;
-import java.util.*;
+import java.lang.ref.Reference;
+import java.lang.ref.ReferenceQueue;
+import java.lang.ref.SoftReference;
+import java.lang.ref.WeakReference;
+import java.util.AbstractMap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -72,7 +80,7 @@ import jdk.internal.javac.PreviewFeature;
  * @param <V> the type of mapped values
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public final class ReferencedKeyMap<K, V> implements Map<K, V> {
+final class ReferencedKeyMap<K, V> implements Map<K, V> {
     /**
      * true if {@link SoftReference} keys are to be used,
      * {@link WeakReference} otherwise.
@@ -115,7 +123,7 @@ public final class ReferencedKeyMap<K, V> implements Map<K, V> {
      * @param <V> the type of mapped values
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> ReferencedKeyMap<K, V>
+    static <K, V> ReferencedKeyMap<K, V>
     create(boolean isSoft, Supplier<Map<?, ?>> supplier) {
         return new ReferencedKeyMap<K, V>(isSoft,
                 (Map<ReferenceKey<K>, V>)supplier.get());
@@ -133,7 +141,7 @@ public final class ReferencedKeyMap<K, V> implements Map<K, V> {
      * @param <V> the type of mapped values
      */
     @SuppressWarnings("unchecked")
-    public static <K, V> ReferencedKeyMap<K, V>
+    static <K, V> ReferencedKeyMap<K, V>
     create(Supplier<Map<?, ?>> supplier) {
         return new ReferencedKeyMap<K, V>(false,
                 (Map<ReferenceKey<K>, V>)supplier.get());

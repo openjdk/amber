@@ -270,7 +270,7 @@ public final class TransLiterals extends TreeTranslator {
                              List<LoadableConstant> staticArgValues,
                              List<Type> staticArgsTypes) {
             Symbol bsm = rs.resolveQualifiedMethod(tree.pos(), env,
-                    syms.templateSupportType, bootstrapName, staticArgsTypes, List.nil());
+                    syms.templateRuntimeType, bootstrapName, staticArgsTypes, List.nil());
             MethodType indyType = new MethodType(argTypes, type, List.nil(), syms.methodClass);
             DynamicMethodSymbol dynSym = new DynamicMethodSymbol(
                     name,

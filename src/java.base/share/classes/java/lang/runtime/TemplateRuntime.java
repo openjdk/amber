@@ -23,7 +23,7 @@
  * questions.
  */
 
-package jdk.internal.template;
+package java.lang.runtime;
 
 import java.lang.invoke.CallSite;
 import java.lang.invoke.ConstantCallSite;
@@ -36,6 +36,7 @@ import java.lang.template.ValidatingProcessor;
 import java.util.List;
 import java.util.Objects;
 
+import jdk.internal.access.JavaTemplateAccess;
 import jdk.internal.access.JavaUtilCollectionAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
@@ -59,16 +60,17 @@ import jdk.internal.javac.PreviewFeature;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public final class TemplateSupport {
+public final class TemplateRuntime {
+    private static final JavaTemplateAccess JTA = SharedSecrets.getJavaTemplateAccess();
     private static final JavaUtilCollectionAccess JUCA = SharedSecrets.getJavaUtilCollectionAccess();
 
     /**
-     * {@link MethodHandle} to {@link TemplateSupport#defaultProcess}.
+     * {@link MethodHandle} to {@link TemplateRuntime#defaultProcess}.
      */
     private static final MethodHandle DEFAULT_PROCESS_MH;
 
     /**
-     * {@link MethodHandle} to {@link TemplateSupport#fromArrays}.
+     * {@link MethodHandle} to {@link TemplateRuntime#fromArrays}.
      */
     private static final MethodHandle FROM_ARRAYS;
 
@@ -81,10 +83,10 @@ public final class TemplateSupport {
 
             MethodType mt = MethodType.methodType(Object.class,
                     List.class, ValidatingProcessor.class, Object[].class);
-            DEFAULT_PROCESS_MH = lookup.findStatic(TemplateSupport.class, "defaultProcess", mt);
+            DEFAULT_PROCESS_MH = lookup.findStatic(TemplateRuntime.class, "defaultProcess", mt);
 
             mt = MethodType.methodType(StringTemplate.class, String[].class, Object[].class);
-            FROM_ARRAYS = lookup.findStatic(TemplateSupport.class, "fromArrays", mt);
+            FROM_ARRAYS = lookup.findStatic(TemplateRuntime.class, "fromArrays", mt);
         } catch (ReflectiveOperationException ex) {
             throw new AssertionError("string bootstrap fail", ex);
         }
@@ -93,7 +95,7 @@ public final class TemplateSupport {
     /**
      * Private constructor.
      */
-    private TemplateSupport() {
+    private TemplateRuntime() {
         throw new AssertionError("private constructor");
     }
 
@@ -145,7 +147,7 @@ public final class TemplateSupport {
         Objects.requireNonNull(type, "type is null");
         Objects.requireNonNull(fragments, "fragments is null");
 
-        MethodHandle mh = StringTemplateImplFactory
+        MethodHandle mh = JTA
                 .createStringTemplateImplMH(List.of(fragments), type).asType(type);
 
         return new ConstantCallSite(mh);

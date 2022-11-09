@@ -23,7 +23,7 @@
  * questions.
  */
 
-package jdk.internal.util;
+package java.lang.template;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -34,11 +34,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.lang.invoke.MethodType.methodType;
-
 import jdk.internal.javac.PreviewFeature;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.vm.annotation.Stable;
+
+import static java.lang.invoke.MethodType.methodType;
 
 /**
  * A <em>carrier</em> is an opaque object that can be used to store component values
@@ -84,7 +84,7 @@ import jdk.internal.vm.annotation.Stable;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public final class Carriers {
+final class Carriers {
     /**
      * Maximum number of components in a carrier (based on the maximum
      * number of args to a constructor.)
@@ -401,7 +401,7 @@ public final class Carriers {
      * primitives array using normal indices. Integers follow using int[] indices offset beyond
      * the longs using unsafe getInt/putInt.
      */
-    public static class CarrierObject {
+    static class CarrierObject {
         /**
          * Carrier for primitive values.
          */
@@ -730,7 +730,7 @@ public final class Carriers {
      * is, a {@linkplain MethodType method type} whose parameter types describe the types of
      * the carrier component values, or by providing the parameter types directly.
      */
-    public static final class CarrierFactory {
+    static final class CarrierFactory {
         /**
          * Constructor
          */
@@ -752,7 +752,7 @@ public final class Carriers {
          * @throws NullPointerException is methodType is null
          * @throws IllegalArgumentException if number of component slots exceeds maximum
          */
-        public static CarrierElements of(MethodType methodType) {
+        static CarrierElements of(MethodType methodType) {
             Objects.requireNonNull(methodType, "methodType must not be null");
             MethodType constructorMT = methodType.changeReturnType(Object.class);
             CarrierShape carrierShape = new CarrierShape(constructorMT);
@@ -776,7 +776,7 @@ public final class Carriers {
          * @throws NullPointerException is ptypes is null
          * @throws IllegalArgumentException if number of component slots exceeds maximum
          */
-        public static CarrierElements of(Class < ? >...ptypes) {
+        static CarrierElements of(Class < ? >...ptypes) {
             Objects.requireNonNull(ptypes, "ptypes must not be null");
             return of(methodType(Object.class, ptypes));
         }
@@ -788,7 +788,7 @@ public final class Carriers {
      * gleaned from the parameter types of the constructor {@link MethodHandle} or by the
      * return types of the components' {@link MethodHandle MethodHandles}.
      */
-    public static final class CarrierElements {
+    static final class CarrierElements {
         /**
          * Slot count required for objects.
          */
@@ -845,21 +845,21 @@ public final class Carriers {
         /**
          * {@return slot count required for objects}
          */
-        public int objectCount() {
+        int objectCount() {
             return objectCount;
         }
 
         /**
          * {@return slot count required for primitives}
          */
-        public int primitiveCount() {
+        int primitiveCount() {
             return primitiveCount;
         }
 
         /**
          * {@return the underlying carrier class}
          */
-        public Class<?> carrierClass() {
+        Class<?> carrierClass() {
             return carrierClass;
         }
 
@@ -867,22 +867,23 @@ public final class Carriers {
          * {@return the constructor {@link MethodHandle} for the carrier. The
          * carrier constructor will always have a return type of {@link Object} }
          */
-        public MethodHandle constructor() {
+        MethodHandle constructor() {
             return constructor;
         }
 
         /**
-         * {@return the initializer {@link MethodHandle} for the carrier.
+         * {@return the initializer {@link MethodHandle} for the carrier}
          */
-        public MethodHandle initializer() {
+        MethodHandle initializer() {
             return initializer;
         }
 
         /**
-         * {@return the constructor plus initializer {@link MethodHandle} for the carrier.
-         * The result will always have a return type of {@link Object} }
+         * Return the constructor plus initializer {@link MethodHandle} for the carrier.
+         * The {@link MethodHandle} will always have a return type of {@link Object}.
+         * @return the constructor plus initializer {@link MethodHandle}
          */
-        public MethodHandle initializingConstructor() {
+        MethodHandle initializingConstructor() {
             return MethodHandles.foldArguments(initializer, 0, constructor);
         }
 
@@ -891,7 +892,7 @@ public final class Carriers {
          * for all the carrier's components. The receiver type of the accessors
          * will always be {@link Object} }
          */
-        public List<MethodHandle> components() {
+        List<MethodHandle> components() {
             return components;
         }
 
@@ -903,7 +904,7 @@ public final class Carriers {
          *
          * @throws IllegalArgumentException if {@code i} is out of bounds
          */
-        public MethodHandle component(int i) {
+        MethodHandle component(int i) {
             if (i < 0 || components.size() <= i) {
                 throw new IllegalArgumentException("i is out of bounds " + i +
                         " of " + components.size());
@@ -924,7 +925,7 @@ public final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    public static Class<?> carrierClass(MethodType methodType) {
+    static Class<?> carrierClass(MethodType methodType) {
         return CarrierFactory.of(methodType).carrierClass();
     }
 
@@ -935,7 +936,7 @@ public final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    public static MethodHandle constructor(MethodType methodType) {
+    static MethodHandle constructor(MethodType methodType) {
         MethodHandle constructor = CarrierFactory.of(methodType).constructor();
         constructor = constructor.asType(constructor.type().changeReturnType(Object.class));
         return constructor;
@@ -949,7 +950,7 @@ public final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    public static MethodHandle initializer(MethodType methodType) {
+    static MethodHandle initializer(MethodType methodType) {
         MethodHandle initializer = CarrierFactory.of(methodType).initializer();
         initializer = initializer.asType(initializer.type()
                 .changeReturnType(Object.class).changeParameterType(0, Object.class));
@@ -964,7 +965,7 @@ public final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    public static MethodHandle initializingConstructor(MethodType methodType) {
+    static MethodHandle initializingConstructor(MethodType methodType) {
         MethodHandle constructor = CarrierFactory.of(methodType).initializingConstructor();
         constructor = constructor.asType(constructor.type().changeReturnType(Object.class));
         return constructor;
@@ -978,7 +979,7 @@ public final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    public static List<MethodHandle> components(MethodType methodType) {
+    static List<MethodHandle> components(MethodType methodType) {
         return CarrierFactory
                 .of(methodType)
                 .components()
@@ -998,7 +999,7 @@ public final class Carriers {
      *
      * @throws IllegalArgumentException if {@code i} is out of bounds
      */
-    public static MethodHandle component(MethodType methodType, int i) {
+    static MethodHandle component(MethodType methodType, int i) {
         MethodHandle component = CarrierFactory.of(methodType).component(i);
         component = component.asType(component.type().changeParameterType(0, Object.class));
         return component;

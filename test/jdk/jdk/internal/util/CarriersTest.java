@@ -24,17 +24,15 @@
 /*
  * @test
  * @summary Test features provided by the Carriers class.
- * @modules java.base/jdk.internal.util
- * @compile --enable-preview -source ${jdk.version} CarriersTest.java
- * @run main/othervm --enable-preview CarriersTest
+ * @modules java.base/java.lang.template
+ * @enablePreview true
  */
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.lang.template.Carriers;
 import java.util.Arrays;
 import java.util.List;
-
-import jdk.internal.util.Carriers;
 
 public class CarriersTest {
     public static void main(String[] args) throws Throwable {

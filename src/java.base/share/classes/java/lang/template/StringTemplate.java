@@ -253,7 +253,7 @@ public interface StringTemplate {
      */
     public static StringTemplate of(String string) {
         Objects.requireNonNull(string, "string must not be null");
-        return new TemplateRuntime.SimpleStringTemplate(List.of(string), List.of());
+        return new TemplateSupport.SimpleStringTemplate(List.of(string), List.of());
     }
 
     /**
@@ -281,8 +281,8 @@ public interface StringTemplate {
                     "fragments list size is not one more than values list size");
         }
         fragments = List.copyOf(fragments);
-        values = TemplateRuntime.toList(values.toArray().clone());
-        return new TemplateRuntime.SimpleStringTemplate(fragments, values);
+        values = TemplateSupport.toList(values.toArray().clone());
+        return new TemplateSupport.SimpleStringTemplate(fragments, values);
     }
 
     /**
@@ -304,7 +304,7 @@ public interface StringTemplate {
         if (fragmentsSize != valuesSize + 1) {
             throw new RuntimeException("fragments must have one more element than values");
         }
-        return TemplateRuntime.interpolate(List.copyOf(fragments), TemplateRuntime.toList(values.toArray()));
+        return TemplateSupport.interpolate(List.copyOf(fragments), TemplateSupport.toList(values.toArray()));
     }
 
     /**
@@ -322,7 +322,7 @@ public interface StringTemplate {
       * @throws RuntimeException if sts has zero elements
       */
     public static StringTemplate combine(StringTemplate... sts) {
-        return TemplateRuntime.combine(sts);
+        return TemplateSupport.combine(sts);
     }
 
     /**
@@ -334,7 +334,7 @@ public interface StringTemplate {
      * }
      * @implNote The result of interpolation is not interned.
      */
-    public static final StringProcessor STR = StringTemplate::interpolate;
+    public static final StringProcessor STR = TemplateSupport.basicInterpolate();
 
     /**
      * No-op template processor. Used to highlight that non-processing of the StringTemplate

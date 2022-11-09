@@ -24,17 +24,15 @@
 /*
  * @test
  * @summary Test features provided by the ReferencedKeyMap class.
- * @modules java.base/jdk.internal.util
- * @compile --enable-preview -source ${jdk.version} ReferencedKeyTest.java
- * @run main/othervm --enable-preview  ReferencedKeyTest
+ * @modules java.base/java.lang.template
+ * @enablePreview
  */
 
+import java.lang.template.ReferencedKeyMap;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-
-import jdk.internal.util.ReferencedKeyMap;
 
 public class ReferencedKeyTest {
     static long BASE_KEY = 10_000_000L;

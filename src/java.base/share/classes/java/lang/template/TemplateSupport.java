@@ -40,6 +40,7 @@ import java.util.Objects;
 
 import jdk.internal.access.JavaLangAccess;
 import jdk.internal.access.JavaLangInvokeAccess;
+import jdk.internal.access.JavaTemplateAccess;
 import jdk.internal.access.JavaUtilCollectionAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
@@ -51,12 +52,12 @@ import jdk.internal.javac.PreviewFeature;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-final class TemplateRuntime {
+final class TemplateSupport {
 
     /**
      * Private constructor.
      */
-    private TemplateRuntime() {
+    private TemplateSupport() {
         throw new AssertionError("private constructor");
     }
 
@@ -160,7 +161,17 @@ final class TemplateRuntime {
                 values[j++] = value;
             }
         }
-        return new SimpleStringTemplate(TemplateRuntime.toList(fragments), TemplateRuntime.toList(values));
+        return new SimpleStringTemplate(TemplateSupport.toList(fragments), TemplateSupport.toList(values));
+    }
+
+    /**
+     * Return the basic string interpolate process, and, initialize the SharedSecret.
+     *
+     * @return basic string interpolate process
+     */
+    static StringProcessor basicInterpolate() {
+        SharedSecrets.setJavaTemplateAccess(new StringTemplateImplFactory());
+        return StringTemplate::interpolate;
     }
 
 }

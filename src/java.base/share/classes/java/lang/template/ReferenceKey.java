@@ -23,7 +23,7 @@
  * questions.
  */
 
-package jdk.internal.util;
+package java.lang.template;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;

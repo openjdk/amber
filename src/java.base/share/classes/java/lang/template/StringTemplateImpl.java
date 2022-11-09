@@ -23,15 +23,13 @@
  * questions.
  */
 
-package jdk.internal.template;
+package java.lang.template;
 
 import java.lang.invoke.MethodHandle;
-import java.lang.template.StringTemplate;
 import java.util.List;
 import java.util.Objects;
 
 import jdk.internal.javac.PreviewFeature;
-import jdk.internal.util.Carriers;
 import jdk.internal.vm.annotation.Stable;
 
 /**

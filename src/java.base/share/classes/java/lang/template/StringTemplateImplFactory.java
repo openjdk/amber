@@ -23,16 +23,19 @@
  * questions.
  */
 
-package jdk.internal.template;
+package java.lang.template;
 
-import java.lang.invoke.*;
-import java.lang.template.StringTemplate;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.invoke.StringConcatException;
+import java.lang.invoke.StringConcatFactory;
 import java.util.List;
 
+import jdk.internal.access.JavaTemplateAccess;
 import jdk.internal.access.JavaUtilCollectionAccess;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.javac.PreviewFeature;
-import jdk.internal.util.Carriers;
 
 import static java.lang.invoke.MethodType.methodType;
 
@@ -43,13 +46,12 @@ import static java.lang.invoke.MethodType.methodType;
  * @since 20
  */
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
-public final class StringTemplateImplFactory {
+final class StringTemplateImplFactory implements JavaTemplateAccess {
 
     /**
      * Private constructor.
      */
-    private StringTemplateImplFactory() {
-        throw new AssertionError("private constructor");
+    StringTemplateImplFactory() {
     }
 
     /*
@@ -107,7 +109,7 @@ public final class StringTemplateImplFactory {
      * @return {@link MethodHandle} that can construct a {@link StringTemplateImpl} with arguments
      * used as values.
      */
-    public static MethodHandle createStringTemplateImplMH(List<String> fragments, MethodType type) {
+    public  MethodHandle createStringTemplateImplMH(List<String> fragments, MethodType type) {
         Carriers.CarrierElements elements = Carriers.CarrierFactory.of(type);
         MethodHandle[] components = elements
                 .components()
