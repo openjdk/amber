@@ -25,7 +25,8 @@
  * @test
  * @summary Test features provided by the ReferencedKeyMap class.
  * @modules java.base/jdk.internal.util
- * @run main ReferencedKeyTest
+ * @compile --enable-preview -source ${jdk.version} ReferencedKeyTest.java
+ * @run main/othervm --enable-preview  ReferencedKeyTest
  */
 
 import java.util.HashMap;
