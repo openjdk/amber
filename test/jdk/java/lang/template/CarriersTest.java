@@ -26,11 +26,14 @@
  * @summary Test features provided by the Carriers class.
  * @modules java.base/java.lang.template
  * @enablePreview true
+ * @compile --patch-module java.base=${test.src} CarriersTest.java
+ * @run main/othervm --patch-module java.base=${test.class.path} java.lang.template.CarriersTest
  */
+
+package java.lang.template;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
-import java.lang.template.Carriers;
 import java.util.Arrays;
 import java.util.List;
 

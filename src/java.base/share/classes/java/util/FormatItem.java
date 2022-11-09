@@ -71,7 +71,7 @@ class FormatItem {
     private static final long charMix(long lengthCoder, char value) {
         try {
             return (long)CHAR_MIX.invokeExact(lengthCoder, value);
-        } catch (RuntimeException ex) {
+        } catch (Error | RuntimeException ex) {
             throw ex;
         } catch (Throwable ex) {
             throw new RuntimeException(ex);
@@ -424,8 +424,7 @@ class FormatItem {
 
     protected static abstract sealed class FormatItemModifier implements FormatConcatItem
         permits FormatItemFillLeft,
-                FormatItemFillRight,
-                FormatItemUpper
+                FormatItemFillRight
     {
         private final long itemLengthCoder;
         protected final FormatConcatItem item;
@@ -511,36 +510,6 @@ class FormatItem {
         }
     }
 
-
-    /**
-     * To upper case format item.
-     */
-    static final class FormatItemUpper extends FormatItemModifier
-            implements FormatConcatItem {
-        FormatItemUpper(FormatConcatItem item) {
-            super(item);
-        }
-
-        @Override
-        public long mix(long lengthCoder) {
-            return (lengthCoder | coder()) + length();
-        }
-
-        @Override
-        public long prepend(long lengthCoder, byte[] buffer) throws Throwable {
-            MethodHandle getCharMH = selectGetChar(lengthCoder);
-            MethodHandle putCharMH = selectPutChar(lengthCoder);
-            lengthCoder = item.prepend(lengthCoder, buffer);
-            int start = (int)lengthCoder;
-
-            for (int i = 0; i < length(); i++) {
-                char ch = (char)getCharMH.invokeExact(buffer, start + i);
-                putCharMH.invokeExact(buffer, start + i, (int)Character.toUpperCase(ch));
-            }
-
-            return lengthCoder;
-        }
-    }
 
     /**
      * Null format item.

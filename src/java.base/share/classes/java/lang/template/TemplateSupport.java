@@ -146,22 +146,24 @@ final class TemplateSupport {
             Objects.requireNonNull(st, "string templates should not be null");
             size += st.values().size();
         }
-        String[] fragments = new String[size + 1];
-        Object[] values = new Object[size];
+        String[] combinedFragments = new String[size + 1];
+        Object[] combinedValues = new Object[size];
         int i = 0, j = 0;
-        fragments[0] = "";
+        String last = "";
         for (StringTemplate st : sts) {
-            Iterator<String> fragmentIter = st.fragments().iterator();
-            fragments[i++] += fragmentIter.next();
-            while (fragmentIter.hasNext()) {
-                fragments[i++] = fragmentIter.next();
+            List<String> fragments = st.fragments();
+            combinedFragments[i++] = last + fragments.get(0);
+            int k = 1, sizem1 = fragments.size() - 1;
+            for(; k < sizem1; k++) {
+                combinedFragments[i++] = fragments.get(k);
             }
-            i--;
+            last = fragments.get(k);
             for (Object value : st.values()) {
-                values[j++] = value;
+                combinedValues[j++] = value;
             }
         }
-        return new SimpleStringTemplate(TemplateSupport.toList(fragments), TemplateSupport.toList(values));
+        combinedFragments[i] = last;
+        return new SimpleStringTemplate(TemplateSupport.toList(combinedFragments), TemplateSupport.toList(combinedValues));
     }
 
     /**

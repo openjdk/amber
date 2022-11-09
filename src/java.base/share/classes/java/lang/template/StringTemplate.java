@@ -205,44 +205,6 @@ public interface StringTemplate {
     }
 
     /**
-     * Produces a hash code for the supplied {@link StringTemplate}.
-     *
-     * @param stringTemplate the {@link StringTemplate} to hash
-     *
-     * @return hash code for the supplied {@link StringTemplate}
-     *
-     * @throws NullPointerException if stringTemplate is null
-     *
-     * @implSpec The hashCode is the bit XOR of the fragments hash code and
-     * the values hash code.
-     */
-    public static int hashCode(StringTemplate stringTemplate) {
-        Objects.requireNonNull(stringTemplate, "stringTemplate should not be null");
-        return Objects.hash(stringTemplate.fragments(), stringTemplate.values());
-    }
-
-    /**
-     * Tests equality of two {@link StringTemplate}.
-     *
-     * @param a  first {@link StringTemplate}
-     * @param b  second {@link StringTemplate}
-     *
-     * @return true if the two {@link StringTemplate StringTemplates} are equivalent
-     *
-     * @throws NullPointerException if either @link StringTemplate} is null
-     *
-     * @implSpec Equality is determined by testing equality of the fragments and
-     * the values.
-     */
-    public static boolean equals(Object a, Object b) {
-        Objects.requireNonNull(a, "StringTemplate a should not be null");
-        Objects.requireNonNull(b, "StringTemplate b should not be null");
-        return a instanceof StringTemplate aST && b instanceof StringTemplate bST &&
-                Objects.equals(aST.fragments(), bST.fragments()) &&
-                Objects.equals(aST.values(), bST.values());
-    }
-
-    /**
      * Returns a StringTemplate composed from a string.
      *
      * @param string  single string fragment
@@ -294,6 +256,8 @@ public interface StringTemplate {
      *
      * @return String interpolation of fragments and values
      *
+     * @throws IllegalArgumentException if fragments list size is not one more
+     *         than values list size
      * @throws NullPointerException fragments or values is null or if any of the fragments is null
      */
     public static String interpolate(List<String> fragments, List<Object> values) {
@@ -302,7 +266,7 @@ public interface StringTemplate {
         int fragmentsSize = fragments.size();
         int valuesSize = values.size();
         if (fragmentsSize != valuesSize + 1) {
-            throw new RuntimeException("fragments must have one more element than values");
+            throw new IllegalArgumentException("fragments must have one more element than values");
         }
         return TemplateSupport.interpolate(List.copyOf(fragments), TemplateSupport.toList(values.toArray()));
     }

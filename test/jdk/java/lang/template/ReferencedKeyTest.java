@@ -26,9 +26,12 @@
  * @summary Test features provided by the ReferencedKeyMap class.
  * @modules java.base/java.lang.template
  * @enablePreview
+ * @compile --patch-module java.base=${test.src} ReferencedKeyTest.java
+ * @run main/othervm --patch-module java.base=${test.class.path} java.lang.template.ReferencedKeyTest
  */
 
-import java.lang.template.ReferencedKeyMap;
+package java.lang.template;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
