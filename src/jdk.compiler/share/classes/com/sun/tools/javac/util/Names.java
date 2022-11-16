@@ -226,7 +226,9 @@ public class Names {
     public final Name process;
     public final Name str;
     public final Name raw;
-    public final Name stringTemplateBSM;
+    public final Name newStringTemplate;
+    public final Name newLargeStringTemplate;
+    public final Name processStringTemplate;
 
     public final Name.Table table;
 
@@ -405,7 +407,9 @@ public class Names {
         process = fromString("process");
         str = fromString("STR");
         raw = fromString("RAW");
-        stringTemplateBSM = fromString("stringTemplateBSM");
+        newStringTemplate = fromString("newStringTemplate");
+        newLargeStringTemplate = fromString("newLargeStringTemplate");
+        processStringTemplate = fromString("processStringTemplate");
 
         // pattern switches
         typeSwitch = fromString("typeSwitch");

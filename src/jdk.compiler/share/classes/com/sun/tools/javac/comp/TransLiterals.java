@@ -310,7 +310,7 @@ public final class TransLiterals extends TreeTranslator {
                 JCNewArray valuesArray = make.NewArray(make.Type(syms.objectType),
                         List.nil(), expressions);
                 valuesArray.type = new ArrayType(syms.objectType, syms.arrayClass);
-                return bsmCall(names.process, names.stringTemplateBSM, syms.stringTemplateType,
+                return bsmCall(names.process, names.newLargeStringTemplate, syms.stringTemplateType,
                         List.of(fragmentArray, valuesArray),
                         List.of(fragmentArray.type, valuesArray.type),
                         staticArgValues, staticArgsTypes);
@@ -320,7 +320,7 @@ public final class TransLiterals extends TreeTranslator {
                     staticArgValues = staticArgValues.append(LoadableConstant.String(fragment));
                     staticArgsTypes = staticArgsTypes.append(syms.stringType);
                 }
-                return bsmCall(names.process, names.stringTemplateBSM, syms.stringTemplateType,
+                return bsmCall(names.process, names.newStringTemplate, syms.stringTemplateType,
                         expressions, expressionTypes, staticArgValues, staticArgsTypes);
             }
         }
@@ -338,7 +338,7 @@ public final class TransLiterals extends TreeTranslator {
                 staticArgValues = staticArgValues.append(LoadableConstant.String(fragment));
                 staticArgsTypes = staticArgsTypes.append(syms.stringType);
             }
-            return bsmCall(names.process, names.stringTemplateBSM, tree.type,
+            return bsmCall(names.process, names.processStringTemplate, tree.type,
                     args, argTypes, staticArgValues, staticArgsTypes);
         }
 
