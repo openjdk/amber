@@ -224,8 +224,8 @@ public class Names {
 
     // templated string
     public final Name process;
-    public final Name str;
-    public final Name raw;
+    public final Name STR;
+    public final Name RAW;
     public final Name newStringTemplate;
     public final Name newLargeStringTemplate;
     public final Name processStringTemplate;
@@ -405,8 +405,8 @@ public class Names {
 
         // templated string
         process = fromString("process");
-        str = fromString("STR");
-        raw = fromString("RAW");
+        STR = fromString("STR");
+        RAW = fromString("RAW");
         newStringTemplate = fromString("newStringTemplate");
         newLargeStringTemplate = fromString("newLargeStringTemplate");
         processStringTemplate = fromString("processStringTemplate");
