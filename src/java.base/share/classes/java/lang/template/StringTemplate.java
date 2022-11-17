@@ -70,8 +70,8 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * When the template expression is evaluated, an instance of {@link StringTemplate} is
  * produced that returns the same lists from {@link StringTemplate#fragments()} and
- * {@link StringTemplate#values()} as shown above. The {@link STR} template processor
- * uses these lists to yield an interpolated string. {@code s} will be equivalent to
+ * {@link StringTemplate#values()} as shown above. The {@link StringTemplate#STR} template
+ * processor uses these lists to yield an interpolated string. {@code s} will be equivalent to
  * {@code "10 + 20 = 30"}.
  * <p>
  * The {@code interpolate()} method provides a direct way to perform string interpolation
@@ -83,7 +83,8 @@ import jdk.internal.javac.PreviewFeature;
  * String result = StringTemplate.interpolate(fragments, values);
  * }
  * The {@link StringTemplate#process(ValidatingProcessor)} method, in conjunction with
- * the {@link RAW} processor, may be used to defer processing of a {@link StringTemplate}.
+ * the {@link StringTemplate#RAW} processor, may be used to defer processing of a
+ * {@link StringTemplate}.
  * {@snippet :
  * StringTemplate st = RAW."\{x} + \{y} = \{x + y}";
  * ...other steps...
@@ -146,12 +147,17 @@ public interface StringTemplate {
     List<Object> values();
 
     /**
-     * Returns the interpolation of the fragments and values for this {@link StringTemplate}.
+     * Returns the string interpolation of the fragments and values for this
+     * {@link StringTemplate}.
+     * <p>
+     * For better visibility and when practical, it is recommended that users use the
+     * {@link StringTemplate#STR} processor instead of invoking the
+     * {@link StringTemplate#interpolate()} method directly.
      * {@snippet :
      * String student = "Mary";
      * String teacher = "Johnson";
      * StringTemplate st = RAW."The student \{student} is in \{teacher}'s class room.";
-     * String result = st.interpolation(); // @highlight substring="interpolation()"
+     * String result = st.interpolate(); // @highlight substring="interpolate()"
      * }
      * {@code result} will be equivalent to {@code "The student Mary is in Johnson's class room."}
      *
@@ -193,7 +199,7 @@ public interface StringTemplate {
     }
 
     /**
-     * Produces a diagnostic string representing the supplied
+     * Produces a diagnostic string that describes the fragments and values of the supplied
      * {@link StringTemplate}.
      *
      * @param stringTemplate  the {@link StringTemplate} to represent
@@ -212,8 +218,9 @@ public interface StringTemplate {
     }
 
     /**
-     * Returns a StringTemplate as if constructed by invoking
-     * {@code StringTemplate.of(List.of(string), List.of())}.
+     * Returns a {@link StringTemplate} as if constructed by invoking
+     * {@code StringTemplate.of(List.of(string), List.of())}. That is, a {@link StringTemplate}
+     * with one fragment and no values.
      *
      * @param string  single string fragment
      *
@@ -286,20 +293,29 @@ public interface StringTemplate {
      * Fragment lists from each {@link StringTemplate} are merged such that the last fragment
      * from the previous {@link StringTemplate} is concatenated with the first fragment of the next
      * {@link StringTemplate}. Values lists are simply concatenated to produce a single values list.
+     * The result is a well-formed {@link StringTemplate} with n+1 fragments and n values, where
+     * n is the total of number of values across all the supplied
+     * {@link StringTemplate StringTemplates}.
      *
-     * @param sts  one or more {@link StringTemplate}
+     * @param stringTemplates  one or more {@link StringTemplate}
      *
      * @return combined {@link StringTemplate}
      *
      * @throws NullPointerException if sts is null or if any of the elements are null
      * @throws RuntimeException if sts has zero elements
      */
-    static StringTemplate combine(StringTemplate... sts) {
-        return TemplateSupport.combine(sts);
+    static StringTemplate combine(StringTemplate... stringTemplates) {
+        return TemplateSupport.combine(stringTemplates);
     }
 
     /**
-     * Interpolation template processor instance.
+     * The {@link StringProcessor} instance conventionally used for the string interpolation
+     * of a supplied {@link StringTemplate}. In order to make use easier, {@link StringTemplate#STR}
+     * is implicitly statically imported into every Java source. No other declaration is required.
+     * <p>
+     * For better visibility and when practical, it is recommended that users use the
+     * {@link StringTemplate#STR} processor instead of invoking the
+     * {@link StringTemplate#interpolate()} method.
      * Example: {@snippet :
      * int x = 10;
      * int y = 20;
@@ -310,13 +326,15 @@ public interface StringTemplate {
     static final StringProcessor STR = StringTemplate::interpolate;
 
     /**
-     * No-op template processor. Used to highlight that non-processing of the StringTemplate
-     * was intentional.
+     * The {@link TemplateProcessor} instance conventionally used to indicate that the
+     * processing of the {@link StringTemplate} is to be deferred to a later time. Deferred
+     * processing can be resumed by invoking the
+     * {@link StringTemplate#process(ValidatingProcessor)} or
+     * {@link ValidatingProcessor#process(StringTemplate)} methods.
      * {@snippet :
-     * // The string template before interpolation
-     * System.out.println(RAW."\{x} = \{y} = \{x + y}"); // @highlight substring="RAW"
-     * // The string template after interpolation
-     * System.out.println(STR."\{x} = \{y} = \{x + y}"); // @highlight substring="STR"
+     * StringTemplate st = RAW."\{x} + \{y} = \{x + y}";
+     * ...other steps...
+     * String result = STR.process(st);
      * }
      */
     static final TemplateProcessor<StringTemplate> RAW = st -> st;
