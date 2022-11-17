@@ -31,8 +31,8 @@ import java.util.Objects;
 import jdk.internal.javac.PreviewFeature;
 
 /**
- * {@link StringTemplate StringTemplates} is the run-time representation of a
- * string template or text block template in a template expression.
+ * {@link StringTemplate} is the run-time representation of a string template or
+ * text block template in a template expression.
  * <p>
  * In the source code of a Java program, a string template or text block template
  * contains an interleaved succession of <em>fragment literals</em> and <em>embedded
@@ -57,8 +57,9 @@ import jdk.internal.javac.PreviewFeature;
  * List<String> fragments = st.fragments();
  * List<Object> values = st.values();
  * }
- * {@code fragments} will be equivalent to {@code List.of("", " + ", " = ", "")}
- * and {@code values} will be the equivalent of {@code List.of(10, 20, 30)}.
+ * {@code fragments} will be equivalent to {@code List.of("", " + ", " = ", "")},
+ * which includes the empty first and last fragments. {@code values} will be the
+ * equivalent of {@code List.of(10, 20, 30)}.
  * <p>
  * The following code contains a template expression with the same template but a
  * different template processor:
@@ -69,7 +70,7 @@ import jdk.internal.javac.PreviewFeature;
  * }
  * When the template expression is evaluated, an instance of {@link StringTemplate} is
  * produced that returns the same lists from {@link StringTemplate#fragments()} and
- * {@link StringTemplate#values()} as shown above. The {@code STR} template processor
+ * {@link StringTemplate#values()} as shown above. The {@link STR} template processor
  * uses these lists to yield an interpolated string. {@code s} will be equivalent to
  * {@code "10 + 20 = 30"}.
  * <p>
@@ -81,10 +82,11 @@ import jdk.internal.javac.PreviewFeature;
  * ... check or manipulate the fragments and/or values ...
  * String result = StringTemplate.interpolate(fragments, values);
  * }
- * The {@link StringTemplate#process(ValidatingProcessor)} method provides an
- * alternative to using string template expressions.
+ * The {@link StringTemplate#process(ValidatingProcessor)} method, in conjunction with
+ * the {@link RAW} processor, may be used to defer processing of a {@link StringTemplate}.
  * {@snippet :
  * StringTemplate st = RAW."\{x} + \{y} = \{x + y}";
+ * ...other steps...
  * String result = st.process(STR);
  * }
  * The factory methods {@link StringTemplate#of(String)} and
@@ -97,9 +99,7 @@ import jdk.internal.javac.PreviewFeature;
  * @see StringProcessor
  * @see java.util.FormatProcessor
  *
- * @implNote Libraries may produce {@link StringTemplate} instances as long as they
- * conform to the requirements of this interface.
- * Implementations of {@link StringTemplate} must minimally implement the
+ * @implNote Implementations of {@link StringTemplate} must minimally implement the
  * methods {@link StringTemplate#fragments()} and {@link StringTemplate#values()}.
  * Instances of {@link StringTemplate} are considered immutable. To preserve the
  * semantics of string templates and text block templates, the list returned by
@@ -111,9 +111,12 @@ import jdk.internal.javac.PreviewFeature;
 @PreviewFeature(feature=PreviewFeature.Feature.STRING_TEMPLATES)
 public interface StringTemplate {
     /**
-     * Returns this {@link StringTemplate StringTemplate's} immutable list of string
-     * fragments consisting of the string of characters preceding each of the embedded
-     * expressions plus the string of characters following the last embedded expression.
+     * Returns s list of fragment literals for this {@link StringTemplate}.
+     * The fragment literals are the character sequences preceding each of the embedded
+     * expressions in source code, plus the character sequence following the last
+     * embedded expression. Such character sequences may be zero-length if an embedded
+     * expression appears at the beginning or end of a template, or if two embedded
+     * expressions are directly adjacent in a template.
      * In the example: {@snippet :
      * String student = "Mary";
      * String teacher = "Johnson";
@@ -124,14 +127,12 @@ public interface StringTemplate {
      * {@code List.of("The student ", " is in ", "'s class room.")}
      *
      * @return list of string fragments
-     *
-     * @implSpec The list returned is immutable.
      */
     List<String> fragments();
 
     /**
-     * Returns this {@link StringTemplate StringTemplate's} immutable list of embedded
-     * expression results. In the example:
+     * Returns a list of embedded expression results for this {@link StringTemplate}.
+     * In the example:
      * {@snippet :
      * String student = "Mary";
      * String teacher = "Johnson";
@@ -141,22 +142,18 @@ public interface StringTemplate {
      * {@code values} will be equivalent to {@code List.of(student, teacher)}
      *
      * @return list of expression values
-     *
-     * @implSpec The list returned is immutable.
      */
     List<Object> values();
 
     /**
-     * Returns the interpolation of this {@link StringTemplate StringTemplate's}.
-     * fragments and values.
-     *
+     * Returns the interpolation of the fragments and values for this {@link StringTemplate}.
      * {@snippet :
      * String student = "Mary";
      * String teacher = "Johnson";
      * StringTemplate st = RAW."The student \{student} is in \{teacher}'s class room.";
-     * String string = st.interpolation(); // @highlight substring="interpolation()"
+     * String result = st.interpolation(); // @highlight substring="interpolation()"
      * }
-     * {@code string} will be equivalent to {@code "The student Mary is in Johnson's class room."}
+     * {@code result} will be equivalent to {@code "The student Mary is in Johnson's class room."}
      *
      * @return interpolation of this {@link StringTemplate}
      */
