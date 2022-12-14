@@ -48,6 +48,7 @@ public class PrimitivePatterns {
         assertEquals(1, exhaustiveWithRecords5());
         assertEquals(1, exhaustiveWithRecords6());
         assertEquals(2, ensureProperSelectionWithRecords());
+        assertEquals(42, switchAndDowncastFromObjectPrimitive());
         assertEquals(42, dominationBetweenBoxedAndPrimitive());
         assertEquals(2, wideningAndUnboxing());
         assertEquals(2, wideningAndUnboxingInRecord());
@@ -197,6 +198,14 @@ public class PrimitivePatterns {
         return switch (r) {
             case R_int(byte x) -> 1;
             case R_int(int x) -> 2;
+        };
+    }
+
+    public static int switchAndDowncastFromObjectPrimitive() {
+        Object i = 42;
+        return switch (i) {
+            case Integer ib  -> ib;
+            default -> -1;
         };
     }
 

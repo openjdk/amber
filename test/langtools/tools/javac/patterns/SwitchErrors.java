@@ -260,16 +260,45 @@ public class SwitchErrors {
             default: break;
         }
     }
+
     void switchLongOverByte(byte b) {
         switch (b) {
             case 0L: return ;
         }
     }
+
     void switchOverPrimitiveFloatFromInt(float f) {
         switch (f) {
-            case 16777216: break;
-            case 16777217: break;
-            default: break;
-        };
+            case 16777216:
+                break;
+            case 16777217:
+                break;
+            default:
+                break;
+        }
+    }
+
+    void noDiamond(Object o) {
+        record R<T>(T t) {}
+        switch (o) {
+            case R<> r -> {}
+            default -> {}
+        }
+        if (o instanceof R<> r) {}
+    }
+    void noRawInferenceNonDeconstruction() {
+        record R<T>(T t) {}
+        R<String> o = null;
+        switch (o) {
+            case R r -> System.out.println(r.t().length());
+        }
+        if (o instanceof R r) System.out.println(r.t().length());
+    }
+    void cannotInfer() {
+        interface A<T> {}
+        record R<T extends Number>() implements A<T> {}
+        A<String> i = null;
+        if (i instanceof R()) {
+        }
     }
 }
