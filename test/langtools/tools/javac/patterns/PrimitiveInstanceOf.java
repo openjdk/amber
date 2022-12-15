@@ -30,32 +30,30 @@
 public class PrimitiveInstanceOf {
 
     public static void main(String[] args) {
-        assertEquals(true, identity_primitive_conversion());
-        assertEquals(true, widening_primitive_conversion());
-        assertEquals(true, narrowing_primitive_conversion());
-        assertEquals(true, widening_and_narrowing_primitive_conversion());
-        assertEquals(true, boxing_conversion());
-        assertEquals(true, boxing_and_widening_reference_conversion());
-
-        assertEquals(true, unboxing());
-        assertEquals(true, unboxing_with_object());
-        assertEquals(true, unboxing_and_convertible(42));
-        assertEquals(true, unboxing_and_widening_primitive_exact());
-        assertEquals(false, unboxing_and_widening_primitive_not_exact());
-        assertEquals(true, unboxing_when_null_and_widening_primitive());
-        assertEquals(true, narrowing_and_unboxing());
-
-        assertEquals(true, pattern_ExtractRecordComponent());
-        assertEquals(true, expr_method());
-        assertEquals(true, expr_staticallyQualified());
+        assertEquals(true,  identityPrimitiveConversion());
+        assertEquals(true,  wideningPrimitiveConversion());
+        assertEquals(true,  narrowingPrimitiveConversion());
+        assertEquals(true,  wideningAndNarrowingPrimitiveConversion());
+        assertEquals(true,  boxingConversion());
+        assertEquals(true,  boxingAndWideningReferenceConversion());
+        assertEquals(true,  unboxing());
+        assertEquals(true,  unboxingWithObject());
+        assertEquals(true,  unboxingAndConvertible(42));
+        assertEquals(true,  unboxingAndWideningPrimitiveExact());
+        assertEquals(false, unboxingAndWideningPrimitiveNotExact());
+        assertEquals(true,  unboxingWhenNullAndWideningPrimitive());
+        assertEquals(true,  narrowingAndUnboxing());
+        assertEquals(true,  patternExtractRecordComponent());
+        assertEquals(true,  exprMethod());
+        assertEquals(true,  exprStaticallyQualified());
     }
 
-    public static boolean identity_primitive_conversion() {
+    public static boolean identityPrimitiveConversion() {
         int i = 42;
         return i instanceof int;
     }
 
-    public static boolean widening_primitive_conversion() {
+    public static boolean wideningPrimitiveConversion() {
         byte b = (byte) 42;
         short s = (short) 42;
         char c = 'a';
@@ -63,27 +61,27 @@ public class PrimitiveInstanceOf {
         return b instanceof int && s instanceof int && c instanceof int;
     }
 
-    public static boolean narrowing_primitive_conversion() {
+    public static boolean narrowingPrimitiveConversion() {
         long l_within_int_range = 42L;
         long l_outside_int_range = 999999999999999999L;
 
         return l_within_int_range instanceof int && !(l_outside_int_range instanceof int);
     }
 
-    public static boolean widening_and_narrowing_primitive_conversion() { // TODO
+    public static boolean wideningAndNarrowingPrimitiveConversion() {
         byte b = (byte) 42;
         byte b2 = (byte) -42;
         char c = (char) 42;
         return b instanceof char && c instanceof byte && !(b2 instanceof char);
     }
 
-    public static boolean boxing_conversion() {
+    public static boolean boxingConversion() {
         int i = 42;
 
         return i instanceof Integer;
     }
 
-    public static boolean boxing_and_widening_reference_conversion() {
+    public static boolean boxingAndWideningReferenceConversion() {
         int i = 42;
         return i instanceof Object &&
                 i instanceof Number &&
@@ -95,7 +93,7 @@ public class PrimitiveInstanceOf {
         return i instanceof int;
     }
 
-    public static boolean unboxing_with_object() {
+    public static boolean unboxingWithObject() {
         Object o1 = (int) 42;
         Object o2 = (byte) 42;
 
@@ -105,11 +103,11 @@ public class PrimitiveInstanceOf {
                 !(o2 instanceof int i2));
     }
 
-    public static <T extends Integer> boolean unboxing_and_convertible(T i) {
+    public static <T extends Integer> boolean unboxingAndConvertible(T i) {
         return i instanceof int;
     }
 
-    public static boolean unboxing_and_widening_primitive_exact() {
+    public static boolean unboxingAndWideningPrimitiveExact() {
         Byte b = Byte.valueOf((byte)42);
         Short s = Short.valueOf((short)42);
         Character c = Character.valueOf('a');
@@ -117,14 +115,14 @@ public class PrimitiveInstanceOf {
         return (b instanceof int) && (s instanceof int) && (c instanceof int);
     }
 
-    public static boolean unboxing_and_widening_primitive_not_exact() {
+    public static boolean unboxingAndWideningPrimitiveNotExact() {
         int smallestIntNotRepresentable = 16777217; // 2^24 + 1
         Integer i = Integer.valueOf(smallestIntNotRepresentable);
 
         return i instanceof float;
     }
 
-    public static boolean unboxing_when_null_and_widening_primitive() {
+    public static boolean unboxingWhenNullAndWideningPrimitive() {
         Byte b = null;
         Short s = null;
         Character c = null;
@@ -132,14 +130,14 @@ public class PrimitiveInstanceOf {
         return !(b instanceof int) && !(s instanceof int) && !(c instanceof int);
     }
 
-    public static boolean narrowing_and_unboxing() {
+    public static boolean narrowingAndUnboxing() {
         Number n = Byte.valueOf((byte) 42);
 
         return n instanceof byte;
     }
 
     public record P(int i) { }
-    public static boolean pattern_ExtractRecordComponent() {
+    public static boolean patternExtractRecordComponent() {
         Object p = new P(42);
         if (p instanceof P(byte b)) {
             return b == 42;
@@ -148,14 +146,14 @@ public class PrimitiveInstanceOf {
     }
 
     public static int meth() {return 42;}
-    public static boolean expr_method() {
+    public static boolean exprMethod() {
         return meth() instanceof int;
     }
 
     public class A1 {
         public static int i = 42;
     }
-    public static boolean expr_staticallyQualified() {
+    public static boolean exprStaticallyQualified() {
         return A1.i instanceof int;
     }
 

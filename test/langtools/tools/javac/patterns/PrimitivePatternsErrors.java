@@ -36,32 +36,32 @@ public class PrimitivePatternsErrors {
             case short s -> System.out.println("its a short");
             case byte b  -> System.out.println("its a byte"); // Error - dominated!
             default      -> System.out.println("any other integral value");
-        };
+        }
     }
 
     public static int dominationWithRecordPatterns() {
         R_int r = new R_int(42);
         return switch (r) {
             case R_int(int x) -> 1;
-            case R_int(byte x) -> 2;
+            case R_int(byte x) -> 2;  // Error - dominated!
         };
     }
 
-    public static int exhaustiveWithRecords2() {
+    public static int inconvertibleNestedComponent() {
         R_int r = new R_int(42);
         return switch (r) {
-            case R_int(Long x) -> 1;
+            case R_int(Long x) -> 1; // inconvertible
         };
     }
 
-    public static int notexhaustive1() {
+    public static int nonExhaustive1() {
         int i = 42;
         return switch (i) {  // Error - not exhaustive
             case short s -> s;
         };
     }
 
-    public static int notexchaustive2() {
+    public static int nonExhaustive2() {
         int i = 42;
         return switch (i) { // Error - not exhaustive
             case byte  b -> 1;
@@ -72,16 +72,24 @@ public class PrimitivePatternsErrors {
     public static int dominationBetweenBoxedAndPrimitive() {
         int i = 42;
         return switch (i) {
-            case Integer ib  -> ib; // Error - dominated!
-            case byte ip     -> ip;
+            case Integer ib  -> ib;
+            case byte ip     -> ip; // Error - dominated!
         };
     }
 
-//    public static int constantDominatedWithPrimitivePattern() {
-//        int i = 42;
-//        return switch (i) {
-//            case int j -> 42;
-//            case 43    -> -1;   // Error - dominated!
-//        };
-//    }
+    public static int constantDominatedWithPrimitivePattern() {
+        int i = 42;
+        return switch (i) {
+            case int j -> 42;
+            case 43    -> -1;   // Error - dominated!
+        };
+    }
+
+    public static int constantDominatedWithFloatPrimitivePattern() {
+        float f = 42.0f;
+        return switch (f) {
+            case Float ff -> 42;
+            case 43.0f    -> -1;   // Error - dominated!
+        };
+    }
 }

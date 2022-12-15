@@ -21,6 +21,8 @@
  * questions.
  */
 
+import java.util.List;
+
 /**
  * @test
  * @summary Check behavior of instanceof for primitives
@@ -52,6 +54,8 @@ public class PrimitivePatterns {
         assertEquals(42, dominationBetweenBoxedAndPrimitive());
         assertEquals(2, wideningAndUnboxing());
         assertEquals(2, wideningAndUnboxingInRecord());
+        assertEquals(2, wideningAndInferredUnboxingInRecord());
+        assertEquals(3, inferredUnboxingInRecordInEnhancedFor());
     }
 
     public static int primitivePattern() {
@@ -236,6 +240,27 @@ public class PrimitivePatterns {
             case Box<Number>(float f) -> 3;
             default -> 4;
         };
+    }
+
+    static int wideningAndInferredUnboxingInRecord() {
+        Box<Number> box = new Box<>(Integer.valueOf(42));
+        return switch (box) {
+            case Box(byte b) -> 1;
+            case Box(int i) -> 2;
+            case Box(float f) -> 3;
+            default -> 4;
+        };
+    }
+
+    static int inferredUnboxingInRecordInEnhancedFor() {
+        List<Box<Integer>> numbers = List.of(new Box<>(1), new Box<>(2));
+
+        int acc = 0;
+        for(Box(long b) : numbers) {
+            acc += b;
+        }
+
+        return acc;
     }
 
     record R_Integer(Integer x) {}

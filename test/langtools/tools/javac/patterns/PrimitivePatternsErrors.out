@@ -2,9 +2,11 @@ PrimitivePatternsErrors.java:37:18: compiler.err.pattern.dominated
 PrimitivePatternsErrors.java:46:18: compiler.err.pattern.dominated
 PrimitivePatternsErrors.java:53:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Long)
 PrimitivePatternsErrors.java:76:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:84:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:92:18: compiler.err.pattern.dominated
 PrimitivePatternsErrors.java:52:16: compiler.err.not.exhaustive
 PrimitivePatternsErrors.java:59:16: compiler.err.not.exhaustive
 PrimitivePatternsErrors.java:66:16: compiler.err.not.exhaustive
 - compiler.note.preview.filename: PrimitivePatternsErrors.java, DEFAULT
 - compiler.note.preview.recompile
-7 errors
+9 errors
