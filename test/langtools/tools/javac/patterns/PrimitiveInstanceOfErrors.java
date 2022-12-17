@@ -34,6 +34,10 @@ public class PrimitiveInstanceOfErrors {
         return l_within_int_range instanceof int && !(l_outside_int_range instanceof int);
     }
 
+    public static <T extends Integer> boolean wideningReferenceConversionUnboxingAndNarrowingPrimitive(T i) {
+        return i instanceof byte;
+    }
+
     public static void boxingConversionsBetweenIncompatibleTypes() {
         int i = 42;
 

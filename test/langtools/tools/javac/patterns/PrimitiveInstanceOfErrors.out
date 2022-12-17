@@ -1,7 +1,8 @@
 PrimitiveInstanceOfErrors.java:34:16: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.Long, int)
 PrimitiveInstanceOfErrors.java:34:55: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.Long, int)
-PrimitiveInstanceOfErrors.java:41:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Double)
-PrimitiveInstanceOfErrors.java:42:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Short)
+PrimitiveInstanceOfErrors.java:38:16: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: T, byte)
+PrimitiveInstanceOfErrors.java:45:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Double)
+PrimitiveInstanceOfErrors.java:46:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Short)
 - compiler.note.preview.filename: PrimitiveInstanceOfErrors.java, DEFAULT
 - compiler.note.preview.recompile
-4 errors
+5 errors

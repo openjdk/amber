@@ -38,7 +38,8 @@ public class PrimitiveInstanceOf {
         assertEquals(true,  boxingAndWideningReferenceConversion());
         assertEquals(true,  unboxing());
         assertEquals(true,  unboxingWithObject());
-        assertEquals(true,  unboxingAndConvertible(42));
+        assertEquals(true,  wideningReferenceConversionUnboxing(42));
+        assertEquals(true,  wideningReferenceConversionUnboxingAndWideningPrimitive(42));
         assertEquals(true,  unboxingAndWideningPrimitiveExact());
         assertEquals(false, unboxingAndWideningPrimitiveNotExact());
         assertEquals(true,  unboxingWhenNullAndWideningPrimitive());
@@ -103,8 +104,12 @@ public class PrimitiveInstanceOf {
                 !(o2 instanceof int i2));
     }
 
-    public static <T extends Integer> boolean unboxingAndConvertible(T i) {
+    public static <T extends Integer> boolean wideningReferenceConversionUnboxing(T i) {
         return i instanceof int;
+    }
+
+    public static <T extends Integer> boolean wideningReferenceConversionUnboxingAndWideningPrimitive(T i) {
+        return i instanceof double;
     }
 
     public static boolean unboxingAndWideningPrimitiveExact() {
