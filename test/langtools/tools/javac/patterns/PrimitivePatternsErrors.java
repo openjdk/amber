@@ -27,7 +27,6 @@
  * @compile/fail/ref=PrimitivePatternsErrors.out --enable-preview -source ${jdk.version} -XDrawDiagnostics -XDshould-stop.at=FLOW PrimitivePatternsErrors.java
  */
 public class PrimitivePatternsErrors {
-    record R_Integer(Integer x) {}
     record R_int(int x) {}
 
     public static void dominationBetweenPrimitivePatterns() {
@@ -66,6 +65,14 @@ public class PrimitivePatternsErrors {
         return switch (i) { // Error - not exhaustive
             case byte  b -> 1;
             case short s -> 2;
+        };
+    }
+
+    public static int nonExhaustive3() {
+        int i = 42;
+        return switch (i) { // Error - not exhaustive
+            case byte  b -> 1;
+            case float f -> 2;
         };
     }
 

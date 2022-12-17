@@ -35,27 +35,29 @@ public class PrimitivePatterns {
         assertEquals(1,  primitiveSwitch());
         assertEquals(42, primitiveSwitch2());
         assertEquals(42, primitiveSwitch3());
+        assertEquals(1,  primitiveSwitch4(0.0f));
+        assertEquals(2,  primitiveSwitch4(1.0f));
         assertEquals(42, exhaustive0());
-        assertEquals(1,  exhaustive1_byte());
-        assertEquals(2,  exhaustive1_short());
-        assertEquals(1,  real_exhaustive2());
-        assertEquals(1,  real_exhaustive3());
-        assertEquals(1,  real_exhaustive4());
-        assertEquals(1,  real_exhaustive4_byte());
-        assertEquals(2,  real_exhaustive4_double());
-        assertEquals(1, exhaustive5());
-        assertEquals(1, exhaustiveWithRecords1());
-        assertEquals(1, exhaustiveWithRecords2());
-        assertEquals(1, exhaustiveWithRecords4());
-        assertEquals(1, exhaustiveWithRecords5());
-        assertEquals(1, exhaustiveWithRecords6());
-        assertEquals(2, ensureProperSelectionWithRecords());
+        assertEquals(1,  exhaustive1WithDefault());
+        assertEquals(2,  exhaustive2WithDefault());
+        assertEquals(1,  exhaustive1());
+        assertEquals(1,  exhaustive2());
+        assertEquals(1,  exhaustive3());
+        assertEquals(1,  exhaustive4());
+        assertEquals(2,  exhaustive5());
+        assertEquals(1,  exhaustive6());
+        assertEquals(1,  exhaustiveWithRecords1());
+        assertEquals(1,  exhaustiveWithRecords2());
+        assertEquals(1,  exhaustiveWithRecords4());
+        assertEquals(1,  exhaustiveWithRecords5());
+        assertEquals(1,  exhaustiveWithRecords6());
+        assertEquals(2,  ensureProperSelectionWithRecords());
         assertEquals(42, switchAndDowncastFromObjectPrimitive());
         assertEquals(42, dominationBetweenBoxedAndPrimitive());
-        assertEquals(2, wideningAndUnboxing());
-        assertEquals(2, wideningAndUnboxingInRecord());
-        assertEquals(2, wideningAndInferredUnboxingInRecord());
-        assertEquals(3, inferredUnboxingInRecordInEnhancedFor());
+        assertEquals(2,  wideningAndUnboxing());
+        assertEquals(2,  wideningAndUnboxingInRecord());
+        assertEquals(2,  wideningAndInferredUnboxingInRecord());
+        assertEquals(3,  inferredUnboxingInRecordInEnhancedFor());
     }
 
     public static int primitivePattern() {
@@ -89,6 +91,14 @@ public class PrimitivePatterns {
         }
     }
 
+    public static int primitiveSwitch4(float f) {
+        return switch (f) {
+            case 0f -> 1;
+            case Float fi when fi == 1f -> 2;
+            case Float fi -> 3;
+        };
+    }
+
     public static int exhaustive0() {
         Integer i = 42;
         switch (i) {
@@ -96,7 +106,7 @@ public class PrimitivePatterns {
         }
     }
 
-    public static int exhaustive1_byte() {
+    public static int exhaustive1WithDefault() {
         int i = 42;
         return switch (i) {
             case byte  b -> 1;
@@ -104,7 +114,7 @@ public class PrimitivePatterns {
         };
     }
 
-    public static int exhaustive1_short() {
+    public static int exhaustive2WithDefault() {
         int i = 30000;
         return switch (i) {
             case byte  b -> 1;
@@ -113,28 +123,28 @@ public class PrimitivePatterns {
         };
     }
 
-    public static int real_exhaustive2() {
+    public static int exhaustive1() {
         int i = 42;
         return switch (i) {
             case Integer p -> 1;
         };
     }
 
-    public static int real_exhaustive3() {
+    public static int exhaustive2() {
         int i = 42;
         return switch (i) {
             case long d -> 1;
         };
     }
 
-    public static int real_exhaustive4() {
+    public static int exhaustive3() {
         int i = 42;
         return switch (i) {
             case double d -> 1;
         };
     }
 
-    public static int real_exhaustive4_byte() {
+    public static int exhaustive4() {
         int i = 127;
         return switch (i) {
             case byte b -> 1;
@@ -142,7 +152,7 @@ public class PrimitivePatterns {
         };
     }
 
-    public static int real_exhaustive4_double() {
+    public static int exhaustive5() {
         int i = 127 + 1;
         return switch (i) {
             case byte b -> 1;
@@ -150,7 +160,7 @@ public class PrimitivePatterns {
         };
     }
 
-    public static int exhaustive5() {
+    public static int exhaustive6() {
         Integer i = Integer.valueOf(42);
         return switch (i) {
             case int p -> 1;

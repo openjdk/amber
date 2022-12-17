@@ -27,14 +27,14 @@
  * @compile/fail/ref=PrimitiveInstanceOfErrors.out --enable-preview -source ${jdk.version} -XDrawDiagnostics -XDshould-stop.at=FLOW PrimitiveInstanceOfErrors.java
  */
 public class PrimitiveInstanceOfErrors {
-    public static boolean unboxing_and_narrowing_primitive_not_allowed_per_casting_conversion() {
+    public static boolean unboxingAndNarrowingPrimitiveNotAllowedPerCastingConversion() {
         Long l_within_int_range = 42L;
         Long l_outside_int_range = 999999999999999999L;
 
         return l_within_int_range instanceof int && !(l_outside_int_range instanceof int);
     }
 
-    public static void boxing_conversions() {
+    public static void boxingConversionsBetweenIncompatibleTypes() {
         int i = 42;
 
         boolean ret1 = i instanceof Integer; // (Integer) i // OK and true

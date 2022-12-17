@@ -782,9 +782,6 @@ public class Flow {
                                 // if the target is unconditionally exact to the pattern, target is covered
                                 if (chk.checkUnconditionallyExact(targetType, primaryPatternType.tsym.type)) {
                                     coveredSymbols.add(targetType.tsym);
-                                } else if (types.isConvertible(targetType, primaryPatternType.tsym.type)) {
-                                    // cancelling out exactness criterion in case of (Wrapper, primitive)
-                                    coveredSymbols.add(targetType.tsym);
                                 }
                             } else if (primaryPatternType.tsym.type.isReference() && targetType.isPrimitive() && types.isCastable(primaryPatternType.tsym.type, targetType)) {
                                 coveredSymbols.add(types.unboxedType(primaryPatternType).tsym);
