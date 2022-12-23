@@ -1,13 +1,13 @@
-PrimitivePatternsErrors.java:37:18: compiler.err.pattern.dominated
-PrimitivePatternsErrors.java:46:18: compiler.err.pattern.dominated
-PrimitivePatternsErrors.java:53:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Long)
-PrimitivePatternsErrors.java:84:18: compiler.err.pattern.dominated
-PrimitivePatternsErrors.java:92:18: compiler.err.pattern.dominated
-PrimitivePatternsErrors.java:100:18: compiler.err.pattern.dominated
-PrimitivePatternsErrors.java:52:16: compiler.err.not.exhaustive
-PrimitivePatternsErrors.java:59:16: compiler.err.not.exhaustive
-PrimitivePatternsErrors.java:66:16: compiler.err.not.exhaustive
-PrimitivePatternsErrors.java:74:16: compiler.err.not.exhaustive
+PrimitivePatternsErrors.java:36:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:45:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:52:24: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Long)
+PrimitivePatternsErrors.java:83:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:91:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:99:18: compiler.err.pattern.dominated
+PrimitivePatternsErrors.java:51:16: compiler.err.not.exhaustive
+PrimitivePatternsErrors.java:58:16: compiler.err.not.exhaustive
+PrimitivePatternsErrors.java:65:16: compiler.err.not.exhaustive
+PrimitivePatternsErrors.java:73:16: compiler.err.not.exhaustive
 - compiler.note.preview.filename: PrimitivePatternsErrors.java, DEFAULT
 - compiler.note.preview.recompile
 10 errors
