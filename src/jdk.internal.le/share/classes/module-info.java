@@ -50,5 +50,8 @@ module jdk.internal.le {
 
     uses jdk.internal.org.jline.terminal.spi.JnaSupport;
 
+    // Console
+    provides jdk.internal.io.JdkConsoleProvider with
+            jdk.internal.org.jline.JdkConsoleProviderImpl;
 }
 

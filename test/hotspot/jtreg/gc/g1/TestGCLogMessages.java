@@ -278,7 +278,6 @@ public class TestGCLogMessages {
                                                                   "-XX:G1EvacuationFailureALotCount=100",
                                                                   "-XX:G1EvacuationFailureALotInterval=1",
                                                                   "-XX:+UnlockDiagnosticVMOptions",
-                                                                  "-XX:-G1UsePreventiveGC",
                                                                   "-Xlog:gc+phases=debug",
                                                                   GCTestWithEvacuationFailure.class.getName());
 
@@ -291,7 +290,6 @@ public class TestGCLogMessages {
                                                    "-Xmn16M",
                                                    "-Xms32M",
                                                    "-XX:+UnlockDiagnosticVMOptions",
-                                                   "-XX:-G1UsePreventiveGC",
                                                    "-Xlog:gc+phases=trace",
                                                    GCTestWithEvacuationFailure.class.getName());
 
@@ -301,7 +299,6 @@ public class TestGCLogMessages {
     }
 
     LogMessageWithLevel concurrentStartMessages[] = new LogMessageWithLevel[] {
-        new LogMessageWithLevel("Clear Claimed Marks", Level.DEBUG),
         new LogMessageWithLevel("Reset Marking State", Level.DEBUG),
         new LogMessageWithLevel("Note Start Of Mark", Level.DEBUG),
     };
@@ -369,7 +366,7 @@ public class TestGCLogMessages {
     static class GCTestWithConcurrentStart {
         public static void main(String [] args) {
             jdk.test.whitebox.WhiteBox WB = jdk.test.whitebox.WhiteBox.getWhiteBox();
-            WB.g1StartConcMarkCycle();
+            WB.g1StartConcurrentGC();
         }
     }
 
