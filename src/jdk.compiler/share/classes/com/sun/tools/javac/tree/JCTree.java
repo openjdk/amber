@@ -623,6 +623,30 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public Tag getTag() {
             return TOPLEVEL;
         }
+
+        public boolean isUnnamedClass() {
+            // Detect unnamed class.
+            for (JCTree def : defs) {
+                if (def.hasTag(Tag.METHODDEF) || def.hasTag(Tag.VARDEF)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public JCClassDecl getUnnamedClass() {
+            // Find unnamed class.
+            for (JCTree def : defs) {
+                if (def.hasTag(CLASSDEF)) {
+                    JCClassDecl cls = (JCClassDecl)def;
+                    if ((cls.getModifiers().flags & Flags.UNNAMED_CLASS) != 0) {
+                        return cls;
+                    }
+                }
+            }
+            return null;
+        }
+
     }
 
     /**

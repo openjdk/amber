@@ -39,7 +39,7 @@ import java.util.stream.Stream;
 /**
  * This class provides quick access to commonly used methods, fields and tasks.
  *
- * @since  20
+ * @since  21
  */
 public final class IO {
     /**

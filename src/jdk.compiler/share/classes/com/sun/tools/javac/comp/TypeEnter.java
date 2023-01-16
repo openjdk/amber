@@ -355,6 +355,12 @@ public class TypeEnter implements Completer {
                 }
                 importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false), javaLang, env);
 
+                if (tree.getUnnamedClass() != null) {
+                    JCExpression ioType = make.QualIdent(syms.ioImportsType.tsym);
+                    JCImport imp = make.Import(make.Select(ioType, names.asterisk), true);
+                    doImport(imp);
+                }
+
                 JCModuleDecl decl = tree.getModuleDecl();
 
                 // Process the package def and all import clauses.

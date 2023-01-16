@@ -386,7 +386,7 @@ public class Enter extends JCTree.Visitor {
                 tree.packge.package_info = c;
                 tree.packge.sourcefile = tree.sourcefile;
             }
-            if (isUnnamedClass(tree)) {
+            if (tree.isUnnamedClass()) {
                 constructUnnamedClass(tree);
             }
             classEnter(tree.defs, topEnv);
@@ -423,17 +423,6 @@ public class Enter extends JCTree.Visitor {
             }
         };
 
-        // Detect unnamed class.
-        private boolean isUnnamedClass(JCCompilationUnit tree) {
-            for (JCTree def : tree.defs) {
-                if (def.hasTag(Tag.METHODDEF) || def.hasTag(Tag.VARDEF)) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
         // Restructure top level to be an unnamed class.
         private void constructUnnamedClass(JCCompilationUnit tree) {
             make.at(tree.pos);
@@ -447,12 +436,6 @@ public class Enter extends JCTree.Visitor {
             Name name = names.fromString(simplename);
 
             ListBuffer<JCTree> topDefs = new ListBuffer<>();
-
-            JCExpression pid = make.QualIdent(syms.ioImportsType.tsym);
-            pid = make.Select(pid, names.asterisk);
-            JCImport imp = make.Import(pid, true);
-            topDefs.append(imp);
-
             ListBuffer<JCTree> defs = new ListBuffer<>();
 
             for (JCTree def : tree.defs) {
@@ -468,7 +451,7 @@ public class Enter extends JCTree.Visitor {
             }
 
             JCModifiers unnamedMods = make.at(tree.pos)
-                    .Modifiers(Flags.FINAL| MANDATED|Flags.UNNAMED_CLASS, List.nil());
+                    .Modifiers(FINAL|MANDATED|UNNAMED_CLASS, List.nil());
             JCClassDecl unnamed = make.at(tree.pos).ClassDef(
                     unnamedMods, name, List.nil(), null, List.nil(), List.nil(),
                     defs.toList());
