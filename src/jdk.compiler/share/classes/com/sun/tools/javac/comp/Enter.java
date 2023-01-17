@@ -386,8 +386,8 @@ public class Enter extends JCTree.Visitor {
                 tree.packge.package_info = c;
                 tree.packge.sourcefile = tree.sourcefile;
             }
-            if (tree.isImplicitClass()) {
-                constructImplicitClass(tree);
+            if (tree.isImplicitClass() && tree.getImplicitClass() == null) {
+                constructImplicitClass(tree, make, log, names);
             }
             classEnter(tree.defs, topEnv);
             if (addEnv) {
@@ -423,39 +423,39 @@ public class Enter extends JCTree.Visitor {
             }
         };
 
-        // Restructure top level to be an implicit class.
-        private void constructImplicitClass(JCCompilationUnit tree) {
-            make.at(tree.pos);
-            String simplename = PathFileObject.getSimpleName(tree.sourcefile);
-            if (simplename.endsWith(".java")) {
-                simplename = simplename.substring(0, simplename.length() - ".java".length());
-            }
-            if (!SourceVersion.isIdentifier(simplename) || SourceVersion.isKeyword(simplename)) {
-                log.error(null, Errors.BadFileName(simplename));
-            }
-            Name name = names.fromString(simplename);
-
-            ListBuffer<JCTree> topDefs = new ListBuffer<>();
-            ListBuffer<JCTree> defs = new ListBuffer<>();
-
-            for (JCTree def : tree.defs) {
-                if (def.hasTag(Tag.PACKAGEDEF)) {
-                    log.error(null, Errors.ImplicitClassShouldNotHavePackageDeclaration);
-                } else if (def.hasTag(Tag.IMPORT)) {
-                    topDefs.append(def);
-                } else {
-                    defs.append(def);
-                }
-            }
-
-            JCModifiers implicitMods = make.at(tree.pos)
-                    .Modifiers(FINAL|MANDATED|IMPLICIT_CLASS, List.nil());
-            JCClassDecl implicit = make.at(tree.pos).ClassDef(
-                    implicitMods, name, List.nil(), null, List.nil(), List.nil(),
-                    defs.toList());
-            topDefs.append(implicit);
-            tree.defs = topDefs.toList();
+    // Restructure top level to be an implicit class.
+    public static void constructImplicitClass(JCCompilationUnit tree, TreeMaker make, Log log, Names names) {
+        make.at(tree.pos);
+        String simplename = PathFileObject.getSimpleName(tree.sourcefile);
+        if (simplename.endsWith(".java")) {
+            simplename = simplename.substring(0, simplename.length() - ".java".length());
         }
+        if (!SourceVersion.isIdentifier(simplename) || SourceVersion.isKeyword(simplename)) {
+            log.error(null, Errors.BadFileName(simplename));
+        }
+        Name name = names.fromString(simplename);
+
+        ListBuffer<JCTree> topDefs = new ListBuffer<>();
+        ListBuffer<JCTree> defs = new ListBuffer<>();
+
+        for (JCTree def : tree.defs) {
+            if (def.hasTag(Tag.PACKAGEDEF)) {
+                log.error(null, Errors.ImplicitClassShouldNotHavePackageDeclaration);
+            } else if (def.hasTag(Tag.IMPORT)) {
+                topDefs.append(def);
+            } else {
+                defs.append(def);
+            }
+        }
+
+        JCModifiers implicitMods = make.at(tree.pos)
+                .Modifiers(FINAL|MANDATED|IMPLICIT_CLASS, List.nil());
+        JCClassDecl implicit = make.at(tree.pos).ClassDef(
+                implicitMods, name, List.nil(), null, List.nil(), List.nil(),
+                defs.toList());
+        topDefs.append(implicit);
+        tree.defs = topDefs.toList();
+    }
 
     @Override
     public void visitClassDef(JCClassDecl tree) {

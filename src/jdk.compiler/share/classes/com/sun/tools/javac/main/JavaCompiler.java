@@ -642,6 +642,11 @@ public class JavaCompiler {
 
         tree.sourcefile = filename;
 
+        // TODO - just for the prototype
+        if (tree.isImplicitClass() && "true".equals(System.getProperty("jdk.implicit.class.in.parser"))) {
+            Enter.constructImplicitClass(tree, make, log, names);
+        }
+
         if (content != null && !taskListener.isEmpty() && !silent) {
             TaskEvent e = new TaskEvent(TaskEvent.Kind.PARSE, tree);
             taskListener.finished(e);
