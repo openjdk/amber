@@ -386,8 +386,8 @@ public class Enter extends JCTree.Visitor {
                 tree.packge.package_info = c;
                 tree.packge.sourcefile = tree.sourcefile;
             }
-            if (tree.isUnnamedClass()) {
-                constructUnnamedClass(tree);
+            if (tree.isImplicitClass()) {
+                constructImplicitClass(tree);
             }
             classEnter(tree.defs, topEnv);
             if (addEnv) {
@@ -423,8 +423,8 @@ public class Enter extends JCTree.Visitor {
             }
         };
 
-        // Restructure top level to be an unnamed class.
-        private void constructUnnamedClass(JCCompilationUnit tree) {
+        // Restructure top level to be an implicit class.
+        private void constructImplicitClass(JCCompilationUnit tree) {
             make.at(tree.pos);
             String simplename = PathFileObject.getSimpleName(tree.sourcefile);
             if (simplename.endsWith(".java")) {
@@ -440,7 +440,7 @@ public class Enter extends JCTree.Visitor {
 
             for (JCTree def : tree.defs) {
                 if (def.hasTag(Tag.PACKAGEDEF)) {
-                    log.error(null, Errors.UnnamedClassShouldNotHavePackageDeclaration);
+                    log.error(null, Errors.ImplicitClassShouldNotHavePackageDeclaration);
                 } else if (def.hasTag(Tag.IMPORT)) {
                     topDefs.append(def);
                 } else {
@@ -448,12 +448,12 @@ public class Enter extends JCTree.Visitor {
                 }
             }
 
-            JCModifiers unnamedMods = make.at(tree.pos)
-                    .Modifiers(FINAL|MANDATED|UNNAMED_CLASS, List.nil());
-            JCClassDecl unnamed = make.at(tree.pos).ClassDef(
-                    unnamedMods, name, List.nil(), null, List.nil(), List.nil(),
+            JCModifiers implicitMods = make.at(tree.pos)
+                    .Modifiers(FINAL|MANDATED|IMPLICIT_CLASS, List.nil());
+            JCClassDecl implicit = make.at(tree.pos).ClassDef(
+                    implicitMods, name, List.nil(), null, List.nil(), List.nil(),
                     defs.toList());
-            topDefs.append(unnamed);
+            topDefs.append(implicit);
             tree.defs = topDefs.toList();
         }
 
@@ -479,7 +479,7 @@ public class Enter extends JCTree.Visitor {
                 log.error(tree.pos(),
                           Errors.ClassPublicShouldBeInFile(topElement, tree.name));
             }
-            if ((tree.mods.flags & UNNAMED_CLASS) != 0) {
+            if ((tree.mods.flags & IMPLICIT_CLASS) != 0) {
                 syms.removeClass(env.toplevel.modle, tree.name);
             }
         } else {

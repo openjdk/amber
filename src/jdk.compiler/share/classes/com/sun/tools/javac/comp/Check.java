@@ -2261,7 +2261,7 @@ public class Check {
         }
 
         if (!found) {
-            log.error(pos, Errors.UnnamedClassDoesNotHaveMainMethod);
+            log.error(pos, Errors.ImplicitClassDoesNotHaveMainMethod);
         }
     }
 

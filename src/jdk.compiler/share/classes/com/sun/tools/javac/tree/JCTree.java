@@ -624,8 +624,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return TOPLEVEL;
         }
 
-        public boolean isUnnamedClass() {
-            // Detect unnamed class.
+        public boolean isImplicitClass() {
+            // Detect implicit class.
             for (JCTree def : defs) {
                 if (def.hasTag(Tag.METHODDEF) || def.hasTag(Tag.VARDEF)) {
                     return true;
@@ -634,12 +634,12 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return false;
         }
 
-        public JCClassDecl getUnnamedClass() {
-            // Find unnamed class.
+        public JCClassDecl getImplicitClass() {
+            // Find implicit class.
             for (JCTree def : defs) {
                 if (def.hasTag(CLASSDEF)) {
                     JCClassDecl cls = (JCClassDecl)def;
-                    if ((cls.getModifiers().flags & Flags.UNNAMED_CLASS) != 0) {
+                    if ((cls.getModifiers().flags & Flags.IMPLICIT_CLASS) != 0) {
                         return cls;
                     }
                 }
