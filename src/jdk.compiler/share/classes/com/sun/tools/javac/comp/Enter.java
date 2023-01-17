@@ -443,8 +443,6 @@ public class Enter extends JCTree.Visitor {
                     log.error(null, Errors.UnnamedClassShouldNotHavePackageDeclaration);
                 } else if (def.hasTag(Tag.IMPORT)) {
                     topDefs.append(def);
-                } else if (def.hasTag(Tag.METHODDEF)) {
-                    defs.append(def);
                 } else {
                     defs.append(def);
                 }
