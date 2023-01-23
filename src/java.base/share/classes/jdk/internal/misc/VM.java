@@ -546,23 +546,28 @@ public class VM {
     public static Method findMainMethod(Class<?> mainClass) {
         String name = "main";
         MethodType withArgsMT = MethodType.methodType(void.class, String[].class);
-        Method mainMethod = findMainMethod(mainClass, true, true, name, withArgsMT);
         MethodType noArgsMT = MethodType.methodType(void.class);
-        if (mainMethod == null) {
-            mainMethod = findMainMethod(mainClass, true, true, name, noArgsMT);
+        Method mainMethod = findMainMethod(mainClass, true, true, name, withArgsMT);
+        if (mainMethod != null) return mainMethod;
+
+        if (!Runtime.version().optional().orElse("").contains("onramp")) {
+            String[] args = getRuntimeArguments();
+
+            if (args == null || !List.of(args).contains("--enable-preview")){
+                return null;
+            }
         }
-        if (mainMethod == null) {
-            mainMethod = findMainMethod(mainClass, true, false, name, withArgsMT);
-        }
-        if (mainMethod == null) {
-            mainMethod = findMainMethod(mainClass, true, false, name, noArgsMT);
-        }
-        if (mainMethod == null) {
-            mainMethod = findMainMethod(mainClass, false, false, name, withArgsMT);
-        }
-        if (mainMethod == null) {
-            mainMethod = findMainMethod(mainClass, false, false, name, noArgsMT);
-        }
+
+        mainMethod = findMainMethod(mainClass, true, true, name, noArgsMT);
+        if (mainMethod != null) return mainMethod;
+        mainMethod = findMainMethod(mainClass, true, false, name, withArgsMT);
+        if (mainMethod != null) return mainMethod;
+        mainMethod = findMainMethod(mainClass, true, false, name, noArgsMT);
+        if (mainMethod != null) return mainMethod;
+        mainMethod = findMainMethod(mainClass, false, false, name, withArgsMT);
+        if (mainMethod != null) return mainMethod;
+        mainMethod = findMainMethod(mainClass, false, false, name, noArgsMT);
+
         return mainMethod;
     }
 
