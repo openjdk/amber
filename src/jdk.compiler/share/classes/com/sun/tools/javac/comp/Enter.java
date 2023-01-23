@@ -36,6 +36,7 @@ import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Kinds.KindName;
 import com.sun.tools.javac.code.Kinds.KindSelector;
 import com.sun.tools.javac.code.Scope.*;
+import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol.*;
 import com.sun.tools.javac.code.Type.*;
 import com.sun.tools.javac.file.PathFileObject;
@@ -45,7 +46,10 @@ import com.sun.tools.javac.resources.CompilerProperties.Warnings;
 import com.sun.tools.javac.tree.*;
 import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.util.*;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
+import com.sun.tools.javac.util.JCDiagnostic.Error;
+import com.sun.tools.javac.util.JCDiagnostic.Fragment;
 import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.Flags.*;
@@ -106,6 +110,8 @@ public class Enter extends JCTree.Visitor {
     TypeEnvs typeEnvs;
     Modules modules;
     JCDiagnostic.Factory diags;
+    Source source;
+    Preview preview;
 
     private final Todo todo;
 
@@ -130,6 +136,8 @@ public class Enter extends JCTree.Visitor {
         names = Names.instance(context);
         modules = Modules.instance(context);
         diags = JCDiagnostic.Factory.instance(context);
+        source = Source.instance(context);
+        preview = Preview.instance(context);
 
         predefClassDef = make.ClassDef(
             make.Modifiers(PUBLIC),
@@ -387,7 +395,7 @@ public class Enter extends JCTree.Visitor {
                 tree.packge.sourcefile = tree.sourcefile;
             }
             if (tree.isImplicitClass() && tree.getImplicitClass() == null) {
-                constructImplicitClass(tree, make, log, names);
+                constructImplicitClass(tree, source, preview, make, log, names);
             }
             classEnter(tree.defs, topEnv);
             if (addEnv) {
@@ -424,7 +432,25 @@ public class Enter extends JCTree.Visitor {
         };
 
     // Restructure top level to be an implicit class.
-    public static void constructImplicitClass(JCCompilationUnit tree, TreeMaker make, Log log, Names names) {
+    public static void constructImplicitClass(JCCompilationUnit tree,
+                                              Source source, Preview preview,
+                                              TreeMaker make, Log log, Names names) {
+
+        if (!Runtime.version().optional().orElse("").contains("onramp")) {
+            Feature feature = Feature.IMPLICIT_CLASSES;
+
+            if (preview.isPreview(feature) && !preview.isEnabled()) {
+                //preview feature without --preview flag, error
+                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, preview.disabledError(feature));
+            } else if (!feature.allowedInSource(source)) {
+                //incompatible source level, error
+                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, feature.error(source.name));
+            } else if (preview.isPreview(feature)) {
+                //use of preview feature, warn
+                preview.warnPreview(tree.pos, feature);
+            }
+        }
+
         make.at(tree.pos);
         String simplename = PathFileObject.getSimpleName(tree.sourcefile);
         if (simplename.endsWith(".java")) {

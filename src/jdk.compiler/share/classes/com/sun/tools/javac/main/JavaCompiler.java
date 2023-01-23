@@ -644,7 +644,7 @@ public class JavaCompiler {
 
         // TODO - just for the prototype
         if (tree.isImplicitClass() && "true".equals(System.getProperty("jdk.implicit.class.in.parser"))) {
-            Enter.constructImplicitClass(tree, make, log, names);
+            Enter.constructImplicitClass(tree, source, preview, make, log, names);
         }
 
         if (content != null && !taskListener.isEmpty() && !silent) {
