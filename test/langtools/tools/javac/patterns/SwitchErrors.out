@@ -8,8 +8,8 @@ SwitchErrors.java:147:18: compiler.err.default.label.not.allowed
 SwitchErrors.java:206:29: compiler.err.default.label.not.allowed
 SwitchErrors.java:213:47: compiler.err.default.label.not.allowed
 SwitchErrors.java:220:47: compiler.err.default.label.not.allowed
-SwitchErrors.java:284:20: compiler.err.illegal.start.of.type
-SwitchErrors.java:287:28: compiler.err.illegal.start.of.type
+SwitchErrors.java:303:20: compiler.err.illegal.start.of.type
+SwitchErrors.java:306:28: compiler.err.illegal.start.of.type
 SwitchErrors.java:10:18: compiler.err.constant.label.not.compatible: java.lang.String, java.lang.Object
 SwitchErrors.java:16:18: compiler.err.constant.label.not.compatible: int, java.lang.Object
 SwitchErrors.java:22:18: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Integer)
@@ -52,9 +52,10 @@ SwitchErrors.java:259:18: compiler.err.flows.through.from.pattern
 SwitchErrors.java:266:18: compiler.err.prob.found.req: (compiler.misc.possible.loss.of.precision: long, byte)
 SwitchErrors.java:272:18: compiler.err.constant.label.not.compatible: int, float
 SwitchErrors.java:274:18: compiler.err.constant.label.not.compatible: int, float
-SwitchErrors.java:293:49: compiler.err.cant.resolve.location.args: kindname.method, length, , , (compiler.misc.location: kindname.class, java.lang.Object, null)
-SwitchErrors.java:295:55: compiler.err.cant.resolve.location.args: kindname.method, length, , , (compiler.misc.location: kindname.class, java.lang.Object, null)
-SwitchErrors.java:301:26: compiler.err.pattern.type.cannot.infer
+SwitchErrors.java:285:13: compiler.err.duplicate.case.label
+SwitchErrors.java:313:49: compiler.err.cant.resolve.location.args: kindname.method, length, , , (compiler.misc.location: kindname.class, java.lang.Object, null)
+SwitchErrors.java:315:55: compiler.err.cant.resolve.location.args: kindname.method, length, , , (compiler.misc.location: kindname.class, java.lang.Object, null)
+SwitchErrors.java:322:26: compiler.err.pattern.type.cannot.infer
 SwitchErrors.java:9:9: compiler.err.not.exhaustive.statement
 SwitchErrors.java:15:9: compiler.err.not.exhaustive.statement
 SwitchErrors.java:21:9: compiler.err.not.exhaustive.statement
@@ -67,6 +68,7 @@ SwitchErrors.java:97:9: compiler.err.not.exhaustive.statement
 SwitchErrors.java:104:9: compiler.err.not.exhaustive.statement
 SwitchErrors.java:152:9: compiler.err.not.exhaustive.statement
 SwitchErrors.java:225:9: compiler.err.not.exhaustive.statement
+SwitchErrors.java:293:16: compiler.err.default.label.not.allowed
 - compiler.note.preview.filename: SwitchErrors.java, DEFAULT
 - compiler.note.preview.recompile
-69 errors
+71 errors

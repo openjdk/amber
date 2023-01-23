@@ -278,6 +278,25 @@ public class SwitchErrors {
         }
     }
 
+    void switchOverNotRepresentableFloat(Float f) {
+        switch (f) {
+            case 1.0f:
+                break;
+            case 0.999999999f:
+                break;
+            case Float fi:
+                break;
+        }
+    }
+
+    int switchOverPrimitiveBooleanExhaustiveWithNonPermittedDefault(boolean b) {
+        return switch (b) {
+            case true -> 1;
+            case false -> 2;
+            default -> 3;
+        };
+    }
+
     void noDiamond(Object o) {
         record R<T>(T t) {}
         switch (o) {
@@ -286,6 +305,7 @@ public class SwitchErrors {
         }
         if (o instanceof R<> r) {}
     }
+
     void noRawInferenceNonDeconstruction() {
         record R<T>(T t) {}
         R<String> o = null;
@@ -294,6 +314,7 @@ public class SwitchErrors {
         }
         if (o instanceof R r) System.out.println(r.t().length());
     }
+
     void cannotInfer() {
         interface A<T> {}
         record R<T extends Number>() implements A<T> {}

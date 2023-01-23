@@ -87,17 +87,24 @@ public class Switches {
         assertEquals(5, switchOverPrimitiveInt(0));
         assertEquals(7, switchOverPrimitiveInt(1));
         assertEquals(9, switchOverPrimitiveInt(2));
-        assertEquals(5f, switchOverPrimitiveFloat(0f));
-        assertEquals(7f, switchOverPrimitiveFloat(1f));
-        assertEquals(9f, switchOverPrimitiveFloat(2f));
-        assertEquals(9f, switchOverPrimitiveFloat(2f));
+        assertEquals(5f, switchOverBoxedFloat(0f));
+        assertEquals(7f, switchOverBoxedFloat(1f));
+        assertEquals(9f, switchOverBoxedFloat(2f));
+        assertEquals(9f, switchOverBoxedFloat(2f));
         assertEquals(5f, switchOverPrimitiveDouble(0d));
         assertEquals(7f, switchOverPrimitiveDouble(1d));
         assertEquals(9f, switchOverPrimitiveDouble(2d));
         assertEquals(1, switchOverPrimitiveChar('a'));
         assertEquals(-1, switchOverPrimitiveChar('x'));
-        assertTrue(switchOverPrimitiveBoolean(Boolean.valueOf(true)));
-        assertTrue(!switchOverPrimitiveBoolean(false));
+        assertTrue(switchOverBoxedBooleanWithUnconditional(Boolean.valueOf(true)));
+        assertTrue(switchOverBoxedBooleanWithUnconditional(true));
+        assertTrue(!switchOverBoxedBooleanWithUnconditional(false));
+        assertEquals(1, switchOverPrimitiveBooleanWithDefault(true));
+        assertEquals(2, switchOverPrimitiveBooleanWithDefault(false));
+        assertEquals(1, switchOverPrimitiveBoolean(true));
+        assertEquals(2, switchOverPrimitiveBoolean(false));
+        assertEquals(1, switchOverPrimitiveFloat(0.0f/0.0f));
+        assertEquals(2, switchOverPrimitiveFloat((float) Math.pow(0.0f/0.0f, 0)));
         assertEquals("a", deconstructStatement(new R("a")));
         assertEquals("1", deconstructStatement(new R(1)));
         assertEquals("other", deconstructStatement(""));
@@ -638,7 +645,7 @@ public class Switches {
         };
     }
 
-    private float switchOverPrimitiveFloat(Float f) {
+    private float switchOverBoxedFloat(Float f) {
         return switch (f) {
             case 0f -> 5f + 0f;
             case Float fi when fi == 1f -> 6f + fi;
@@ -654,16 +661,38 @@ public class Switches {
         };
     }
 
-    private boolean switchOverPrimitiveBoolean(Boolean b) {
+    private boolean switchOverBoxedBooleanWithUnconditional(Boolean b) {
         return switch (b) {
             case true -> true;
             case Boolean bi -> bi;
         };
     }
 
-    private int switchOverPrimitiveChar(int i) {
-        return switch (i) {
+    private int switchOverPrimitiveBooleanWithDefault(boolean b) {
+        return switch (b) {
+            case true -> 1;
+            default -> 2;
+        };
+    }
+
+    private int switchOverPrimitiveBoolean(boolean b) {
+        return switch (b) {
+            case true -> 1;
+            case false -> 2;
+        };
+    }
+
+    private int switchOverPrimitiveChar(char c) {
+        return switch (c) {
             case 'a' -> 1;
+            default -> -1;
+        };
+    }
+
+    private int switchOverPrimitiveFloat(float f) {
+        return switch (f) {
+            case Float.NaN -> 1;
+            case 1.0f -> 2;
             default -> -1;
         };
     }

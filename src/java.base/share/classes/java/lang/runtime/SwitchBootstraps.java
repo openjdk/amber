@@ -190,6 +190,9 @@ public class SwitchBootstraps {
                 } else if (target instanceof Character input && constant.intValue() == input.charValue()) {
                     return i;
                 }
+                else if (target instanceof Boolean input && constant.intValue() == (input.booleanValue()?1:0)) {
+                    return i;
+                }
             } else if (label.equals(target)) {
                 return i;
             }

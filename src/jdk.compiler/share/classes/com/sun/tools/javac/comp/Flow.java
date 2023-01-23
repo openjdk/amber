@@ -740,10 +740,29 @@ public class Flow {
                     }
                 }
             }
-            Set<Symbol> coveredSymbols = coveredSymbolsForCases(tree.pos(), tree.selector, tree.cases);
-            tree.isExhaustive = tree.hasUnconditionalPattern ||
-                                TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) ||
-                                isExhaustive(tree.selector.pos(), tree.selector.type, coveredSymbols);
+
+            if (tree.selector.type.hasTag(TypeTag.BOOLEAN)) {
+                HashSet<JCTree> labelValues = tree.cases.stream()
+                        .flatMap(c -> c.labels.stream())
+                        .filter(TreeInfo::unguardedCaseLabel)
+                        .filter(l -> !l.hasTag(DEFAULTCASELABEL))
+                        .map(l -> l.hasTag(CONSTANTCASELABEL) ? ((JCConstantCaseLabel) l).expr
+                                : ((JCPatternCaseLabel) l).pat)
+                        .collect(Collectors.toCollection(HashSet::new));
+
+                boolean hasBothTrueAndFalse = labelValues.stream().filter(l -> l.hasTag(Tag.LITERAL)).map(l -> ((JCLiteral)l).value).distinct().count() == 2;
+
+                tree.isExhaustive = hasBothTrueAndFalse || tree.hasUnconditionalPattern;
+
+                if (hasBothTrueAndFalse && tree.hasUnconditionalPattern) {
+                    log.error(tree, Errors.DefaultLabelNotAllowed);
+                }
+            } else {
+                Set<Symbol> coveredSymbols = coveredSymbolsForCases(tree.pos(), tree.selector, tree.cases);
+                tree.isExhaustive = tree.hasUnconditionalPattern ||
+                        TreeInfo.isErrorEnumSwitch(tree.selector, tree.cases) ||
+                        isExhaustive(tree.selector.pos(), tree.selector.type, coveredSymbols);
+            }
             if (!tree.isExhaustive) {
                 log.error(tree, Errors.NotExhaustive);
             }
