@@ -606,14 +606,10 @@ public class TransPatterns extends TreeTranslator {
                     }
                 }
                 c.labels = translatedLabels.toList();
-                if (c.caseKind == CaseTree.CaseKind.STATEMENT) {
-                    previousCompletesNormally = c.completesNormally;
-                } else {
-                    previousCompletesNormally = false;
-                    JCBreak brk = make.at(TreeInfo.endPos(c.stats.last())).Break(null);
-                    brk.target = tree;
-                    c.stats = c.stats.append(brk);
-                }
+                previousCompletesNormally =
+                        c.caseKind == CaseTree.CaseKind.STATEMENT &&
+                        c.completesNormally;
+                appendBreakIfNeeded(tree, c);
             }
 
             if (tree.hasTag(Tag.SWITCH)) {
@@ -657,6 +653,14 @@ public class TransPatterns extends TreeTranslator {
                 }
             }.scan(c.stats);
         }
+
+    private void appendBreakIfNeeded(JCTree switchTree, JCCase c) {
+        if (c.caseKind == CaseTree.CaseKind.RULE) {
+            JCBreak brk = make.at(TreeInfo.endPos(c.stats.last())).Break(null);
+            brk.target = switchTree;
+            c.stats = c.stats.append(brk);
+        }
+    }
 
     private Symbol.DynamicVarSymbol makePrimitive(DiagnosticPosition pos, Type primitiveType) {
         Assert.checkNonNull(currentClass);
@@ -811,6 +815,7 @@ public class TransPatterns extends TreeTranslator {
                         } else {
                             newLabel = List.of(make.PatternCaseLabel(binding, newGuard));
                         }
+                        appendBreakIfNeeded(currentSwitch, accummulated);
                         nestedCases.add(make.Case(CaseKind.STATEMENT, newLabel, accummulated.stats, null));
                     }
                     if (!hasUnconditional) {
