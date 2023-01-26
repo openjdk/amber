@@ -105,6 +105,8 @@ public class Switches {
         assertEquals(2, switchOverPrimitiveBoolean(false));
         assertEquals(1, switchOverPrimitiveFloat(0.0f/0.0f));
         assertEquals(2, switchOverPrimitiveFloat((float) Math.pow(0.0f/0.0f, 0)));
+        assertEquals(3, switchOverPrimitiveFloat(0.0f));
+        assertEquals(4, switchOverPrimitiveFloat(-0.0f));
         assertEquals("a", deconstructStatement(new R("a")));
         assertEquals("1", deconstructStatement(new R(1)));
         assertEquals("other", deconstructStatement(""));
@@ -689,10 +691,13 @@ public class Switches {
         };
     }
 
+    final float NaNconstant = Float.NaN;
     private int switchOverPrimitiveFloat(float f) {
         return switch (f) {
-            case Float.NaN -> 1;
+            case NaNconstant -> 1;
             case 1.0f -> 2;
+            case 0.0f -> 3;
+            case -0.0f -> 4;
             default -> -1;
         };
     }
