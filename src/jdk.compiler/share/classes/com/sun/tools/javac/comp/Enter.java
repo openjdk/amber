@@ -475,7 +475,7 @@ public class Enter extends JCTree.Visitor {
         }
 
         JCModifiers implicitMods = make.at(tree.pos)
-                .Modifiers(FINAL|MANDATED|IMPLICIT_CLASS, List.nil());
+                .Modifiers(FINAL|MANDATED|SYNTHETIC|IMPLICIT_CLASS, List.nil());
         JCClassDecl implicit = make.at(tree.pos).ClassDef(
                 implicitMods, name, List.nil(), null, List.nil(), List.nil(),
                 defs.toList());
