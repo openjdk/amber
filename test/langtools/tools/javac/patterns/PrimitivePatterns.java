@@ -52,6 +52,7 @@ public class PrimitivePatterns {
         assertEquals(1,  exhaustiveWithRecords5());
         assertEquals(1,  exhaustiveWithRecords6());
         assertEquals(2,  ensureProperSelectionWithRecords());
+        assertEquals(1,  ensureProperSelectionWithRecords2());
         assertEquals(42, switchAndDowncastFromObjectPrimitive());
         assertEquals(42, dominationBetweenBoxedAndPrimitive());
         assertEquals(2,  wideningAndUnboxing());
@@ -215,6 +216,18 @@ public class PrimitivePatterns {
         };
     }
 
+    public static int ensureProperSelectionWithRecords2() {
+        R_double r = new R_double(42);
+        switch (r) {
+            case R_double(int i):
+                return meth_int(i);
+            case R_double(double x):
+                return meth_double(x);
+        }
+    }
+    public static int meth_int(int i) { return 1; }
+    public static int meth_double(double d) { return 2;}
+
     public static int switchAndDowncastFromObjectPrimitive() {
         Object i = 42;
         return switch (i) {
@@ -275,6 +288,7 @@ public class PrimitivePatterns {
 
     record R_Integer(Integer x) {}
     record R_int(int x) {}
+    record R_double(double x) {}
     record Box<N extends Number>(N num) {}
 
     static void assertEquals(int expected, int actual) {
