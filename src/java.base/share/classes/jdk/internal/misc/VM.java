@@ -550,7 +550,7 @@ public class VM {
         Method mainMethod = findMainMethod(mainClass, true, true, name, withArgsMT);
         if (mainMethod != null) return mainMethod;
 
-        if (!Runtime.version().optional().orElse("").contains("onramp")) {
+        if (!Runtime.version().pre().orElse("").equals("ea")) {
             String[] args = getRuntimeArguments();
 
             if (args == null || !List.of(args).contains("--enable-preview")){
