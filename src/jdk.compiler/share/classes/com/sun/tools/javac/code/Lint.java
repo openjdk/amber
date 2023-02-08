@@ -107,6 +107,8 @@ public class Lint
         if (options.isSet(Option.XLINT) || options.isSet(Option.XLINT_CUSTOM, "all")) {
             // If -Xlint or -Xlint:all is given, enable all categories by default
             values = EnumSet.allOf(LintCategory.class);
+            // Imports is verbose
+            values.remove(LintCategory.IMPORTS);
         } else if (options.isSet(Option.XLINT_CUSTOM, "none")) {
             // if -Xlint:none is given, disable all categories by default
             values = EnumSet.noneOf(LintCategory.class);
@@ -213,6 +215,11 @@ public class Lint
          * Warn about finally clauses that do not terminate normally.
          */
         FINALLY("finally"),
+
+        /**
+         * Warn about missing named import.
+         */
+        IMPORTS("imports"),
 
         /**
           * Warn about compiler possible lossy conversions.

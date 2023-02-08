@@ -27,6 +27,7 @@ package com.sun.tools.javac.comp;
 
 import com.sun.tools.javac.api.Formattable.LocalizedString;
 import com.sun.tools.javac.code.*;
+import com.sun.tools.javac.code.Lint.LintCategory;
 import com.sun.tools.javac.code.Scope.WriteableScope;
 import com.sun.tools.javac.code.Source.Feature;
 import com.sun.tools.javac.code.Symbol.*;
@@ -53,7 +54,6 @@ import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticFlag;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticType;
-import com.sun.tools.javac.util.JCDiagnostic.Warning;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -104,6 +104,7 @@ public class Resolve {
     Infer infer;
     ClassFinder finder;
     ModuleFinder moduleFinder;
+    Lint lint;
     Types types;
     JCDiagnostic.Factory diags;
     public final boolean allowModules;
@@ -113,6 +114,7 @@ public class Resolve {
     private final boolean allowYieldStatement;
     final EnumSet<VerboseResolutionMode> verboseResolutionMode;
     final boolean dumpMethodReferenceSearchResults;
+    private Set<Symbol> reportedLint;
 
     WriteableScope polymorphicSignatureScope;
 
@@ -134,6 +136,7 @@ public class Resolve {
         infer = Infer.instance(context);
         finder = ClassFinder.instance(context);
         moduleFinder = ModuleFinder.instance(context);
+        lint = Lint.instance(context);
         types = Types.instance(context);
         diags = JCDiagnostic.Factory.instance(context);
         Preview preview = Preview.instance(context);
@@ -2400,7 +2403,22 @@ public class Resolve {
             else bestSoFar = bestOf(bestSoFar, sym);
 
             sym = findGlobalType(env, env.toplevel.starImportScope, name, starImportScopeRecovery);
-            if (sym.exists()) return sym;
+            if (sym.exists()) {
+                if (sym.kind == Kind.TYP && lint.isEnabled(LintCategory.IMPORTS)) {
+                    PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
+                    if (sym.packge() != javaLang) {
+                        if (reportedLint == null) {
+                            reportedLint = new HashSet<>();
+                        }
+                        if (!reportedLint.contains(sym)) {
+                            DiagnosticPosition pos = env.toplevel.starImportScope.position(sym);
+                            log.warning(LintCategory.IMPORTS, pos, Warnings.MissingImport(sym.flatName()));
+                            reportedLint.add(sym);
+                        }
+                    }
+                }
+                return sym;
+            }
             else bestSoFar = bestOf(bestSoFar, sym);
         }
 

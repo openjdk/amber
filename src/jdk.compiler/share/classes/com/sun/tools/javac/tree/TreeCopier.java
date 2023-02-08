@@ -258,7 +258,8 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     public JCTree visitImport(ImportTree node, P p) {
         JCImport t = (JCImport) node;
         JCTree qualid = copy(t.qualid, p);
-        return M.at(t.pos).Import(qualid, t.staticImport);
+        JCTree modle = copy(t.modle, p);
+        return M.at(t.pos).Import(qualid, t.staticImport, modle);
     }
 
     @DefinedBy(Api.COMPILER_TREE)

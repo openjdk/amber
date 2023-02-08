@@ -436,19 +436,16 @@ public class Enter extends JCTree.Visitor {
                                               Source source, Preview preview,
                                               TreeMaker make, Log log, Names names) {
 
-        if (!Runtime.version().optional().orElse("").contains("onramp")) {
-            Feature feature = Feature.IMPLICIT_CLASSES;
-
-            if (preview.isPreview(feature) && !preview.isEnabled()) {
-                //preview feature without --preview flag, error
-                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, preview.disabledError(feature));
-            } else if (!feature.allowedInSource(source)) {
-                //incompatible source level, error
-                log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, feature.error(source.name));
-            } else if (preview.isPreview(feature)) {
-                //use of preview feature, warn
-                preview.warnPreview(tree.pos, feature);
-            }
+        Feature feature = Feature.IMPLICIT_CLASSES;
+        if (preview.isPreview(feature) && !preview.isEnabled()) {
+            //preview feature without --preview flag, error
+            log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, preview.disabledError(feature));
+        } else if (!feature.allowedInSource(source)) {
+            //incompatible source level, error
+            log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, feature.error(source.name));
+        } else if (preview.isPreview(feature)) {
+            //use of preview feature, warn
+            preview.warnPreview(tree.pos, feature);
         }
 
         make.at(tree.pos);

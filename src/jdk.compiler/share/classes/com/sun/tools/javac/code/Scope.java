@@ -35,6 +35,7 @@ import com.sun.tools.javac.code.Symbol.CompletionFailure;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.tree.JCTree.JCImport;
 import com.sun.tools.javac.util.*;
+import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
@@ -901,6 +902,14 @@ public abstract class Scope {
             return subScopes.nonEmpty();
         }
 
+        public DiagnosticPosition position(Symbol sym) {
+            for (Scope scope : subScopes) {
+                if (scope.includes(sym) && scope instanceof FilterImportScope fis) {
+                    return fis.position();
+                }
+            }
+            return null;
+        }
     }
 
     public interface ImportFilter {
@@ -985,6 +994,10 @@ public abstract class Scope {
         @Override
         public boolean isStaticallyImported(Symbol byName) {
             return isStaticallyImported();
+        }
+
+        DiagnosticPosition position() {
+            return imp;
         }
 
         public boolean isStaticallyImported() {

@@ -3986,6 +3986,7 @@ public class JavacParser implements Parser {
         int pos = token.pos;
         nextToken();
         boolean importStatic = false;
+        JCExpression modle = null;
         if (token.kind == STATIC) {
             importStatic = true;
             nextToken();
@@ -4000,10 +4001,23 @@ public class JavacParser implements Parser {
                 break;
             } else {
                 pid = toP(F.at(pos1).Select(pid, ident()));
+                if (token.kind == SLASH && modle == null) {
+                    pos1 = token.pos;
+                    checkSourceLevel(pos1, Feature.IMPLICIT_CLASSES);
+                    nextToken();
+                    modle = pid;
+                    if (token.kind == STAR) {
+                        pid = toP(F.at(token.pos).Ident(names.asterisk));
+                        nextToken();
+                        break;
+                    } else {
+                        pid = toP(F.at(token.pos).Ident(ident()));
+                    }
+                }
             }
         } while (token.kind == DOT);
         accept(SEMI);
-        return toP(F.at(pos).Import(pid, importStatic));
+        return toP(F.at(pos).Import(pid, importStatic, modle));
     }
 
     /** TypeDeclaration = ClassOrInterfaceOrEnumDeclaration

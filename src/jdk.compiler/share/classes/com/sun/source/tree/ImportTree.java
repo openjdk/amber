@@ -57,4 +57,11 @@ public interface ImportTree extends Tree {
      * this is an import-on-demand
      */
     Tree getQualifiedIdentifier();
+
+    /**
+     * Returns qualified identifier for specified module.
+     * @return qualified identifier for specified module or null
+     * if not qualified.
+     */
+    Tree getModule();
 }

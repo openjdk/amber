@@ -532,6 +532,10 @@ public class Pretty extends JCTree.Visitor {
         try {
             print("import ");
             if (tree.staticImport) print("static ");
+            if (tree.modle != null) {
+                printExpr(tree.modle);
+                print(" / ");
+            }
             printExpr(tree.qualid);
             print(";");
             println();
