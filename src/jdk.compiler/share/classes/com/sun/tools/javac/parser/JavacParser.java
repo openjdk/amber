@@ -4001,7 +4001,7 @@ public class JavacParser implements Parser {
                 break;
             } else {
                 pid = toP(F.at(pos1).Select(pid, ident()));
-                if (token.kind == SLASH && modle == null) {
+                if (token.kind == SLASH && modle == null && !importStatic) {
                     pos1 = token.pos;
                     checkSourceLevel(pos1, Feature.IMPLICIT_CLASSES);
                     nextToken();
