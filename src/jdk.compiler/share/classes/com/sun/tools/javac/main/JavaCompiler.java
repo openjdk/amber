@@ -284,6 +284,10 @@ public class JavaCompiler {
      */
     protected Attr attr;
 
+    /** The resolver.
+     */
+    protected Resolve resolve;
+
     /** The analyzer
      */
     protected Analyzer analyzer;
@@ -404,6 +408,7 @@ public class JavaCompiler {
         source = Source.instance(context);
         preview = Preview.instance(context);
         attr = Attr.instance(context);
+        resolve = Resolve.instance(context);
         analyzer = Analyzer.instance(context);
         chk = Check.instance(context);
         gen = Gen.instance(context);
@@ -1337,6 +1342,7 @@ public class JavaCompiler {
                                   env.toplevel.sourcefile);
         try {
             attr.attrib(env);
+            resolve.reportLint(env);
             if (errorCount() > 0 && !shouldStop(CompileState.ATTR)) {
                 //if in fail-over mode, ensure that AST expression nodes
                 //are correctly initialized (e.g. they have a type/symbol)

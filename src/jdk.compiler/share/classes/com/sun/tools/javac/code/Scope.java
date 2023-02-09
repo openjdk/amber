@@ -783,6 +783,19 @@ public abstract class Scope {
             return impScope;
         }
 
+        public DiagnosticPosition position(Symbol sym) {
+            for (Scope scope : subScopes) {
+                if (scope.includes(sym)) {
+                    if (scope instanceof FilterImportScope fis) {
+                        return fis.position();
+                    } else if (scope instanceof NamedImportScope.SingleEntryScope ses) {
+                        return ses.position();
+                    }
+                }
+            }
+            return null;
+        }
+
     }
 
     public static class NamedImportScope extends ImportScope {
@@ -803,8 +816,8 @@ public abstract class Scope {
             return appendScope(new FilterImportScope(types, origin, name, filter, imp, cfHandler), name);
         }
 
-        public Scope importType(Scope delegate, Scope origin, Symbol sym) {
-            return appendScope(new SingleEntryScope(delegate.owner, sym, origin), sym.name);
+        public Scope importType(Scope delegate, Scope origin, Symbol sym, JCImport imp) {
+            return appendScope(new SingleEntryScope(delegate.owner, sym, origin, imp), sym.name);
         }
 
         private Scope appendScope(Scope newScope, Name name) {
@@ -844,12 +857,14 @@ public abstract class Scope {
             private final Symbol sym;
             private final List<Symbol> content;
             private final Scope origin;
+            private final JCImport imp;
 
-            public SingleEntryScope(Symbol owner, Symbol sym, Scope origin) {
+            public SingleEntryScope(Symbol owner, Symbol sym, Scope origin, JCImport imp) {
                 super(owner);
                 this.sym = sym;
                 this.content = List.of(sym);
                 this.origin = origin;
+                this.imp = imp;
             }
 
             @Override
@@ -875,6 +890,9 @@ public abstract class Scope {
                 return false;
             }
 
+            DiagnosticPosition position() {
+                return imp;
+            }
         }
     }
 
@@ -900,15 +918,6 @@ public abstract class Scope {
 
         public boolean isFilled() {
             return subScopes.nonEmpty();
-        }
-
-        public DiagnosticPosition position(Symbol sym) {
-            for (Scope scope : subScopes) {
-                if (scope.includes(sym) && scope instanceof FilterImportScope fis) {
-                    return fis.position();
-                }
-            }
-            return null;
         }
     }
 

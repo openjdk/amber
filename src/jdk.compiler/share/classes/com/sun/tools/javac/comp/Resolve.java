@@ -65,10 +65,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -114,7 +112,7 @@ public class Resolve {
     private final boolean allowYieldStatement;
     final EnumSet<VerboseResolutionMode> verboseResolutionMode;
     final boolean dumpMethodReferenceSearchResults;
-    private Set<Symbol> reportedLint;
+    private Set<Symbol> lintSymsUsed;
 
     WriteableScope polymorphicSignatureScope;
 
@@ -152,6 +150,7 @@ public class Resolve {
         allowModules = Feature.MODULES.allowedInSource(source);
         allowRecords = Feature.RECORDS.allowedInSource(source);
         dumpMethodReferenceSearchResults = options.isSet("debug.dumpMethodReferenceSearchResults");
+        lintSymsUsed = lint.isEnabled(LintCategory.IMPORTS) ? new HashSet<>() : null;
     }
 
     /** error symbols, which are returned when resolution fails
@@ -682,6 +681,24 @@ public class Resolve {
                                   allowBoxing, useVarargs, warn);
         } catch (InapplicableMethodException ex) {
             return null;
+        }
+    }
+
+    public void reportLint(Env<AttrContext> env) {
+        if (lintSymsUsed != null) {
+            PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
+            for (Symbol sym : env.toplevel.namedImportScope.getSymbols()) {
+                if (sym.packge() != javaLang && !lintSymsUsed.contains(sym)) {
+                    DiagnosticPosition pos = env.toplevel.namedImportScope.position(sym);
+                    log.warning(LintCategory.IMPORTS, pos, Warnings.UnusedImport(sym.flatName()));
+                }
+            }
+            for (Symbol sym : env.toplevel.starImportScope.getSymbols()) {
+                if (sym.packge() != javaLang && lintSymsUsed.contains(sym)) {
+                    DiagnosticPosition pos = env.toplevel.starImportScope.position(sym);
+                    log.warning(LintCategory.IMPORTS, pos, Warnings.MissingImport(sym.flatName()));
+                }
+            }
         }
     }
 
@@ -2391,7 +2408,12 @@ public class Resolve {
 
         if (!env.tree.hasTag(IMPORT)) {
             sym = findGlobalType(env, env.toplevel.namedImportScope, name, namedImportScopeRecovery);
-            if (sym.exists()) return sym;
+            if (sym.exists()) {
+                if (lintSymsUsed != null) {
+                    lintSymsUsed.add(sym);
+                }
+                return sym;
+            }
             else bestSoFar = bestOf(bestSoFar, sym);
 
             sym = findGlobalType(env, env.toplevel.toplevelScope, name, noRecovery);
@@ -2404,18 +2426,8 @@ public class Resolve {
 
             sym = findGlobalType(env, env.toplevel.starImportScope, name, starImportScopeRecovery);
             if (sym.exists()) {
-                if (sym.kind == Kind.TYP && lint.isEnabled(LintCategory.IMPORTS)) {
-                    PackageSymbol javaLang = syms.enterPackage(syms.java_base, names.java_lang);
-                    if (sym.packge() != javaLang) {
-                        if (reportedLint == null) {
-                            reportedLint = new HashSet<>();
-                        }
-                        if (!reportedLint.contains(sym)) {
-                            DiagnosticPosition pos = env.toplevel.starImportScope.position(sym);
-                            log.warning(LintCategory.IMPORTS, pos, Warnings.MissingImport(sym.flatName()));
-                            reportedLint.add(sym);
-                        }
-                    }
+                if (lintSymsUsed != null) {
+                    lintSymsUsed.add(sym);
                 }
                 return sym;
             }
