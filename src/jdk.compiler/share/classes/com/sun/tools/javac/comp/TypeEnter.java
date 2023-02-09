@@ -547,7 +547,7 @@ public class TypeEnter implements Completer {
             TypeSymbol tsym = originalType.hasTag(CLASS) ? originalType.tsym : importedType.tsym;
             if (tsym.kind == TYP) {
                 imp.importScope = env.toplevel.namedImportScope.importType(tsym.owner.members(),
-                        tsym.owner.members(), tsym, imp);
+                        tsym.owner.members(), tsym);
             }
         }
 

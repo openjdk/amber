@@ -35,7 +35,6 @@ import com.sun.tools.javac.code.Symbol.CompletionFailure;
 import com.sun.tools.javac.code.Symbol.TypeSymbol;
 import com.sun.tools.javac.tree.JCTree.JCImport;
 import com.sun.tools.javac.util.*;
-import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
@@ -783,19 +782,6 @@ public abstract class Scope {
             return impScope;
         }
 
-        public DiagnosticPosition position(Symbol sym) {
-            for (Scope scope : subScopes) {
-                if (scope.includes(sym)) {
-                    if (scope instanceof FilterImportScope fis) {
-                        return fis.position();
-                    } else if (scope instanceof NamedImportScope.SingleEntryScope ses) {
-                        return ses.position();
-                    }
-                }
-            }
-            return null;
-        }
-
     }
 
     public static class NamedImportScope extends ImportScope {
@@ -816,8 +802,8 @@ public abstract class Scope {
             return appendScope(new FilterImportScope(types, origin, name, filter, imp, cfHandler), name);
         }
 
-        public Scope importType(Scope delegate, Scope origin, Symbol sym, JCImport imp) {
-            return appendScope(new SingleEntryScope(delegate.owner, sym, origin, imp), sym.name);
+        public Scope importType(Scope delegate, Scope origin, Symbol sym) {
+            return appendScope(new SingleEntryScope(delegate.owner, sym, origin), sym.name);
         }
 
         private Scope appendScope(Scope newScope, Name name) {
@@ -857,14 +843,12 @@ public abstract class Scope {
             private final Symbol sym;
             private final List<Symbol> content;
             private final Scope origin;
-            private final JCImport imp;
 
-            public SingleEntryScope(Symbol owner, Symbol sym, Scope origin, JCImport imp) {
+            public SingleEntryScope(Symbol owner, Symbol sym, Scope origin) {
                 super(owner);
                 this.sym = sym;
                 this.content = List.of(sym);
                 this.origin = origin;
-                this.imp = imp;
             }
 
             @Override
@@ -890,9 +874,6 @@ public abstract class Scope {
                 return false;
             }
 
-            DiagnosticPosition position() {
-                return imp;
-            }
         }
     }
 
@@ -919,6 +900,7 @@ public abstract class Scope {
         public boolean isFilled() {
             return subScopes.nonEmpty();
         }
+
     }
 
     public interface ImportFilter {
@@ -1003,10 +985,6 @@ public abstract class Scope {
         @Override
         public boolean isStaticallyImported(Symbol byName) {
             return isStaticallyImported();
-        }
-
-        DiagnosticPosition position() {
-            return imp;
         }
 
         public boolean isStaticallyImported() {
