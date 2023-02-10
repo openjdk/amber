@@ -805,8 +805,7 @@ public class TransPatterns extends TreeTranslator {
                         JCBindingPattern binding = (JCBindingPattern) instanceofCheck.pattern;
                         hasUnconditional =
                                 instanceofCheck.allowNull &&
-                                types.isSubtype(commonNestedExpression.type,
-                                                types.erasure(binding.type)) &&
+                                types.checkUnconditionallyExact(commonNestedExpression.type, types.erasure(binding.type)) &&
                                 accList.tail.isEmpty();
                         List<JCCaseLabel> newLabel;
                         if (hasUnconditional) {
@@ -829,6 +828,7 @@ public class TransPatterns extends TreeTranslator {
                     }
                     JCSwitch newSwitch = make.Switch(commonNestedExpression, nestedCases.toList());
                     newSwitch.patternSwitch = true;
+                    newSwitch.hasUnconditionalPattern = hasUnconditional;
                     JCPatternCaseLabel leadingTest =
                             (JCPatternCaseLabel) accummulator.first().labels.head;
                     leadingTest.guard = null;

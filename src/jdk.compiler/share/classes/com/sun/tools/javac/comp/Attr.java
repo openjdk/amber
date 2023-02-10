@@ -1830,7 +1830,7 @@ public class Attr extends JCTree.Visitor {
                         boolean unguarded = TreeInfo.unguardedCaseLabel(label) && !pat.hasTag(RECORDPATTERN);
                         boolean unconditional = unguarded && !patternType.isErroneous();
 
-                        unconditional &= chk.checkUnconditionallyExact(seltype, patternType);
+                        unconditional &= types.checkUnconditionallyExact(seltype, patternType);
 
                         if (unconditional) {
                             if (hasUnconditionalPattern) {

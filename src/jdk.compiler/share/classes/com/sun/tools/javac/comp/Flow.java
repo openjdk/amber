@@ -799,7 +799,7 @@ public class Flow {
                                 // if it is primitive, it covers its wrapper type
                                 coveredSymbols.add(types.boxedClass(primaryPatternType.tsym.type));
                                 // if the target is unconditionally exact to the pattern, target is covered
-                                if (chk.checkUnconditionallyExact(targetType, primaryPatternType.tsym.type)) {
+                                if (types.checkUnconditionallyExact(targetType, primaryPatternType.tsym.type)) {
                                     coveredSymbols.add(targetType.tsym);
                                 }
                             } else if (primaryPatternType.tsym.type.isReference() && targetType.isPrimitive() && types.isCastable(primaryPatternType.tsym.type, targetType)) {
@@ -885,7 +885,7 @@ public class Flow {
                     }
                 }
                 for (Symbol currentType : coveredSymbolsForComponent) {
-                    if (chk.checkUnconditionallyExact(currentType.type, componentPatternType.type) ||
+                    if (types.checkUnconditionallyExact(currentType.type, componentPatternType.type) ||
                             types.isConvertible(currentType.type, componentPatternType.type)) {
                         coveredSymbol2Patterns.put(currentType,
                                                    coveredSymbol2Patterns.getOrDefault(currentType,

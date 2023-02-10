@@ -2840,8 +2840,8 @@ public class Lower extends TreeTranslator {
             // We regard Wrapper instanceof p as unconditional if the underlying primitive of Wrapper is unconditional to p.
             // However, we still need to emit a null check.
             // This branch covers true unconditionality for the underlying type as well.
-            if (chk.checkUnconditionallyExact(tree.expr.type, tree.pattern.type) &&
-                !(tree.expr.type.isReference() && chk.isExactPrimitiveWidening(types.unboxedType(tree.expr.type), tree.pattern.type))) {
+            if (types.checkUnconditionallyExact(tree.expr.type, tree.pattern.type) &&
+                !(tree.expr.type.isReference() && types.isExactPrimitiveWidening(types.unboxedType(tree.expr.type), tree.pattern.type))) {
                 if (types.isConvertible(tree.expr.type, tree.pattern.type)) {
                     exactnessCheck = make.Literal(BOOLEAN, 1).setType(syms.booleanType);
                 }
@@ -2868,7 +2868,7 @@ public class Lower extends TreeTranslator {
                             make.Ident(dollar_s),
                             makeNull());
 
-                    if (chk.checkUnconditionallyExact(types.unboxedType(tree.expr.type), tree.pattern.type)) {
+                    if (types.checkUnconditionallyExact(types.unboxedType(tree.expr.type), tree.pattern.type)) {
                         exactnessCheck = make.Literal(BOOLEAN, 1).setType(syms.booleanType);                                          // emit no exactness check
                     } else {
                         // if expression type is Byte, Short, Integer, ...

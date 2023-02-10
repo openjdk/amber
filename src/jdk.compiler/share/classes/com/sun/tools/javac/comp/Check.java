@@ -3913,53 +3913,6 @@ public class Check {
         return true;
     }
 
-    /** Check unconditionality between any combination of reference or primitive types.
-     *
-     *  Rules:
-     *  - widening from one reference type to another,
-     *  - boxing.
-     *
-     *  @param source     Source primitive or reference type
-     *  @param target     Target primitive or reference type
-     */
-    public boolean checkUnconditionallyExact(Type source, Type target) {
-        if (types.isSameType(source, target)) {
-            return true;
-        }
-
-        if (target.isPrimitive()) {
-            return (source.isReference() && types.isSubtype(types.boxedTypeOrType(types.erasure(source)), target)) ||
-                   (source.isReference() && isExactPrimitiveWidening(types.unboxedType(source), target) ) ||
-                    isExactPrimitiveWidening(source, target);
-        } else {
-            return types.isSubtype(types.boxedTypeOrType(types.erasure(source)), target);
-        }
-    }
-
-    /** Check unconditionality between primitive types.
-     *
-     *  - widening from one integral type to another,
-     *  - widening from one floating point type to another,
-     *  - widening from byte, short, or char to a floating point type,
-     *  - widening from int to double.
-     *
-     *  @param source     Source primitive type
-     *  @param target     Target primitive type
-     */
-    public boolean isExactPrimitiveWidening(Type source, Type target) {
-        if (types.isSameType(source, target)) {
-            return true;
-        }
-
-        return (source.isPrimitive() && target.isPrimitive()) &&
-                ((source.hasTag(BYTE) && !target.hasTag(CHAR) ||
-                (source.hasTag(SHORT) && (target.hasTag(INT) || target.hasTag(LONG) || target.hasTag(FLOAT) || target.hasTag(DOUBLE)))||
-                (source.hasTag(CHAR)  && (target.hasTag(INT) || target.hasTag(LONG) || target.hasTag(FLOAT) || target.hasTag(DOUBLE))) ||
-                (source.hasTag(LONG) && (target.hasTag(LONG))) ||
-                (source.hasTag(INT) && (target.hasTag(DOUBLE) || target.hasTag(LONG))) ||
-                (source.hasTag(FLOAT) && (target.hasTag(DOUBLE)))));
-    }
-
     /** Check that a qualified name is in canonical form (for import decls).
      */
     public void checkCanonical(JCTree tree) {
@@ -4508,7 +4461,7 @@ public class Check {
                     Type testType = labelType(testCaseLabel);
                     boolean dominated = false;
                     if (unconditionalCaseLabel == testCaseLabel) unconditionalFound = true;
-                    if (checkUnconditionallyExact(currentType, testType) &&
+                    if (types.checkUnconditionallyExact(currentType, testType) &&
                         !currentType.hasTag(ERROR) && !testType.hasTag(ERROR)) {
                         //the current label is potentially dominated by the existing (test) label, check:
                         if (label instanceof JCConstantCaseLabel) {
@@ -4546,7 +4499,7 @@ public class Check {
             Type existingPatternType = types.erasure(existingPattern.type);
             Type currentPatternType = types.erasure(currentPattern.type);
 
-            boolean unconditionallyExact = checkUnconditionallyExact(currentPatternType, existingPatternType);
+            boolean unconditionallyExact = types.checkUnconditionallyExact(currentPatternType, existingPatternType);
             if (!unconditionallyExact) {
                 return false;
             }
