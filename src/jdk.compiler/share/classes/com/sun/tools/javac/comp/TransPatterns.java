@@ -329,7 +329,7 @@ public class TransPatterns extends TreeTranslator {
             }
             JCMethodInvocation componentAccessor =
                     make.App(make.Select(convert(make.Ident(recordBinding), recordBinding.type), //TODO - cast needed????
-                             component.accessor));
+                             component.accessor)).setType(types.erasure(component.accessor.getReturnType()));
             if (deconstructorCalls == null) {
                 deconstructorCalls = Collections.newSetFromMap(new IdentityHashMap<>());
             }
@@ -555,10 +555,10 @@ public class TransPatterns extends TreeTranslator {
                                     pattern = parenthesized.pattern;
                                 }
                                 Assert.check(pattern.hasTag(Tag.BINDINGPATTERN));
-                                VarSymbol binding = ((JCBindingPattern) pattern).var.sym;
+                                BindingSymbol binding = (BindingSymbol) ((JCBindingPattern) pattern).var.sym;
                                 guard = makeBinary(Tag.OR,
                                                    makeBinary(Tag.EQ,
-                                                              make.Ident(binding),
+                                                              make.Ident(bindingContext.getBindingFor(binding)),
                                                               makeNull()),
                                                    guard);
                             }
@@ -811,7 +811,7 @@ public class TransPatterns extends TreeTranslator {
                         List<JCCaseLabel> newLabel;
                         if (hasUnconditional) {
                             newLabel = List.of(make.ConstantCaseLabel(makeNull()),
-                                               make.DefaultCaseLabel());
+                                    make.PatternCaseLabel(binding, newGuard));
                         } else {
                             newLabel = List.of(make.PatternCaseLabel(binding, newGuard));
                         }
