@@ -662,6 +662,12 @@ public class TransTypes extends TreeTranslator {
         result = tree;
     }
 
+    public void visitMatch(JCMatch tree) {
+        tree.pattern = translate(tree.pattern);
+        tree.expr = translate(tree.expr, erasure(tree.expr.type));
+        result = tree;
+    }
+
     public void visitApply(JCMethodInvocation tree) {
         tree.meth = translate(tree.meth, null);
         Symbol meth = TreeInfo.symbol(tree.meth);

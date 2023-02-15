@@ -2470,6 +2470,19 @@ public class Attr extends JCTree.Visitor {
         result = null;
     }
 
+    public void visitMatch(JCMatch tree) {
+        attribExpr(tree.expr, env);
+        attribExpr(tree.pattern, env);
+
+        matchBindings.bindingsWhenTrue.forEach(env.info.scope::enter);
+        matchBindings.bindingsWhenTrue.forEach(BindingSymbol::preserveBinding);
+
+        Type clazztype = tree.pattern.type;
+        checkCastablePattern(tree.expr.pos(), tree.expr.type, clazztype);
+
+        result = null;
+    }
+
      /** Visitor method for method invocations.
      *  NOTE: The method part of an application will have in its type field
      *        the return type of the method, not the method's type itself!

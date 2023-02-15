@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,20 +21,12 @@
  * questions.
  */
 
+// key: compiler.err.preview.feature.disabled.plural
 // key: compiler.misc.feature.match.statements
-// key: compiler.misc.feature.deconstruction.patterns
-// key: compiler.warn.preview.feature.use.plural
-// key: compiler.err.foreach.not.exhaustive.on.type
-// options: --enable-preview -source ${jdk.version} -Xlint:preview
-
-import java.util.List;
-
-class ForeachNotExhaustive {
-    void m(List<Object> points) {
-        for (match Point(var x, var y): points) {
-            System.out.println();
-        }
+// key: compiler.err.not.a.deconstruction.pattern.for.match.statement
+class NotADeconstructionPatternForMatchStatement {
+    void m() {
+        match Point p = new Point(42);
     }
-
-    record Point(Integer x, Integer y) { }
+    record Point(int a) {}
 }

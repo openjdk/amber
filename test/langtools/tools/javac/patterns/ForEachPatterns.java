@@ -52,7 +52,7 @@ public class ForEachPatterns {
 
     static int iteratorEnhancedFor(List<Point> points) {
         int result = 0;
-        for (Point(Integer a, Integer b) : points) {
+        for (match Point(Integer a, Integer b) : points) {
             result += a + b;
         }
         return result;
@@ -60,7 +60,7 @@ public class ForEachPatterns {
 
     static int arrayEnhancedFor(Point[] points) {
         int result = 0;
-        for (Point(Integer a, Integer b) : points) {
+        for (match Point(Integer a, Integer b) : points) {
             result += a + b;
         }
         return result;
@@ -68,7 +68,7 @@ public class ForEachPatterns {
 
     static int simpleDecostructionPatternWithAccesses(List<Point> points) {
         int result = 0;
-        for (Point(var a, var b): points) {
+        for (match Point(var a, var b): points) {
             result += a + b;
         }
         return result;
@@ -76,7 +76,7 @@ public class ForEachPatterns {
 
     static int simpleDecostructionPatternException(List<PointEx> points) {
         int result = 0;
-        for (PointEx(var a, var b): points) {
+        for (match PointEx(var a, var b): points) {
             result += a + b;
         }
         return result;
@@ -84,7 +84,7 @@ public class ForEachPatterns {
 
     static int simpleDecostructionPatternNoComponentAccess(List<Point> points) {
         int result = 0;
-        for (Point(var a, var b): points) {
+        for (match Point(var a, var b): points) {
             result += 1;
         }
         return result;
@@ -92,14 +92,14 @@ public class ForEachPatterns {
 
     static int varAndConcrete(List<Point> points) {
         int result = 0;
-        for (Point(Integer a, var b): points) {
+        for (match Point(Integer a, var b): points) {
             result += a + b;
         }
         return result;
     }
 
     static int returnFromEnhancedFor(List<Point> points) {
-        for (Point(var a, var b): points) {
+        for (match Point(var a, var b): points) {
             return a + b;
         }
         return -1;
@@ -108,7 +108,7 @@ public class ForEachPatterns {
     static int breakFromEnhancedFor(List<Point> points) {
         int i = 1;
         int result = 0;
-        for (Point(var a, var b): points) {
+        for (match Point(var a, var b): points) {
             if (i == 1) break;
             else result += a + b;
         }
@@ -118,7 +118,7 @@ public class ForEachPatterns {
     static int sealedRecordPassBaseType(List<IPoint> points) {
         int result = 0;
 
-        for(Point(var x, var y) : points) {
+        for(match Point(var x, var y) : points) {
             result += (x + y);
         }
 
@@ -127,7 +127,7 @@ public class ForEachPatterns {
 
     static int withPrimitives(List<WithPrimitives> points) {
         int result = 0;
-        for (WithPrimitives(int a, double b): points) {
+        for (match WithPrimitives(int a, double b): points) {
             result += a + (int) b;
         }
         return result;
@@ -169,14 +169,14 @@ public class ForEachPatterns {
     //where
     static List<Color> printUpperLeftColors(Rectangle[] r) {
         List<Color> ret = new ArrayList<>();
-        for (Rectangle(ColoredPoint(Point p, Color c), ColoredPoint lr): r) {
+        for (match Rectangle(ColoredPoint(Point p, Color c), ColoredPoint lr): r) {
             ret.add(c);
         }
         return ret;
     }
 
     static int arrayWithSealed(IParent[] recs){
-        for (Rec(int a) : recs) {
+        for (match Rec(int a) : recs) {
             return a;
         }
         return -1;
@@ -192,15 +192,6 @@ public class ForEachPatterns {
     sealed interface IPoint permits Point {}
     record Point(Integer x, Integer y) implements IPoint { }
 
-    record GPoint<T>(T x, T y) { }
-    record VoidPoint() { }
-    record RecordOfLists(List<Integer> o) {}
-    record RecordOfLists2(List<List<Integer>> o) {}
-
-    @Target({ElementType.TYPE_USE, ElementType.LOCAL_VARIABLE})
-    @interface Annot {
-        String field();
-    }
     record Frog(Integer x, Integer y) { }
     record PointEx(Integer x, Integer y) {
         @Override

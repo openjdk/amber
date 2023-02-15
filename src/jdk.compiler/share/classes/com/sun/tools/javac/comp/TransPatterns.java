@@ -901,6 +901,46 @@ public class TransPatterns extends TreeTranslator {
     }
 
     @Override
+    public void visitMatch(JCTree.JCMatch tree) {
+        /**
+         * A statement of the form
+         *
+         * <pre>
+         *     match <pattern> = <expression> ;
+         * </pre>
+         *
+         * (where <pattern> is a record pattern) is translated to:
+         *
+         * <pre>{@code
+         *     if (!(<expression> instanceof(<pattern>)) {
+         *         throw new MatchException(null, null);
+         *     }
+         * }</pre>
+         *
+         */
+        bindingContext = new BasicBindingContext();
+        try {
+            List<JCExpression> nestedNPEParams = List.of(makeNull());
+            JCNewClass nestedNPE = makeNewClass(syms.nullPointerExceptionType, nestedNPEParams);
+
+            List<JCExpression> matchExParams = List.of(makeNull(), nestedNPE);
+            JCThrow thr = make.Throw(makeNewClass(syms.matchExceptionType, matchExParams));
+
+            JCExpression expr = translate(tree.expr);
+
+            JCInstanceOf instanceOfTree = make.TypeTest(expr, tree.pattern);
+            tree.type = syms.booleanType;
+
+            JCIf ifNode = make.If(makeUnary(Tag.NOT,
+                    translate(instanceOfTree)).setType(syms.booleanType), thr, null);
+
+            result = bindingContext.decorateStatement(ifNode);
+        } finally {
+            bindingContext.pop();
+        }
+    }
+
+    @Override
     public void visitForeachLoop(JCTree.JCEnhancedForLoop tree) {
         bindingContext = new BasicBindingContext();
         VarSymbol prevCurrentValue = currentValue;

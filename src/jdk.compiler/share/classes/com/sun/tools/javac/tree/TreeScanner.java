@@ -242,6 +242,11 @@ public class TreeScanner extends Visitor {
         scan(tree.detail);
     }
 
+    public void visitMatch(JCMatch tree) {
+        scan(tree.pattern);
+        scan(tree.expr);
+    }
+
     public void visitApply(JCMethodInvocation tree) {
         scan(tree.typeargs);
         scan(tree.meth);

@@ -107,7 +107,7 @@ public class GenericRecordDeconstructionPattern {
     }
 
     int forEachInference(Iterable<I<String>> b) {
-        for (Box(var s) : b) {
+        for (match Box(var s) : b) {
             return s == null ? 1 : s.length();
         }
         return -1;

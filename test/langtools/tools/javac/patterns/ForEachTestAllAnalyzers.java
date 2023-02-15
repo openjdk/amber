@@ -6,7 +6,7 @@
  */
 public class ForEachTestAllAnalyzers {
     private void test(Iterable<? extends R> l) {
-        for (R(Object a) : l) { }
+        for (match R(Object a) : l) { }
     }
     record R(Object a) {}
 }

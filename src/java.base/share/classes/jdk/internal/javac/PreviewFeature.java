@@ -72,6 +72,8 @@ public @interface PreviewFeature {
         VIRTUAL_THREADS,
         @JEP(number=434, title="Foreign Function & Memory API", status="Second Preview")
         FOREIGN,
+        @JEP(number=999, title="Match Statements", status="First Preview")
+        MATCH_STATEMENTS(),
         /**
          * A key for testing.
          */

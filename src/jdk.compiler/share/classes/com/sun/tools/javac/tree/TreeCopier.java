@@ -106,6 +106,14 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitMatchStatement(MatchStatementTree node, P p) {
+        JCMatch t = (JCMatch) node;
+        JCPattern recordPattern = copy(t.pattern, p);
+        JCExpression expr = copy(t.expr, p);
+        return M.at(t.pos).Match(recordPattern, expr);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitAssignment(AssignmentTree node, P p) {
         JCAssign t = (JCAssign) node;
         JCExpression lhs = copy(t.lhs, p);

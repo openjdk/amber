@@ -1107,7 +1107,11 @@ public class Gen extends JCTree.Visitor {
                 invocationsWithPatternMatchingCatch = tree.patternMatchingCatch.calls2Handle();
                 patternMatchingInvocationRanges = new ListBuffer<>();
                 doVisitBlock(tree);
-            } finally {
+            }
+            catch (Throwable e) {
+                e.printStackTrace();
+            }
+            finally {
                 Chain skipCatch = code.branch(goto_);
                 JCCatch handler = tree.patternMatchingCatch.handler();
                 code.entryPoint(startState, handler.param.sym.type);

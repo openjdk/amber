@@ -584,6 +584,22 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
+    public R visitMatchStatement(MatchStatementTree node, P p) {
+        R r = scan(node.getPattern(), p);
+        r = scanAndReduce(node.getExpression(), p, r);
+        return r;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
     public R visitMethodInvocation(MethodInvocationTree node, P p) {
         R r = scan(node.getTypeArguments(), p);
         r = scanAndReduce(node.getMethodSelect(), p, r);

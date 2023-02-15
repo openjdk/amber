@@ -644,6 +644,29 @@ public class Flow {
                 tree.cond != null && !tree.cond.type.isTrue());
         }
 
+        public void visitMatch(JCMatch tree) {
+            ListBuffer<PendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+
+            if (tree.pattern instanceof JCRecordPattern rp) {
+                visitRecordPattern(rp);
+            }
+
+            Set<Symbol> coveredSymbols =
+                    coveredSymbols(tree.pattern.pos(), List.of(tree.pattern));
+
+            boolean isExhaustive =
+                    isExhaustive(tree.pattern.pos(), tree.expr.type, coveredSymbols);
+
+            if (!isExhaustive) {
+                log.error(tree, Errors.ForeachNotExhaustiveOnType(tree.pattern.type, tree.expr.type));
+            }
+
+            scan(tree.expr);
+
+            alive = alive.or(resolveBreaks(tree, prevPendingExits));
+        }
+
         public void visitForeachLoop(JCEnhancedForLoop tree) {
             if(tree.varOrRecordPattern instanceof JCVariableDecl jcVariableDecl) {
                 visitVarDef(jcVariableDecl);

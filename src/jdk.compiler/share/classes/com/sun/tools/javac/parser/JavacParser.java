@@ -62,7 +62,6 @@ import static com.sun.tools.javac.resources.CompilerProperties.Fragments.Implici
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.VarAndExplicitNotAllowed;
 import static com.sun.tools.javac.resources.CompilerProperties.Fragments.VarAndImplicitNotAllowed;
 import com.sun.tools.javac.util.JCDiagnostic.SimpleDiagnosticPosition;
-import java.util.function.BiFunction;
 
 /**
  * The parser maps a token sequence into an abstract syntax tree.
@@ -188,6 +187,7 @@ public class JavacParser implements Parser {
         endPosTable = newEndPosTable(keepEndPositions);
         this.allowYieldStatement = Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = Feature.RECORDS.allowedInSource(source);
+        this.allowMatchStatements = Feature.MATCH_STATEMENTS.allowedInSource(source);
         this.allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
     }
 
@@ -225,6 +225,10 @@ public class JavacParser implements Parser {
     /** Switch: are records allowed in this source level?
      */
     boolean allowRecords;
+
+    /** Are match statements allowed in this source level?
+     */
+    boolean allowMatchStatements;
 
     /** Switch: are sealed types allowed in this source level?
      */
@@ -2766,6 +2770,27 @@ public class JavacParser implements Parser {
         if (isRecordStart() && allowRecords) {
             dc = token.comment(CommentStyle.JAVADOC);
             return List.of(recordDeclaration(F.at(pos).Modifiers(0), dc));
+        } else if (isMatchStatementStart() && allowMatchStatements) {
+            nextToken();
+            int patternPos = token.pos;
+            JCModifiers mods = optFinal(0);
+            JCExpression type = unannotatedType(false);
+
+            JCPattern pattern = parsePattern(patternPos, mods, type, false, false);
+
+            if (pattern.getTag() != RECORDPATTERN) {
+                log.error(token.pos, Errors.NotADeconstructionPatternForMatchStatement(pattern.toString()));
+
+                return List.of(toP(F.at(pos).Exec(F.at(patternPos).Erroneous())));
+            } else {
+                accept(EQ);
+
+                JCExpression expr = parseExpression();
+
+                accept(SEMI);
+
+                return List.of(toP(F.at(pos).Match(pattern, expr)));
+            }
         } else {
             Token prevToken = token;
             JCExpression t = term(EXPR | TYPE);
@@ -2787,6 +2812,7 @@ public class JavacParser implements Parser {
             }
         }
     }
+
     //where
         private List<JCStatement> localVariableDeclarations(JCModifiers mods, JCExpression type) {
             ListBuffer<JCStatement> stats =
@@ -2834,20 +2860,17 @@ public class JavacParser implements Parser {
         case FOR: {
             nextToken();
             accept(LPAREN);
-            JCTree pattern;
 
-            ForInitResult initResult = analyzeForInit();
-
-            if (initResult == ForInitResult.RecordPattern) {
+            if (S.token().kind == IDENTIFIER && S.token().name() == names.match) {
+                nextToken();
                 int patternPos = token.pos;
                 JCModifiers mods = optFinal(0);
-                int typePos = token.pos;
                 JCExpression type = unannotatedType(false);
 
-                pattern = parsePattern(patternPos, mods, type, false, false);
+                JCTree pattern = parsePattern(patternPos, mods, type, false, false);
 
                 if (pattern != null) {
-                    checkSourceLevel(token.pos, Feature.PATTERN_SWITCH);
+                    checkSourceLevel(token.pos, Feature.MATCH_STATEMENTS);
                 }
                 accept(COLON);
                 JCExpression expr = parseExpression();
@@ -4550,6 +4573,15 @@ public class JavacParser implements Parser {
     protected boolean isRecordStart() {
         if (token.kind == IDENTIFIER && token.name() == names.record && peekToken(TokenKind.IDENTIFIER)) {
             checkSourceLevel(Feature.RECORDS);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    protected boolean isMatchStatementStart() {
+        if (token.kind == IDENTIFIER && token.name() == names.match && S.token(1).kind == IDENTIFIER) {
+            checkSourceLevel(Feature.MATCH_STATEMENTS);
             return true;
         } else {
             return false;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,20 +21,32 @@
  * questions.
  */
 
-// key: compiler.misc.feature.match.statements
-// key: compiler.misc.feature.deconstruction.patterns
-// key: compiler.warn.preview.feature.use.plural
-// key: compiler.err.foreach.not.exhaustive.on.type
-// options: --enable-preview -source ${jdk.version} -Xlint:preview
+/*
+ * @test
+ * @summary Tests for match statements
+ * @build KullaTesting TestingInputStream
+ * @run testng MatchStatementsTest
+ */
 
-import java.util.List;
+import jdk.jshell.JShell;
+import org.testng.annotations.Test;
 
-class ForeachNotExhaustive {
-    void m(List<Object> points) {
-        for (match Point(var x, var y): points) {
-            System.out.println();
-        }
+import java.util.function.Consumer;
+
+import static org.testng.Assert.assertEquals;
+
+@Test
+public class MatchStatementsTest extends KullaTesting {
+
+    public void testMatchStatement() {
+        assertEval("record Point(int a) {}");
+        assertEquals(varKey(assertEval("Point p = new Point(42);")).name(), "p");
+        assertEval("match Point(int b) = p;");
+//        assertEval("b + 1", "43"); // TODO
     }
 
-    record Point(Integer x, Integer y) { }
+    @org.testng.annotations.BeforeMethod
+    public void setUp() {
+        super.setUp(bc -> bc.compilerOptions("--source", System.getProperty("java.specification.version"), "--enable-preview").remoteVMOptions("--enable-preview"));
+    }
 }
