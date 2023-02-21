@@ -555,13 +555,6 @@ JavaMain(void* _args)
     jclass ioClass = (*env)->FindClass(env, "java/lang/IO");
     CHECK_EXCEPTION_NULL_LEAVE(ioClass);
 
-    jfieldID argsID =
-        (*env)->GetStaticFieldID(env, ioClass, "ARGS", "[Ljava/lang/String;");
-    CHECK_EXCEPTION_NULL_LEAVE(argsID);
-
-    (*env)->SetStaticObjectField(env, ioClass, argsID, mainArgs);
-    CHECK_EXCEPTION_LEAVE(1);
-
     switch (mainType) {
     case 0: {
         mainID = (*env)->GetStaticMethodID(env, mainClass, "main",

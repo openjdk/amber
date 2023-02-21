@@ -417,17 +417,6 @@ public class Main {
         }
     }
 
-    private static void setIOArgs(String[] args) {
-        try {
-            Class<?> ioClass = Class.forName("java.lang.IO");
-            if (ioClass != null) {
-                ioClass.getDeclaredField("ARGS").set(ioClass, (Object) args);
-            }
-        } catch (ReflectiveOperationException ex) {
-            // Bootstrapping may cause IO to not be found.
-        }
-    }
-
     /**
      * Invokes the {@code main} method of a specified class, using a class loader that
      * will load recently compiled classes from memory.
@@ -449,7 +438,6 @@ public class Main {
                 throw new Fault(Errors.CantFindMainMethod(mainClassName));
             }
             main.setAccessible(true);
-            setIOArgs(appArgs);
             int mods = main.getModifiers();
             if ((mods & Modifier.STATIC) != 0) {
                 if (main.getParameterCount() == 0) {
