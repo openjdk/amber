@@ -324,10 +324,9 @@ public class TypeEnter implements Completer {
 
         private void implicitClassImports() {
             JCExpression ioType = make.QualIdent(syms.ioImportsType.tsym);
-            JCImport imp = make.Import(make.Select(ioType, names.asterisk), true,
-                    null);
+            JCImport imp = make.Import(make.Select(ioType, names.asterisk), true, false);
             doImport(imp);
-            imp = make.Import(make.Ident(names.asterisk), false, make.QualIdent(syms.java_base));
+            imp = make.Import(make.QualIdent(syms.java_base), false, true);
             doImport(imp);
         }
 
@@ -359,8 +358,8 @@ public class TypeEnter implements Completer {
                     log.error(Errors.NoJavaLang);
                     throw new Abort();
                 }
-                importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false,
-                        null), javaLang, env);
+                importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false, false),
+                        javaLang, env);
                 if (tree.getImplicitClass() != null) {
                     implicitClassImports();
                 }
@@ -419,26 +418,11 @@ public class TypeEnter implements Completer {
             // Create a local environment pointing to this tree to disable
             // effects of other imports in Resolve.findGlobalType
             Env<AttrContext> localEnv = env.dup(tree);
-            ModuleSymbol modle = null;
-            if (tree.modle != null) {
-                Name moduleName = TreeInfo.fullName(tree.modle);
-                modle = syms.getModule(moduleName);
-                if (modle == null) {
-                    int pos = TreeInfo.getStartPos(tree);
-                    log.error(pos, Errors.ModuleNotFound(new ModuleSymbol(moduleName, syms.noSymbol)));
-                }
-            }
-            if (tree.qualid.getTag() == IDENT) {
+            if (tree.moduleImport) {
                 // module / *
-                importModule(tree, modle);
+                importModule(tree);
             } else {
                 TypeSymbol tsym = attr.attribImportQualifier(tree, localEnv).tsym;
-                if (modle != null) {
-                    if (tsym instanceof PackageSymbol psym && psym.modle != modle) {
-                        int pos = TreeInfo.getStartPos(tree);
-                        log.error(pos, Errors.DoesntExist(psym));
-                    }
-                }
                 if (name == names.asterisk) {
                     // Import on demand.
                     if (tree.staticImport)
@@ -471,21 +455,25 @@ public class TypeEnter implements Completer {
             }
         }
 
-        private void importModule(JCImport imp, ModuleSymbol modle) {
-            Stream<PackageSymbol> pkgStream = env.toplevel.modle.visiblePackages
-                    .values()
-                    .stream()
-                    .filter(pkg -> pkg.modle == modle);
+        private void importModule(JCImport imp) {
+            Name moduleName = TreeInfo.fullName(imp.qualid);
             boolean isEmpty = true;
-            for (Iterator<PackageSymbol> it = pkgStream.iterator(); it.hasNext(); ) {
-                PackageSymbol pkg = it.next();
-                env.toplevel.starImportScope.importAll(types, pkg.members(), typeImportFilter, imp, cfHandler);
-                isEmpty = false;
+            ModuleSymbol modle = syms.getModule(moduleName);
+            if (modle != null) {
+                Stream<PackageSymbol> pkgStream = env.toplevel.modle.visiblePackages
+                        .values()
+                        .stream()
+                        .filter(pkg -> pkg.modle == modle);
+                for (Iterator<PackageSymbol> it = pkgStream.iterator(); it.hasNext(); ) {
+                    PackageSymbol pkg = it.next();
+                    env.toplevel.starImportScope.importAll(types, pkg.members(), typeImportFilter, imp, cfHandler);
+                    isEmpty = false;
+                }
             }
             if (isEmpty) {
                 int pos = TreeInfo.getStartPos(imp.qualid);
                 PackageSymbol ps = syms.enterPackage(env.toplevel.modle, TreeInfo.fullName(imp.qualid));
-                log.error(pos, Errors.PackageEmptyOrNotFound(ps));
+                log.error(pos, Errors.ModuleEmptyOrNotFound(moduleName));
             }
         }
 

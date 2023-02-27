@@ -4002,44 +4002,34 @@ public class JavacParser implements Parser {
         return defs.toList();
     }
 
-    /** ImportDeclaration = IMPORT [ STATIC ] Ident { "." Ident } [ "." "*" ] ";"
+    /** ImportDeclaration = IMPORT [ STATIC | MODULE ] Ident { "." Ident } [ "." "*" ] ";"
      */
     protected JCTree importDeclaration() {
         int pos = token.pos;
         nextToken();
-        boolean importStatic = false;
-        JCExpression modle = null;
+        boolean staticImport = false;
+        boolean moduleImport = false;
         if (token.kind == STATIC) {
-            importStatic = true;
+            staticImport = true;
+            nextToken();
+        } else if (token.kind == IDENTIFIER && token.name() == names.module) {
+            moduleImport = true;
             nextToken();
         }
         JCExpression pid = toP(F.at(token.pos).Ident(ident()));
         do {
             int pos1 = token.pos;
             accept(DOT);
-            if (token.kind == STAR) {
+            if (token.kind == STAR && !moduleImport) {
                 pid = to(F.at(pos1).Select(pid, names.asterisk));
                 nextToken();
                 break;
             } else {
                 pid = toP(F.at(pos1).Select(pid, ident()));
-                if (token.kind == SLASH && modle == null && !importStatic) {
-                    pos1 = token.pos;
-                    checkSourceLevel(pos1, Feature.IMPLICIT_CLASSES);
-                    nextToken();
-                    modle = pid;
-                    if (token.kind == STAR) {
-                        pid = toP(F.at(token.pos).Ident(names.asterisk));
-                        nextToken();
-                        break;
-                    } else {
-                        pid = toP(F.at(token.pos).Ident(ident()));
-                    }
-                }
             }
         } while (token.kind == DOT);
         accept(SEMI);
-        return toP(F.at(pos).Import(pid, importStatic, modle));
+        return toP(F.at(pos).Import(pid, staticImport, moduleImport));
     }
 
     /** TypeDeclaration = ClassOrInterfaceOrEnumDeclaration

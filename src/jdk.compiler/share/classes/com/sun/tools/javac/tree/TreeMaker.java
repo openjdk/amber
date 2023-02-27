@@ -150,8 +150,8 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
-    public JCImport Import(JCTree qualid, boolean importStatic, JCTree modle) {
-        JCImport tree = new JCImport(qualid, importStatic, modle);
+    public JCImport Import(JCTree qualid, boolean staticImport, boolean moduleImport) {
+        JCImport tree = new JCImport(qualid, staticImport, moduleImport);
         tree.pos = pos;
         return tree;
     }

@@ -49,6 +49,12 @@ public interface ImportTree extends Tree {
     boolean isStatic();
 
     /**
+     * Returns true if this is a module import declaration.
+     * @return true if this is a module import
+     */
+    boolean isModule();
+
+    /**
      * Returns the qualified identifier for the declaration(s)
      * being imported.
      * If this is an import-on-demand declaration, the
@@ -57,11 +63,4 @@ public interface ImportTree extends Tree {
      * this is an import-on-demand
      */
     Tree getQualifiedIdentifier();
-
-    /**
-     * Returns qualified identifier for specified module.
-     * @return qualified identifier for specified module or null
-     * if not qualified.
-     */
-    Tree getModule();
 }
