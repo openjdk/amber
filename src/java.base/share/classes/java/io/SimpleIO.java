@@ -253,6 +253,7 @@ public final class SimpleIO {
      *
      * @param filename file name or path string of file to be written
      * @param content  string content of the file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
      */
     public static void write(String filename, String content) {
         Objects.requireNonNull(filename, "filename must not be null");
@@ -270,6 +271,7 @@ public final class SimpleIO {
      *
      * @param filename file name or path string of file to be written
      * @param lines list of lines to be written to the file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
      */
     public static void writeLines(String filename, List<String> lines) {
         Objects.requireNonNull(filename, "filename must not be null");
