@@ -80,7 +80,7 @@ public class OnrampMainTest extends TestHelper {
     }
 
     @Test
-    public void testImplicitStaticMainArgs() throws Exception {
+    public void testTLAnonStaticMainArgs() throws Exception {
         test("""
             static void main() {
                 throw new AssertionError();
@@ -91,7 +91,7 @@ public class OnrampMainTest extends TestHelper {
     }
 
     @Test
-    public void testImplicitStaticMain() throws Exception {
+    public void testTLAnonStaticMain() throws Exception {
         test("""
             void main(String[] args) {
                 throw new AssertionError();
@@ -102,7 +102,7 @@ public class OnrampMainTest extends TestHelper {
     }
 
     @Test
-    public void testImplicitMainArgs() throws Exception {
+    public void testTLAnonMainArgs() throws Exception {
         test("""
             void main() {
                 throw new AssertionError();
@@ -113,7 +113,7 @@ public class OnrampMainTest extends TestHelper {
     }
 
     @Test
-    public void testImplicitMain() throws Exception {
+    public void testTLAnonMain() throws Exception {
         test("""
             void main() {
             }

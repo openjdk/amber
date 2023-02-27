@@ -2428,7 +2428,7 @@ public class Resolve {
 
         if (kind.contains(KindSelector.TYP)) {
             sym = findType(env, name);
-            if ((sym.flags() & IMPLICIT_CLASS) != 0) {
+            if ((sym.flags() & TOP_LEVEL_ANONYMOUS_CLASS) != 0) {
                 sym = typeNotFound;
             }
             if (sym.exists()) return sym;

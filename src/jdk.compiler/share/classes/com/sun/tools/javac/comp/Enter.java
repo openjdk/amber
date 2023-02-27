@@ -394,8 +394,8 @@ public class Enter extends JCTree.Visitor {
                 tree.packge.package_info = c;
                 tree.packge.sourcefile = tree.sourcefile;
             }
-            if (tree.isImplicitClass() && tree.getImplicitClass() == null) {
-                constructImplicitClass(tree, source, preview, make, log, names);
+            if (tree.isTopLevelAnonymousClass() && tree.getTopLevelAnonymousClass() == null) {
+                constructTopLevelAnonymousClass(tree, source, preview, make, log, names);
             }
             classEnter(tree.defs, topEnv);
             if (addEnv) {
@@ -431,12 +431,12 @@ public class Enter extends JCTree.Visitor {
             }
         };
 
-    // Restructure top level to be an implicit class.
-    public static void constructImplicitClass(JCCompilationUnit tree,
-                                              Source source, Preview preview,
-                                              TreeMaker make, Log log, Names names) {
+    // Restructure top level to be an top level anonymous class.
+    public static void constructTopLevelAnonymousClass(JCCompilationUnit tree,
+                                                       Source source, Preview preview,
+                                                       TreeMaker make, Log log, Names names) {
 
-        Feature feature = Feature.IMPLICIT_CLASSES;
+        Feature feature = Feature.TOP_LEVEL_ANONYMOUS_CLASSES;
         if (preview.isPreview(feature) && !preview.isEnabled()) {
             //preview feature without --preview flag, error
             log.error(DiagnosticFlag.SOURCE_LEVEL, tree.pos, preview.disabledError(feature));
@@ -463,7 +463,7 @@ public class Enter extends JCTree.Visitor {
 
         for (JCTree def : tree.defs) {
             if (def.hasTag(Tag.PACKAGEDEF)) {
-                log.error(null, Errors.ImplicitClassShouldNotHavePackageDeclaration);
+                log.error(null, Errors.TopLevelAnonymousClassShouldNotHavePackageDeclaration);
             } else if (def.hasTag(Tag.IMPORT)) {
                 topDefs.append(def);
             } else {
@@ -471,12 +471,12 @@ public class Enter extends JCTree.Visitor {
             }
         }
 
-        JCModifiers implicitMods = make.at(tree.pos)
-                .Modifiers(FINAL|MANDATED|SYNTHETIC|IMPLICIT_CLASS, List.nil());
-        JCClassDecl implicit = make.at(tree.pos).ClassDef(
-                implicitMods, name, List.nil(), null, List.nil(), List.nil(),
+        JCModifiers anonMods = make.at(tree.pos)
+                .Modifiers(FINAL|MANDATED|SYNTHETIC|TOP_LEVEL_ANONYMOUS_CLASS, List.nil());
+        JCClassDecl anon = make.at(tree.pos).ClassDef(
+                anonMods, name, List.nil(), null, List.nil(), List.nil(),
                 defs.toList());
-        topDefs.append(implicit);
+        topDefs.append(anon);
         tree.defs = topDefs.toList();
     }
 
@@ -502,7 +502,7 @@ public class Enter extends JCTree.Visitor {
                 log.error(tree.pos(),
                           Errors.ClassPublicShouldBeInFile(topElement, tree.name));
             }
-            if ((tree.mods.flags & IMPLICIT_CLASS) != 0) {
+            if ((tree.mods.flags & TOP_LEVEL_ANONYMOUS_CLASS) != 0) {
                 syms.removeClass(env.toplevel.modle, tree.name);
             }
         } else {

@@ -643,8 +643,8 @@ public class JavaCompiler {
         tree.sourcefile = filename;
 
         // TODO - just for the prototype
-        if (tree.isImplicitClass() && "true".equals(System.getProperty("jdk.implicit.class.in.parser"))) {
-            Enter.constructImplicitClass(tree, source, preview, make, log, names);
+        if (tree.isTopLevelAnonymousClass()) {
+            Enter.constructTopLevelAnonymousClass(tree, source, preview, make, log, names);
         }
 
         if (content != null && !taskListener.isEmpty() && !silent) {

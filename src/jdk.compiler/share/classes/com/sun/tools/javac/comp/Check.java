@@ -2261,7 +2261,7 @@ public class Check {
         }
 
         if (!found) {
-            log.error(pos, Errors.ImplicitClassDoesNotHaveMainMethod);
+            log.error(pos, Errors.TopLevelAnonymousClassDoesNotHaveMainMethod);
         }
     }
 
