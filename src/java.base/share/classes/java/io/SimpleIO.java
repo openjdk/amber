@@ -23,29 +23,45 @@
  * questions.
  */
 
-package java.lang;
+package java.io;
 
-import java.io.*;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Objects;
+import java.util.Scanner;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * This class provides quick access to commonly used methods, fields and tasks.
- *
+ * This class provides simple to use I/O methods for simple applications. Typical use
+ * would include {@code import static java.io.SinmpleIO.*; } in declarations.
+ * There are two groups of methods;
+ * <p>
+ * - Console I/O methods include
+ * {@linkplain SimpleIO#input()},
+ * {@linkplain SimpleIO#input(String)},
+ * {@linkplain SimpleIO#print(Object...)},
+ * {@linkplain SimpleIO#println(Object...)} and
+ * {@linkplain SimpleIO#printLines(List<String>)}
+ * <p>
+ * - File I/O methods include
+ * {@linkplain SimpleIO#read(String)},
+ * {@linkplain SimpleIO#readLines(String)},
+ * {@linkplain SimpleIO#write(String, String)} and
+ * {@linkplain SimpleIO#writeLines(String, List<String>)}.
  * @since  21
  */
-public final class IO {
+public final class SimpleIO {
     /**
      * Private constructor.
      */
-    private IO() {
+    private SimpleIO() {
         throw new AssertionError("private constructor");
     }
 
@@ -137,38 +153,91 @@ public final class IO {
     }
 
     /**
-     * {@return a string of characters read in from input}
+     * Return a string of characters from input. Unlike other input methods, this method
+     * supports editing and navigation of the input, as well as scrolling back through
+     * historic input.
+     *
+     * @return a string of characters read in from input
      */
-    public static String readln() {
-        return readln("");
+    public static String input() {
+        return input("");
     }
 
     /**
-     * Return a string of characters read in from input after issuing a prompt.
+     * Return a string of characters from input after issuing a prompt. Unlike other
+     * input methods, this method supports editing and navigation of the input, as well
+     * as scrolling back through historic input.
      *
      * @param prompt string contain prompt for input
-     * @return a string of characters read in from input or null if no input is available.
+     * @return a string of characters read in from input
      */
-    public static String readln(String prompt) {
+    public static String input(String prompt) {
         Objects.requireNonNull(prompt, "prompt must not be null");
 
         if (LineReader.hasLineReader()) {
-            return LineReader.readLine(prompt);
+            String input = LineReader.readLine(prompt);
+            return input != null ? input : "";
         } else {
             System.out.print(prompt);
-            Scanner input = new Scanner(System.in);
-            return input.hasNext() ? input.nextLine() : "";
+            Scanner scanner = new Scanner(System.in);
+            return scanner.hasNext() ? scanner.nextLine() : "";
         }
     }
 
     /**
-     * Reading all the lines from the specified file.
+     * Printing values with single spacing to output stream.
+     *
+     * @param values values to be printed.
+     */
+    public static void print(Object... values) {
+        System.out.print(Stream.of(values)
+                .map(String::valueOf)
+                .collect(Collectors.joining(" ")));
+    }
+
+    /**
+     * Print values with single spacing followed by a newline to output stream.
+     *
+     * @param values values to be printed.
+     */
+    public static void println(Object... values) {
+        System.out.println(Stream.of(values)
+                .map(String::valueOf)
+                .collect(Collectors.joining(" ")));
+    }
+
+    /**
+     * Print list of lines to output stream. Each line will be printed and
+     * followed by a line terminator.
+     *
+     * @param lines list of strings
+     */
+    public static void printLines(List<String> lines) {
+        Objects.requireNonNull(lines, "lines must not be null");
+        lines.forEach(System.out::println);
+    }
+
+    /**
+     * Reading the contents from the specified file as a string.
+     *
+     * @param filename file name or path string of file to be read
+     * @return Content read from a file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     */
+    public static String read(String filename) {
+        Objects.requireNonNull(filename, "filename must not be null");
+        return readLines(filename).stream()
+                .collect(Collectors.joining("\n", "", "\n"));
+    }
+
+    /**
+     * Reading all the lines from the specified file as a list of strings.
      *
      * @param filename file name or path string of file to be read
      * @return list of lines read from a file
      * @throws RuntimeException wrapping an IOException if an io error occurs.
      */
-    public static List<String> readlines(String filename) {
+    public static List<String> readLines(String filename) {
         Objects.requireNonNull(filename, "filename must not be null");
         Path path = Paths.get(filename);
 
@@ -180,52 +249,35 @@ public final class IO {
     }
 
     /**
-     * Print list of lines to output stream.
-     *
-     * @param lines list of strings
-     */
-    public static void printlines(List<String> lines) {
-        Objects.requireNonNull(lines, "lines must not be null");
-        lines.forEach(System.out::println);
-    }
-
-    /**
-     * Write a list of strings to a file.
+     * Write a string as content to a file.
      *
      * @param filename file name or path string of file to be written
-     * @param lines    list of lines to be written to the file
+     * @param content  string content of the file
      */
-    public static void writelines(String filename, List<String> lines) {
-        Objects.requireNonNull(lines, "filename must not be null");
-        Objects.requireNonNull(lines, "lines must not be null");
+    public static void write(String filename, String content) {
+        Objects.requireNonNull(filename, "filename must not be null");
+        Objects.requireNonNull(content, "content must not be null");
         try (PrintWriter out = new PrintWriter(filename)) {
-            lines.forEach(out::println);
+            content.lines().forEach(out::println);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
 
     /**
-     * Print values with single spacing followed by a newline to output stream.
+     * Write a list of strings to a file. Each line will be followed by
+     * a line terminator.
      *
-     * @param values values to be printed.
+     * @param filename file name or path string of file to be written
+     * @param lines list of lines to be written to the file
      */
-    public static void println(Object... values) {
-        String line = Stream.of(values)
-                .map(String::valueOf)
-                .collect(Collectors.joining(" "));
-        System.out.println(line);
-    }
-
-    /**
-     * Printing values with single spacing to output stream.
-     *
-     * @param values values to be printed.
-     */
-    public static void print(Object... values) {
-        String line = Stream.of(values)
-                .map(String::valueOf)
-                .collect(Collectors.joining(" "));
-        System.out.print(line);
+    public static void writeLines(String filename, List<String> lines) {
+        Objects.requireNonNull(filename, "filename must not be null");
+        Objects.requireNonNull(lines, "lines must not be null");
+        try (PrintWriter out = new PrintWriter(filename)) {
+            lines.forEach(out::println);
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }
