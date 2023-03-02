@@ -32,7 +32,8 @@ import java.util.List;
 public class PrimitivePatterns {
     public static void main(String[] args) {
         assertEquals(42, primitivePattern());
-        assertEquals(1,  primitiveSwitch());
+        assertEquals(1,  primitiveSwitch(42));
+        assertEquals(2,  primitiveSwitch(123));
         assertEquals(42, primitiveSwitch2());
         assertEquals(42, primitiveSwitch3());
         assertEquals(1,  primitiveSwitch4(0.0f));
@@ -53,6 +54,7 @@ public class PrimitivePatterns {
         assertEquals(1,  exhaustiveWithRecords6());
         assertEquals(2,  ensureProperSelectionWithRecords());
         assertEquals(1,  ensureProperSelectionWithRecords2());
+        assertEquals(3,  ensureProperSelectionWithRecords3());
         assertEquals(42, switchAndDowncastFromObjectPrimitive());
         assertEquals(42, dominationBetweenBoxedAndPrimitive());
         assertEquals(2,  wideningAndUnboxing());
@@ -69,10 +71,10 @@ public class PrimitivePatterns {
         return -1;
     }
 
-    public static int primitiveSwitch() {
-        int i = 42;
+    public static int primitiveSwitch(int i) {
         return switch (i) {
-            case int j -> 1;
+            case int j when j == 42-> 1;
+            case int j -> 2;
         };
     }
 
@@ -225,6 +227,16 @@ public class PrimitivePatterns {
                 return meth_double(x);
         }
     }
+
+    public static int ensureProperSelectionWithRecords3() {
+        R_int r = new R_int(4242);
+        return switch (r) {
+            case R_int(byte x) -> 1;
+            case R_int(int x) when x == 236 -> 2;
+            case R_int(int x) -> 3;
+        };
+    }
+
     public static int meth_int(int i) { return 1; }
     public static int meth_double(double d) { return 2;}
 

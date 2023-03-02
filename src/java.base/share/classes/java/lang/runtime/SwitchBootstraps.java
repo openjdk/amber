@@ -173,7 +173,16 @@ public class SwitchBootstraps {
                                 (c.equals(float.class) && target instanceof Float)||
                                 (c.equals(long.class) && target instanceof Long))
                                 return i;
-                        } else {
+                        } else if (c.equals(selector) ||
+                                (selector.equals(byte.class) && !c.equals(char.class)   ||
+                                (selector.equals(short.class) && (c.equals(int.class)   || c.equals(long.class) || c.equals(float.class) || c.equals(double.class)))||
+                                (selector.equals(char.class)  && (c.equals(int.class)   || c.equals(long.class) || c.equals(float.class) || c.equals(double.class))) ||
+                                (selector.equals(long.class) && (c.equals(long.class))) ||
+                                (selector.equals(int.class) && (c.equals(double.class)  || c.equals(long.class))) ||
+                                (selector.equals(float.class) && (c.equals(double.class))))) {
+                            return i;
+                        }
+                        else {
                             if (exactnessCheck(target, selector, c)) {
                                 return i;
                             }

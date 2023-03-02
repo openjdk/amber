@@ -5008,6 +5008,7 @@ public class Types {
     }
     // </editor-fold>
 
+    // <editor-fold defaultstate="collapsed" desc="Unconditionality">
     /** Check unconditionality between any combination of reference or primitive types.
      *
      *  Rules:
@@ -5054,6 +5055,7 @@ public class Types {
                         (source.hasTag(INT) && (target.hasTag(DOUBLE) || target.hasTag(LONG))) ||
                         (source.hasTag(FLOAT) && (target.hasTag(DOUBLE)))));
     }
+    // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Annotation support">
 
