@@ -227,7 +227,7 @@ public class TransPatterns extends TreeTranslator {
                 }
 
                 Type principalType = types.erasure(TreeInfo.primaryPatternType((pattern)));
-                 JCExpression resultExpression= (JCExpression) this.<JCTree>translate(pattern);
+                JCExpression resultExpression = (JCExpression) this.<JCTree>translate(pattern);
                 if (!tree.allowNull || !types.isSubtype(currentValue.type, principalType)) {
                     resultExpression =
                             makeBinary(Tag.AND,
@@ -325,7 +325,8 @@ public class TransPatterns extends TreeTranslator {
                 allowNull = false;
             } else {
                 nestedBinding = (JCBindingPattern) nestedPattern;
-                allowNull = true;
+                allowNull = types.isSubtype(componentType,
+                                            types.boxedTypeOrType(types.erasure(nestedBinding.type)));
             }
             JCMethodInvocation componentAccessor =
                     make.App(make.Select(convert(make.Ident(recordBinding), recordBinding.type), //TODO - cast needed????
@@ -781,6 +782,7 @@ public class TransPatterns extends TreeTranslator {
                                        "commonNestedExpression: " + commonNestedExpression +
                                        "commonNestedBinding: " + commonNestedBinding);
                     ListBuffer<JCCase> nestedCases = new ListBuffer<>();
+                    JCExpression lastGuard = null;
 
                     for(List<JCCase> accList = accummulator.toList(); accList.nonEmpty(); accList = accList.tail) {
                         var accummulated = accList.head;
@@ -804,8 +806,8 @@ public class TransPatterns extends TreeTranslator {
                         }
                         JCBindingPattern binding = (JCBindingPattern) instanceofCheck.pattern;
                         hasUnconditional =
-                                instanceofCheck.allowNull &&
-                                types.checkUnconditionallyExact(commonNestedExpression.type, types.erasure(binding.type)) &&
+                                (!types.erasure(binding.type).isPrimitive() ? instanceofCheck.allowNull :
+                                types.checkUnconditionallyExact(commonNestedExpression.type, types.erasure(binding.type))) &&
                                 accList.tail.isEmpty();
                         List<JCCaseLabel> newLabel;
                         if (hasUnconditional) {
@@ -816,13 +818,16 @@ public class TransPatterns extends TreeTranslator {
                         }
                         appendBreakIfNeeded(currentSwitch, accummulated);
                         nestedCases.add(make.Case(CaseKind.STATEMENT, newLabel, accummulated.stats, null));
+                        lastGuard = newGuard;
                     }
-                    if (!hasUnconditional) {
+                    if (lastGuard != null || !hasUnconditional) {
                         JCContinue continueSwitch = make.Continue(null);
                         continueSwitch.target = currentSwitch;
                         nestedCases.add(make.Case(CaseKind.STATEMENT,
-                                                  List.of(make.ConstantCaseLabel(makeNull()),
-                                                          make.DefaultCaseLabel()),
+                                                  hasUnconditional
+                                                          ? List.of(make.DefaultCaseLabel())
+                                                          : List.of(make.ConstantCaseLabel(makeNull()),
+                                                                    make.DefaultCaseLabel()),
                                                   List.of(continueSwitch),
                                                   null));
                     }
@@ -845,9 +850,11 @@ public class TransPatterns extends TreeTranslator {
         VarSymbol commonBinding = null;
         JCExpression commonNestedExpression = null;
         VarSymbol commonNestedBinding = null;
+        boolean previousNullable = false;
 
         for (List<JCCase> c = inputCases; c.nonEmpty(); c = c.tail) {
             VarSymbol currentBinding = null;
+            boolean currentNullable = false;
             JCExpression currentNestedExpression = null;
             VarSymbol currentNestedBinding = null;
 
@@ -857,11 +864,13 @@ public class TransPatterns extends TreeTranslator {
                     binOp.lhs instanceof JCInstanceOf instanceofCheck &&
                     instanceofCheck.pattern instanceof JCBindingPattern binding) {
                     currentBinding = ((JCBindingPattern) patternLabel.pat).var.sym;
+                    currentNullable = instanceofCheck.allowNull;
                     currentNestedExpression = instanceofCheck.expr;
                     currentNestedBinding = binding.var.sym;
                 } else if (patternLabel.guard instanceof JCInstanceOf instanceofCheck &&
                     instanceofCheck.pattern instanceof JCBindingPattern binding) {
                     currentBinding = ((JCBindingPattern) patternLabel.pat).var.sym;
+                    currentNullable = instanceofCheck.allowNull;
                     currentNestedExpression = instanceofCheck.expr;
                     currentNestedBinding = binding.var.sym;
                 }
@@ -877,6 +886,7 @@ public class TransPatterns extends TreeTranslator {
                 }
             } else if (currentBinding != null &&
                        commonBinding.type.tsym == currentBinding.type.tsym &&
+                       !previousNullable &&
                        new TreeDiffer(List.of(commonBinding), List.of(currentBinding))
                                .scan(commonNestedExpression, currentNestedExpression)) {
                 accummulator.add(c.head);
@@ -891,6 +901,7 @@ public class TransPatterns extends TreeTranslator {
                 commonNestedExpression = currentNestedExpression;
                 commonNestedBinding = currentNestedBinding;
             }
+            previousNullable = currentNullable;
         }
         resolveAccummulator.resolve(commonBinding, commonNestedExpression, commonNestedBinding);
         return result.toList();
