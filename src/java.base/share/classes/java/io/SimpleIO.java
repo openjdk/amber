@@ -31,7 +31,6 @@ import java.lang.invoke.MethodType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
@@ -39,22 +38,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * This class provides simple to use I/O methods for simple applications. Typical use
- * would include {@code import static java.io.SinmpleIO.*; } in declarations.
- * There are two groups of methods;
- * <p>
- * - Console I/O methods include
- * {@linkplain SimpleIO#input()},
- * {@linkplain SimpleIO#input(String)},
- * {@linkplain SimpleIO#print(Object...)},
- * {@linkplain SimpleIO#println(Object...)} and
- * {@linkplain SimpleIO#printLines(List<String>)}
- * <p>
- * - File I/O methods include
- * {@linkplain SimpleIO#read(String)},
- * {@linkplain SimpleIO#readLines(String)},
- * {@linkplain SimpleIO#write(String, String)} and
- * {@linkplain SimpleIO#writeLines(String, List<String>)}.
+ * This class provides simple to use console and file I/O methods for simple applications.
+ * For example:
+ * {@snippet lang="java":
+ * import static java.io.SimpleIO.*;
+ *
+ * public class Example {
+ *     public static void main(String[] args) {
+ *          println("Hello World!");
+ *     }
+ * }
+ * }
  * @since  21
  */
 public final class SimpleIO {
@@ -155,7 +149,17 @@ public final class SimpleIO {
     /**
      * Return a string of characters from input. Unlike other input methods, this method
      * supports editing and navigation of the input, as well as scrolling back through
-     * historic input.
+     * historic input. For example:
+     * {@snippet lang="java":
+     * print("Name>> ");
+     * var name = input(); // @highlight substring="input"
+     * println(name);
+     * }
+     * will interact with the console as:
+     * {@snippet lang="text":
+     * Name>> Jean
+     * Jean
+     * }
      *
      * @return a string of characters read in from input
      */
@@ -166,10 +170,20 @@ public final class SimpleIO {
     /**
      * Return a string of characters from input after issuing a prompt. Unlike other
      * input methods, this method supports editing and navigation of the input, as well
-     * as scrolling back through historic input.
+     * as scrolling back through historic input. For example:
+     * {@snippet lang="java":
+     * var name = input("Name>> "); // @highlight substring="input"
+     * println(name);
+     * }
+     * will interact with the console as:
+     * {@snippet lang="text":
+     * Name>> Jean
+     * Jean
+     * }
      *
      * @param prompt string contain prompt for input
      * @return a string of characters read in from input
+     * @throws NullPointerException if prompt is null
      */
     public static String input(String prompt) {
         Objects.requireNonNull(prompt, "prompt must not be null");
@@ -184,24 +198,47 @@ public final class SimpleIO {
         }
     }
 
+    private static final Object[] NULL_ARRAY = new Object[1];
+
     /**
-     * Printing values with single spacing to output stream.
+     * Single space print values to the output stream.
+     * For example:
+     * {@snippet lang="java":
+     * print("A", "B"); // @highlight substring="print"
+     * print("C", "D"); // @highlight substring="print"
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * A BC D
+     * }
      *
      * @param values values to be printed.
      */
     public static void print(Object... values) {
-        System.out.print(Stream.of(values)
+        System.out.print(Stream.of(values == null ? NULL_ARRAY : values)
                 .map(String::valueOf)
                 .collect(Collectors.joining(" ")));
     }
 
     /**
-     * Print values with single spacing followed by a newline to output stream.
+     * Single space print values to the output stream followed by the
+     * platform line terminator.
+     * For example:
+     * {@snippet lang="java":
+     * println("A", "B"); // @highlight substring="println"
+     * println("C", "D"); // @highlight substring="println"
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * A B
+     * C D
+     *
+     * }
      *
      * @param values values to be printed.
      */
     public static void println(Object... values) {
-        System.out.println(Stream.of(values)
+        System.out.println(Stream.of(values == null ? NULL_ARRAY : values)
                 .map(String::valueOf)
                 .collect(Collectors.joining(" ")));
     }
@@ -209,8 +246,21 @@ public final class SimpleIO {
     /**
      * Print list of lines to output stream. Each line will be printed and
      * followed by a line terminator.
+     * For example:
+     * {@snippet lang="java":
+     * var fruit = List.of("apple", "pear", "orange");
+     * printLines(fruit); // @highlight substring="printLines"
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * apple
+     * pear
+     * orange
+     *
+     * }
      *
      * @param lines list of strings
+     * @throws NullPointerException if lines is null
      */
     public static void printLines(List<String> lines) {
         Objects.requireNonNull(lines, "lines must not be null");
@@ -218,47 +268,205 @@ public final class SimpleIO {
     }
 
     /**
-     * Reading the contents from the specified file as a string.
+     * The contents of the file {@code filename} are read as a string.
+     * For example:
+     * {@snippet lang="java":
+     * var text = """
+     *    "Hope" is the thing with feathers
+     *    That perches in the soul
+     *    And sings the tune without the words
+     *    And never stops - at all
+     *    """;
+     * write("data.txt", text);
+     * var data = read("data.txt"); // @highlight substring="read"
+     * print(data);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * "Hope" is the thing with feathers
+     * That perches in the soul
+     * And sings the tune without the words
+     * And never stops - at all
      *
-     * @param filename file name or path string of file to be read
+     * }
+     *
+     * @param filename  file name of file to be read
      * @return Content read from a file
      * @throws RuntimeException wrapping an IOException if an io error occurs.
+     *
+     * @implSpec Line terminators are normalized to '\n'.
      */
     public static String read(String filename) {
         Objects.requireNonNull(filename, "filename must not be null");
-        return readLines(filename).stream()
+        return read(Path.of(filename));
+    }
+
+    /**
+     * The contents of the file at {@code path} are read as a string.
+     * For example:
+     * {@snippet lang="java":
+     * var text = """
+     *    "Hope" is the thing with feathers
+     *    That perches in the soul
+     *    And sings the tune without the words
+     *    And never stops - at all
+     *    """;
+     * var path = Path.of("data.txt");
+     * write(path, text);
+     * var data = read(path); // @highlight substring="read"
+     * print(data);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * "Hope" is the thing with feathers
+     * That perches in the soul
+     * And sings the tune without the words
+     * And never stops - at all
+     *
+     * }
+     *
+     * @param path  path of file to be read
+     * @return Content read from a file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     *
+     * @implSpec Line terminators are normalized to '\n'.
+     */
+    public static String read(Path path) {
+        Objects.requireNonNull(path, "path must not be null");
+        return readLines(path).stream()
                 .collect(Collectors.joining("\n", "", "\n"));
     }
 
     /**
-     * Reading all the lines from the specified file as a list of strings.
+     * The contents of the file {@code filename} are read as a list of strings.
+     * For example:
+     * {@snippet lang="java":
+     * var fruit = List.of("apple", "pear", "orange");
+     * var path = Path.of("data.txt");
+     * writelines("data.txt", fruit);
+     * var lines = readLines("data.txt"); // @highlight substring="readLines"
+     * printlines(lines);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * apple
+     * pear
+     * orange
      *
-     * @param filename file name or path string of file to be read
+     * }
+     *
+     * @param filename  file name of file to be read
      * @return list of lines read from a file
      * @throws RuntimeException wrapping an IOException if an io error occurs.
+     *
+     * @implNote The result represents the content split at line terminators.
      */
     public static List<String> readLines(String filename) {
         Objects.requireNonNull(filename, "filename must not be null");
-        Path path = Paths.get(filename);
+        return readLines(Path.of(filename));
+    }
 
+    /**
+     * The contents of the file at {@code path} are read as a list of strings.
+     * For example:
+     * {@snippet lang="java":
+     * var path = Path.of("data.txt");
+     * var supply = List.of("apple", "pear", "orange");
+     * writelines(path, supply);
+     * var lines = readLines(path); // @highlight substring="readLines"
+     * printlines(lines);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * apple
+     * pear
+     * orange
+     *
+     * }
+     *
+     * @param path  path of file to be read
+     * @return list of lines read from a file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     *
+     * @implNote The result represents the content split at line terminators.
+     */
+    public static List<String> readLines(Path path) {
+        Objects.requireNonNull(path, "filename must not be null");
         try {
             return Files.readAllLines(path, StandardCharsets.UTF_8);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
-
     /**
-     * Write a string as content to a file.
+     * The contents of the file at {@code path} are read as a string.
+     * For example:
+     * {@snippet lang="java":
+     * var text = """
+     *    "Hope" is the thing with feathers
+     *    That perches in the soul
+     *    And sings the tune without the words
+     *    And never stops - at all
+     *    """;
+     * write("data.txt", text); // @highlight substring="write"
+     * var data = read("data.txt");
+     * print(data);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * "Hope" is the thing with feathers
+     * That perches in the soul
+     * And sings the tune without the words
+     * And never stops - at all
      *
-     * @param filename file name or path string of file to be written
+     * }
+     *
+     * @implSpec Line terminators are normalized the platform line separator.
+     *
+     * @param filename  file name string of file to be written
      * @param content  string content of the file
      * @throws RuntimeException wrapping an IOException if an io error occurs.
      */
     public static void write(String filename, String content) {
         Objects.requireNonNull(filename, "filename must not be null");
         Objects.requireNonNull(content, "content must not be null");
-        try (PrintWriter out = new PrintWriter(filename)) {
+        write(Path.of(filename), content);
+    }
+
+    /**
+     * The contents of the file at {@code path} are read as a string.
+     * For example:
+     * {@snippet lang="java":
+     * var text = """
+     *    "Hope" is the thing with feathers
+     *    That perches in the soul
+     *    And sings the tune without the words
+     *    And never stops - at all
+     *    """;
+     * var path = Path.of("data.txt");
+     * write(path, text); // @highlight substring="write"
+     * var data = read(path);
+     * print(data);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * "Hope" is the thing with feathers
+     * That perches in the soul
+     * And sings the tune without the words
+     * And never stops - at all
+     *
+     * }
+     *
+     * @implSpec Line terminators are normalized the platform line separator.
+     *
+     * @param path  path of file to be written
+     * @param content  string content of the file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     */
+    public static void write(Path path, String content) {
+        Objects.requireNonNull(path, "path must not be null");
+        Objects.requireNonNull(content, "content must not be null");
+        try (PrintWriter out = new PrintWriter(path.toFile())) {
             content.lines().forEach(out::println);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
@@ -266,20 +474,66 @@ public final class SimpleIO {
     }
 
     /**
-     * Write a list of strings to a file. Each line will be followed by
-     * a line terminator.
+     * Write a list of strings as the content of the file {@code filename}.
+     * For example:
+     * {@snippet lang="java":
+     * var supply = List.of("apple", "pear", "orange");
+     * writeLines("data.txt", supply); // @highlight substring="writeLines"
+     * var lines = readLines("data.txt");
+     * printlines(lines);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * apple
+     * pear
+     * orange
      *
-     * @param filename file name or path string of file to be written
+     * }
+     *
+     * @implSpec Each line will be followed by the platform line separator.
+     *
+     * @param filename  file name string of file to be written
      * @param lines list of lines to be written to the file
      * @throws RuntimeException wrapping an IOException if an io error occurs.
      */
     public static void writeLines(String filename, List<String> lines) {
         Objects.requireNonNull(filename, "filename must not be null");
         Objects.requireNonNull(lines, "lines must not be null");
-        try (PrintWriter out = new PrintWriter(filename)) {
+        writeLines(Path.of(filename), lines);
+    }
+
+    /**
+     * Write a list of strings as the content of the file at {@code path}.
+     * For example:
+     * {@snippet lang="java":
+     * var supply = List.of("apple", "pear", "orange");
+     * var path = Path.of("data.txt");
+     * writeLines(path, supply); // @highlight substring="writeLines"
+     * var lines = readLines(path);
+     * printlines(lines);
+     * }
+     * will print on the output stream as:
+     * {@snippet lang="text":
+     * apple
+     * pear
+     * orange
+     *
+     * }
+     *
+     * @implSpec Each line will be followed by the platform line separator.
+     *
+     * @param path  file name string of file to be written
+     * @param lines  list of lines to be written to the file
+     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     */
+    public static void writeLines(Path path, List<String> lines) {
+        Objects.requireNonNull(path, "path must not be null");
+        Objects.requireNonNull(lines, "lines must not be null");
+        try (PrintWriter out = new PrintWriter(path.toFile())) {
             lines.forEach(out::println);
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
+
 }
