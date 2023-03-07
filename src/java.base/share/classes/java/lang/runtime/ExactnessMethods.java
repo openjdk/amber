@@ -35,7 +35,7 @@ package java.lang.runtime;
 public class ExactnessMethods {
 
     private ExactnessMethods() { }
-    
+
     /** Exactness method from byte to char
      *
      * @param n value
@@ -51,7 +51,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean short_byte(short n)  {return n == (short)(byte)(n);}
-    
+
     /** Exactness method from short to char
      *
      * @param n value
@@ -67,7 +67,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean char_byte(char n)    {return n == (byte)(n);}
-    
+
     /** Exactness method from char to short
      *
      * @param n value
@@ -83,7 +83,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean int_byte(int n)      {return n == (int)(byte)(n);}
-    
+
     /** Exactness method from int to short
      *
      * @param n value
@@ -91,7 +91,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean int_short(int n)     {return n == (int)(short)(n);}
-    
+
     /** Exactness method from int to char
      *
      * @param n value
@@ -122,7 +122,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean long_byte(long n)    {return n == (long)(byte)(n);}
-    
+
     /** Exactness method from long to short
      *
      * @param n value
@@ -130,7 +130,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean long_short(long n)   {return n == (long)(short)(n);}
-    
+
     /** Exactness method from long to char
      *
      * @param n value
@@ -138,7 +138,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean long_char(long n)    {return n == (char)(n);}
-    
+
     /** Exactness method from long to int
      *
      * @param n value
@@ -161,7 +161,7 @@ public class ExactnessMethods {
                 (64 - (Long.numberOfLeadingZeros(n) +
                         Long.numberOfTrailingZeros(n))) ;
     }
-    
+
     /** Exactness method from long to double
      *
      * @param n value
@@ -184,7 +184,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean float_byte(float n)  {return Float.compare(n, (float)(byte)(n)) == 0;}
-    
+
     /** Exactness method from float to short
      *
      * @param n value
@@ -192,7 +192,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean float_short(float n) {return Float.compare(n, (float)(short)(n)) == 0;}
-    
+
     /** Exactness method from float to char
      *
      * @param n value
@@ -200,7 +200,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean float_char(float n)  {return Float.compare(n, (float)(char)(n)) == 0;}
-    
+
     /** Exactness method from float to int
      *
      * @param n value
@@ -210,7 +210,7 @@ public class ExactnessMethods {
     public static boolean float_int(float n) {
         return Double.compare((double)n, (double)((int)n)) == 0;
     }
-    
+
     /** Exactness method from float to long
      *
      * @param n value
@@ -232,7 +232,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean double_byte(double n) {return Double.compare(n, (double)(byte)(n)) == 0;}
-    
+
     /** Exactness method from double to short
      *
      * @param n value
@@ -240,7 +240,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean double_short(double n){return Double.compare(n, (double)(short)(n)) == 0;}
-    
+
     /** Exactness method from double to char
      *
      * @param n value
@@ -248,7 +248,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean double_char(double n) {return Double.compare(n, (double)(char)(n)) == 0;}
-    
+
     /** Exactness method from double to int
      *
      * @param n value
@@ -256,7 +256,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean double_int(double n)  {return Double.compare(n, (double)(int)(n)) == 0;}
-    
+
     /** Exactness method from double to long
      *
      * @param n value
@@ -270,7 +270,7 @@ public class ExactnessMethods {
                 Double.compare(n, Double.POSITIVE_INFINITY) == 0) return false;
         return n == (long)n && n != (double)Long.MAX_VALUE + 1;
     }
-    
+
     /** Exactness method from double to float
      *
      * @param n value
