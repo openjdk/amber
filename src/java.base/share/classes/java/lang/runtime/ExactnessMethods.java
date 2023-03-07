@@ -59,7 +59,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean short_char(short n)  {return n == (char)(n);}
-    
+
     /** Exactness method from char to byte
      *
      * @param n value
