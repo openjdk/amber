@@ -106,14 +106,7 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean int_float(int n) {
-        if (n == Integer.MIN_VALUE)
-            return true;
-        n = Math.abs(n);
-        return Float.PRECISION >= // 24
-                (32 - (Integer.numberOfLeadingZeros(n) +
-                        Integer.numberOfTrailingZeros(n))) ;
-    }
+    public static boolean int_float(int n) { return n == (int)(float)n && n != Integer.MAX_VALUE; }
 
     /** Exactness method from long to byte
      *
@@ -154,12 +147,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean long_float(long n) {
-        if (n == Long.MIN_VALUE)
-            return true;
-        n = Math.abs(n);
-        return Float.PRECISION >= // 24
-                (64 - (Long.numberOfLeadingZeros(n) +
-                        Long.numberOfTrailingZeros(n))) ;
+        return n == (long)(float)n && n != Long.MAX_VALUE;
     }
 
     /** Exactness method from long to double
@@ -169,12 +157,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean long_double(long n) {
-        if (n == Long.MIN_VALUE)
-            return true;
-        n = Math.abs(n);
-        return Double.PRECISION >= // 53
-                (64 - (Long.numberOfLeadingZeros(n) +
-                        Long.numberOfTrailingZeros(n))) ;
+        return n == (long)(double)n && n != Long.MAX_VALUE;
     }
 
     /** Exactness method from float to byte
