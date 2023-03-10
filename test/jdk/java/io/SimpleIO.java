@@ -181,19 +181,19 @@ And never stops - at all
 input NullPointerException thrown
 printLines null list NullPointerException thrown
 read null filename NullPointerException thrown
-read bad filename RuntimeException thrown
-read bad filename RuntimeException thrown
+read bad filename UncheckedIOException thrown
+read bad filename UncheckedIOException thrown
 read null path NullPointerException thrown
 write null filename NullPointerException thrown
 write filename null content NullPointerException thrown
-write bad filename RuntimeException thrown
-write bad filename RuntimeException thrown
+write bad filename UncheckedIOException thrown
+write bad filename UncheckedIOException thrown
 write null path NullPointerException thrown
 write path null content NullPointerException thrown
 writeLines null filename NullPointerException thrown
 writeLines filename null lines NullPointerException thrown
-writeLines bad filename RuntimeException thrown
-writeLines bad filename RuntimeException thrown
+writeLines bad filename UncheckedIOException thrown
+writeLines bad filename UncheckedIOException thrown
 writeLines null path NullPointerException thrown
 writeLines path null lines NullPointerException thrown
 """;

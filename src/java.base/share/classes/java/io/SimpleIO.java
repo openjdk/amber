@@ -292,7 +292,7 @@ public final class SimpleIO {
      *
      * @param filename  file name of file to be read
      * @return Content read from a file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      *
      * @implSpec Line terminators are normalized to '\n'.
      */
@@ -327,7 +327,7 @@ public final class SimpleIO {
      *
      * @param path  path of file to be read
      * @return Content read from a file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      *
      * @implSpec Line terminators are normalized to '\n'.
      */
@@ -357,7 +357,7 @@ public final class SimpleIO {
      *
      * @param filename  file name of file to be read
      * @return list of lines read from a file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      *
      * @implNote The result represents the content split at line terminators.
      */
@@ -386,7 +386,7 @@ public final class SimpleIO {
      *
      * @param path  path of file to be read
      * @return list of lines read from a file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      *
      * @implNote The result represents the content split at line terminators.
      */
@@ -395,7 +395,7 @@ public final class SimpleIO {
         try {
             return Files.readAllLines(path, StandardCharsets.UTF_8);
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
     /**
@@ -425,7 +425,7 @@ public final class SimpleIO {
      *
      * @param filename  file name string of file to be written
      * @param content  string content of the file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      */
     public static void write(String filename, String content) {
         Objects.requireNonNull(filename, "filename must not be null");
@@ -461,7 +461,7 @@ public final class SimpleIO {
      *
      * @param path  path of file to be written
      * @param content  string content of the file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      */
     public static void write(Path path, String content) {
         Objects.requireNonNull(path, "path must not be null");
@@ -469,7 +469,7 @@ public final class SimpleIO {
         try (PrintWriter out = new PrintWriter(path.toFile())) {
             content.lines().forEach(out::println);
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
@@ -494,7 +494,7 @@ public final class SimpleIO {
      *
      * @param filename  file name string of file to be written
      * @param lines list of lines to be written to the file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      */
     public static void writeLines(String filename, List<String> lines) {
         Objects.requireNonNull(filename, "filename must not be null");
@@ -524,7 +524,7 @@ public final class SimpleIO {
      *
      * @param path  file name string of file to be written
      * @param lines  list of lines to be written to the file
-     * @throws RuntimeException wrapping an IOException if an io error occurs.
+     * @throws UncheckedIOException wrapping an IOException if an io error occurs.
      */
     public static void writeLines(Path path, List<String> lines) {
         Objects.requireNonNull(path, "path must not be null");
@@ -532,7 +532,7 @@ public final class SimpleIO {
         try (PrintWriter out = new PrintWriter(path.toFile())) {
             lines.forEach(out::println);
         } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            throw new UncheckedIOException(ex);
         }
     }
 
