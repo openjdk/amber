@@ -166,7 +166,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean float_byte(float n)  {return Float.compare(n, (float)(byte)(n)) == 0;}
+    public static boolean float_byte(float n)  {
+        return n == (float)(byte)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from float to short
      *
@@ -174,7 +176,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean float_short(float n) {return Float.compare(n, (float)(short)(n)) == 0;}
+    public static boolean float_short(float n) {
+        return n == (float)(short)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from float to char
      *
@@ -182,7 +186,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean float_char(float n)  {return Float.compare(n, (float)(char)(n)) == 0;}
+    public static boolean float_char(float n)  {
+        return n == (float)(char)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from float to int
      *
@@ -191,7 +197,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean float_int(float n) {
-        return Double.compare((double)n, (double)((int)n)) == 0;
+        return n == (float)(int)n && n != 0x1p31f && !isNegativeZero(n);
     }
 
     /** Exactness method from float to long
@@ -201,11 +207,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean float_long(float n) {
-        if (Float.compare(n, -0.0f) == 0 ||
-                Float.compare(n, Float.NaN) == 0 ||
-                Float.compare(n, Float.NEGATIVE_INFINITY) == 0 ||
-                Float.compare(n, Float.POSITIVE_INFINITY) == 0) return false;
-        return n == (long)n && n != (float)Long.MAX_VALUE + 1;
+        return n == (float)(long)n && n != 0x1p63f && !isNegativeZero(n);
     }
 
     /** Exactness method from double to byte
@@ -214,7 +216,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean double_byte(double n) {return Double.compare(n, (double)(byte)(n)) == 0;}
+    public static boolean double_byte(double n) {
+        return n == (double)(byte)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from double to short
      *
@@ -222,7 +226,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean double_short(double n){return Double.compare(n, (double)(short)(n)) == 0;}
+    public static boolean double_short(double n){
+        return n == (double)(short)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from double to char
      *
@@ -230,7 +236,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean double_char(double n) {return Double.compare(n, (double)(char)(n)) == 0;}
+    public static boolean double_char(double n) {
+        return n == (double)(char)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from double to int
      *
@@ -238,7 +246,9 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean double_int(double n)  {return Double.compare(n, (double)(int)(n)) == 0;}
+    public static boolean double_int(double n)  {
+        return n == (double)(int)n && !isNegativeZero(n);
+    }
 
     /** Exactness method from double to long
      *
@@ -247,11 +257,7 @@ public class ExactnessMethods {
      *
      * */
     public static boolean double_long(double n) {
-        if (Double.compare(n, -0.0f) == 0 ||
-                Double.compare(n, Double.NaN) == 0 ||
-                Double.compare(n, Double.NEGATIVE_INFINITY) == 0 ||
-                Double.compare(n, Double.POSITIVE_INFINITY) == 0) return false;
-        return n == (long)n && n != (double)Long.MAX_VALUE + 1;
+        return n == (double)(long)n && n != 0x1p63 && !isNegativeZero(n);
     }
 
     /** Exactness method from double to float
@@ -260,5 +266,15 @@ public class ExactnessMethods {
      * @return  true if the passed value can be converted exactly to the target type
      *
      * */
-    public static boolean double_float(double n) {return Double.compare(n, (double)(float)(n)) == 0;}
+    public static boolean double_float(double n) {
+        return n == (double)(float)n || n != n;
+    }
+
+    private static boolean isNegativeZero(float n) {
+        return Float.floatToRawIntBits(n) == Integer.MIN_VALUE;
+    }
+
+    private static boolean isNegativeZero(double n) {
+        return Double.doubleToRawLongBits(n) == Long.MIN_VALUE;
+    }
 }
