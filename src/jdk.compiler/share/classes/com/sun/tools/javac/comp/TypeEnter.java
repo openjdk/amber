@@ -120,6 +120,7 @@ public class TypeEnter implements Completer {
         return instance;
     }
 
+    @SuppressWarnings("this-escape")
     protected TypeEnter(Context context) {
         context.put(typeEnterKey, this);
         names = Names.instance(context);
@@ -358,11 +359,13 @@ public class TypeEnter implements Completer {
                     log.error(Errors.NoJavaLang);
                     throw new Abort();
                 }
+
                 importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false, false),
                         javaLang, env);
                 if (tree.getTopLevelAnonymousClass() != null) {
                     topLevelAnonymousClassImports();
                 }
+
                 JCModuleDecl decl = tree.getModuleDecl();
 
                 // Process the package def and all import clauses.
@@ -1407,7 +1410,7 @@ public class TypeEnter implements Completer {
 
         @Override
         public List<Name> superArgs() {
-            List<JCVariableDecl> params = make.Params(constructorType().getParameterTypes(), constructorSymbol());
+            List<JCVariableDecl> params = make.Params(constructorSymbol());
             if (!enclosingType().hasTag(NONE)) {
                 params = params.tail;
             }

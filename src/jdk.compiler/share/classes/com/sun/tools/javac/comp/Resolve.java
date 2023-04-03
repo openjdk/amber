@@ -113,6 +113,7 @@ public class Resolve {
 
     WriteableScope polymorphicSignatureScope;
 
+    @SuppressWarnings("this-escape")
     protected Resolve(Context context) {
         context.put(resolveKey, this);
         syms = Symtab.instance(context);
@@ -473,7 +474,7 @@ public class Resolve {
          *  and the selection takes place in given class?
          *  @param sym     The symbol with protected access
          *  @param c       The class where the access takes place
-         *  @site          The type of the qualifier
+         *  @param site    The type of the qualifier
          */
         private
         boolean isProtectedAccessible(Symbol sym, ClassSymbol c, Type site) {
@@ -3304,7 +3305,7 @@ public class Resolve {
 
     /**
      * This abstract class embodies the logic that converts one (bound lookup) or two (unbound lookup)
-     * {@code ReferenceLookupResult} objects into a (@code Symbol), which is then regarded as the
+     * {@code ReferenceLookupResult} objects into a {@code Symbol}, which is then regarded as the
      * result of method reference resolution.
      */
     abstract class ReferenceChooser {
@@ -4172,6 +4173,8 @@ public class Resolve {
 
             Pair<Symbol, JCDiagnostic> c = errCandidate();
             Symbol ws = c.fst.asMemberOf(site, types);
+            UnaryOperator<JCDiagnostic> rewriter = compactMethodDiags ?
+              d -> MethodResolutionDiagHelper.rewrite(diags, pos, log.currentSource(), dkind, c.snd) : null;
 
             // If the problem is due to type arguments, then the method parameters aren't relevant,
             // so use the error message that omits them to avoid confusion.
@@ -4180,18 +4183,25 @@ public class Resolve {
                 case "compiler.misc.explicit.param.do.not.conform.to.bounds":
                     return diags.create(dkind, log.currentSource(), pos,
                               "cant.apply.symbol.noargs",
-                              compactMethodDiags ?
-                                      d -> MethodResolutionDiagHelper.rewrite(diags, pos, log.currentSource(), dkind, c.snd) : null,
+                              rewriter,
                               kindName(ws),
                               ws.name == names.init ? ws.owner.name : ws.name,
                               kindName(ws.owner),
                               ws.owner.type,
                               c.snd);
                 default:
+                    // Avoid saying "constructor Array in class Array"
+                    if (ws.owner == syms.arrayClass && ws.name == names.init) {
+                        return diags.create(dkind, log.currentSource(), pos,
+                                  "cant.apply.array.ctor",
+                                  rewriter,
+                                  methodArguments(ws.type.getParameterTypes()),
+                                  methodArguments(argtypes),
+                                  c.snd);
+                    }
                     return diags.create(dkind, log.currentSource(), pos,
                               "cant.apply.symbol",
-                              compactMethodDiags ?
-                                      d -> MethodResolutionDiagHelper.rewrite(diags, pos, log.currentSource(), dkind, c.snd) : null,
+                              rewriter,
                               kindName(ws),
                               ws.name == names.init ? ws.owner.name : ws.name,
                               methodArguments(ws.type.getParameterTypes()),
