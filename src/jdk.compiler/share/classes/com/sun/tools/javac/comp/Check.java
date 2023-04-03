@@ -4287,9 +4287,8 @@ public class Check {
     // Check that packages imported are in scope (JLS 7.4.3, 6.3, 6.5.3.1, 6.5.3.2)
     public void checkImportedPackagesObservable(final JCCompilationUnit toplevel) {
         OUTER: for (JCImport imp : toplevel.getImports()) {
-            if (!imp.staticImport && !imp.moduleImport && TreeInfo.name(imp.qualid) == names.asterisk
-                && imp.qualid instanceof JCFieldAccess impQualID) {
-                TypeSymbol tsym = impQualID.selected.type.tsym;
+            if (!imp.staticImport && !imp.moduleImport && TreeInfo.name(imp.qualid) == names.asterisk) {
+                TypeSymbol tsym = imp.qualid.selected.type.tsym;
                 if (tsym.kind == PCK && tsym.members().isEmpty() &&
                     !(Feature.IMPORT_ON_DEMAND_OBSERVABLE_PACKAGES.allowedInSource(source) && tsym.exists())) {
                     log.error(DiagnosticFlag.RESOLVE_ERROR, imp.pos, Errors.DoesntExist(tsym));

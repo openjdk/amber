@@ -327,7 +327,7 @@ public class TypeEnter implements Completer {
             JCExpression ioType = make.QualIdent(syms.ioImportsType.tsym);
             JCImport imp = make.Import(make.Select(ioType, names.asterisk), true, false);
             doImport(imp);
-            imp = make.Import(make.QualIdent(syms.java_base), false, true);
+            imp = make.Import((JCFieldAccess)make.QualIdent(syms.java_base), false, true);
             doImport(imp);
         }
 
@@ -360,7 +360,7 @@ public class TypeEnter implements Completer {
                     throw new Abort();
                 }
 
-                importAll(make.at(tree.pos()).Import(make.QualIdent(javaLang), false, false),
+                importAll(make.at(tree.pos()).Import((JCFieldAccess)make.QualIdent(javaLang), false, false),
                         javaLang, env);
                 if (tree.getTopLevelAnonymousClass() != null) {
                     topLevelAnonymousClassImports();
