@@ -38,14 +38,57 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * This class provides simple to use console and file I/O methods for simple applications.
+ * This class provides easy to use console and file I/O methods for simple applications.
+ * <p>
+ * The console I/O methods allow interaction with the user through the keyboard and console/screen.
+ * The method {@link #input(String)} accepts input from the keyboard
+ * while allowing the user to edit the input with arrows and backspaces, as well as
+ * allowing the user to scroll through previously entered input. The methods {@link #inputInt(String)},
+ * {@link #inputLong(String)}, {@link #inputFloat(String)} and {@link #inputDouble(String)}
+ * can be used to input primitive values. The methods {@link #print(Object...)} and
+ * {@link #println(Object...)} allow developers to display data directly to the console/screen.
  * For example:
  * {@snippet lang="java":
  * import static java.io.SimpleIO.*;
  *
- * public class Example {
+ * public class Example1 {
  *     public static void main(String[] args) {
- *          println("Hello World!");
+ *         String name = input("Enter name>> ");
+ *         println("Hello", name);
+ *     }
+ * }
+ * }
+ * The file I/O method methods are designed to work with UTF-8 text files. The developer can
+ * specify the file by either a simple file name string or by using a {@link Path}.
+ * The developer also has the choice of working with the whole content as a string or
+ * as a string list representing lines of content.
+ * <p>
+ * File I/O is futher simplifed by throwing {@link UncheckedIOException} for caught
+ * {@link IOException IOExceptions}. This means that the developer does not require
+ * wrapping simple I/O invocations in try blocks. For example:
+ * {@snippet lang="java":
+ * import static java.io.SimpleIO.*;
+ *
+ * public class Example2 {
+ *     public static void main(String[] args) {
+ *         String content = read("original.txt");
+ *         write("copy.txt", content);
+ *     }
+ * }
+ * }
+ * If the developer chooses to handle exceptions they can add the try block to catch
+ * the {@link UncheckedIOException}. For example:
+ * {@snippet lang="java":
+ * import static java.io.SimpleIO.*;
+ *
+ * public class Example3 {
+ *     public static void main(String[] args) {
+ *         try {
+ *           String content = read("original.txt");
+ *           write("copy.txt", content);
+ *         } catch (UncheckedIOException ex) {
+ *              println("File not copied");
+ *         }
  *     }
  * }
  * }
@@ -147,27 +190,6 @@ public final class SimpleIO {
     }
 
     /**
-     * Return a string of characters from input. Unlike other input methods, this method
-     * supports editing and navigation of the input, as well as scrolling back through
-     * historic input. For example:
-     * {@snippet lang="java":
-     * print("Name>> ");
-     * var name = input(); // @highlight substring="input"
-     * println(name);
-     * }
-     * will interact with the console as:
-     * {@snippet lang="text":
-     * Name>> Jean
-     * Jean
-     * }
-     *
-     * @return a string of characters read in from input
-     */
-    public static String input() {
-        return input("");
-    }
-
-    /**
      * Return a string of characters from input after issuing a prompt. Unlike other
      * input methods, this method supports editing and navigation of the input, as well
      * as scrolling back through historic input. For example:
@@ -181,8 +203,8 @@ public final class SimpleIO {
      * Jean
      * }
      *
-     * @param prompt string contain prompt for input
-     * @return a string of characters read in from input
+     * @param prompt string contain prompt for input, may be the empty string
+     * @return a string of characters read in from input or empty string if user aborts input
      * @throws NullPointerException if prompt is null
      */
     public static String input(String prompt) {
@@ -196,6 +218,54 @@ public final class SimpleIO {
             Scanner scanner = new Scanner(System.in);
             return scanner.hasNext() ? scanner.nextLine() : "";
         }
+    }
+
+    /**
+     * Return an int value from input after issuing a prompt. This method
+     * uses {@link #input} to request input.
+     *
+     * @param prompt string contain prompt for input, may be the empty string
+     * @return int value from input
+     * @throws NumberFormatException if the input  does not contain a parsable {@code int}.
+     */
+    public static int inputInt(String prompt) throws NumberFormatException {
+        return Integer.parseInt(input(prompt).strip(), 10);
+    }
+
+    /**
+     * Return a long value from input after issuing a prompt. This method
+     * uses {@link #input} to request input.
+     *
+     * @param prompt string contain prompt for input, may be the empty string
+     * @return long value from input
+     * @throws NumberFormatException if the input  does not contain a parsable {@code long}.
+     */
+    public static long inputLong(String prompt) throws NumberFormatException {
+        return Long.parseLong(input(prompt).strip(), 10);
+    }
+
+    /**
+     * Return a float value from input after issuing a prompt. This method
+     * uses {@link #input} to request input.
+     *
+     * @param prompt string contain prompt for input, may be the empty string
+     * @return float value from input
+     * @throws NumberFormatException if the input  does not contain a parsable {@code float}.
+     */
+    public static float inputFloat(String prompt) throws NumberFormatException {
+        return Float.parseFloat(input(prompt).strip());
+    }
+
+    /**
+     * Return a double value from input after issuing a prompt. This method
+     * uses {@link #input} to request input.
+     *
+     * @param prompt string contain prompt for input, may be the empty string
+     * @return double value from input
+     * @throws NumberFormatException if the input  does not contain a parsable {@code double}.
+     */
+    public static double inputDouble(String prompt) throws NumberFormatException {
+        return Double.parseDouble(input(prompt).strip());
     }
 
     private static final Object[] NULL_ARRAY = new Object[1];
