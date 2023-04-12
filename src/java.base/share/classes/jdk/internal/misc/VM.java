@@ -540,7 +540,13 @@ public class VM {
         MethodType withArgsMT = MethodType.methodType(void.class, String[].class);
         MethodType noArgsMT = MethodType.methodType(void.class);
         Method mainMethod = findMainMethod(mainClass, true, true, name, withArgsMT);
-        if (mainMethod != null) return mainMethod;
+        if (mainMethod != null) {
+            if (mainMethod.getDeclaringClass() != mainClass) {
+                System.err.println("WARNING: static main in super class will be deprecated.");
+            }
+
+            return mainMethod;
+        }
 
         if (!Runtime.version().pre().orElse("").equals("ea")) {
             String[] args = getRuntimeArguments();
