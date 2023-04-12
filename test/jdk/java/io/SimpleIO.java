@@ -49,8 +49,58 @@ public class SimpleIO {
 
         provideInput("Pelham");
         print("Address >> ");
-        String i2 = input();
+        String i2 = input("");
         println(2, i2);
+    }
+
+    static void testPrimitiveInput() {
+        provideInput("123");
+        int i = inputInt("");
+        println(i);
+
+        provideInput("12345678901234567");
+        long l = inputLong("");
+        println(l);
+
+        provideInput("1.3333333333");
+        float f = inputFloat("");
+        println(f);
+
+        provideInput("1.3333333333");
+        double d = inputDouble("");
+        println(d);
+
+        try {
+            provideInput("xyz");
+            i = inputInt("");
+            throw new RuntimeException("inputInt NumberFormatException not thrown");
+        } catch (NumberFormatException ex) {
+            // fine
+        }
+
+        try {
+            provideInput("xyz");
+            l = inputLong("");
+            throw new RuntimeException("inputLong NumberFormatException not thrown");
+        } catch (NumberFormatException ex) {
+            // fine
+        }
+
+        try {
+            provideInput("xyz");
+            f = inputFloat("");
+            throw new RuntimeException("inputFloat NumberFormatException not thrown");
+        } catch (NumberFormatException ex) {
+            // fine
+        }
+
+        try {
+            provideInput("xyz");
+            d = inputDouble("");
+            throw new RuntimeException("inputDouble NumberFormatException not thrown");
+        } catch (NumberFormatException ex) {
+            // fine
+        }
     }
 
     static void testPrint() {
@@ -141,23 +191,29 @@ public class SimpleIO {
         testThrown("writeLines path null lines", t -> writeLines(Path.of("data4.txt"), null));
     }
 
-    public static void main(String[] args) throws IOException {
-        testInput();
+    static boolean isJLinePresent() {
+        try {
+            Class<?> lrClass = Class.forName("jdk.internal.org.jline.reader.LineReader",
+                    false, ClassLoader.getSystemClassLoader());
+            return lrClass != null;
 
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+    }
 
-        PrintStream out = System.out;
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        PrintStream ps = new PrintStream(baos, true, UTF_8);
-        System.setOut(ps);
+    static final String INPUT_EXPECTED = """
+Name >>
+1 Joan
+Address >>
+2 Pelham
+124
+12345678901234567
+1.33334
+1.3333333333
+""";
 
-        testPrint();
-        testPrintln();
-        testPrintLines();
-        testReadWriteFilename();
-        testReadWritePath();
-        testForExceptions();
-
-        String expected = """
+    static final String EXPECTED = """
 Hello Joan
 null1 2 3 4 5.7 8.9 a true[a, b, c]
 Hello\s
@@ -197,6 +253,27 @@ writeLines bad filename UncheckedIOException thrown
 writeLines null path NullPointerException thrown
 writeLines path null lines NullPointerException thrown
 """;
+
+    public static void main(String[] args) throws IOException {
+        String expected = EXPECTED;
+        PrintStream out = System.out;
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream ps = new PrintStream(baos, true, UTF_8);
+        System.setOut(ps);
+
+        if (!isJLinePresent()) {
+            expected = INPUT_EXPECTED + EXPECTED;
+            testInput();
+            testPrimitiveInput();
+        }
+
+        testPrint();
+        testPrintln();
+        testPrintLines();
+        testReadWriteFilename();
+        testReadWritePath();
+        testForExceptions();
+
         String output = baos.toString(UTF_8);
 
         if (!expected.strip().equals(output.strip())) {
