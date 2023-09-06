@@ -1141,6 +1141,10 @@ public class Attr extends JCTree.Visitor {
                 }
             }
 
+            if (m.isDeconstructor()) {
+                m.matcherFlags.add(MatcherFlags.DECONSTRUCTOR);
+            }
+
             // annotation method checks
             if ((owner.flags() & ANNOTATION) != 0) {
                 // annotation method cannot have throws clause
@@ -4256,6 +4260,10 @@ public class Attr extends JCTree.Visitor {
                                         .map(t -> types.upward(t, types.captures(t)).baseType())
                                         .collect(List.collector());
             tree.record = record;
+            var matchers = record.members().getSymbols(sym -> (sym.flags() & MATCHER) != 0);
+            if (matchers.iterator().hasNext()) {
+                tree.matcher = (MethodSymbol) matchers.iterator().next(); // TODO overloading
+            }
         } else {
             log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
             expectedRecordTypes = Stream.generate(() -> types.createErrorType(tree.type))

@@ -82,6 +82,7 @@ import static com.sun.tools.javac.jvm.ByteCodes.ishll;
 import static com.sun.tools.javac.jvm.ByteCodes.lushrl;
 import static com.sun.tools.javac.jvm.ByteCodes.lxor;
 import static com.sun.tools.javac.jvm.ByteCodes.string_add;
+import java.util.stream.Collectors;
 
 /** Root class for Java symbols. It contains subclasses
  *  for specific sorts of symbols, such as variables, methods and operators,
@@ -362,6 +363,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                                   t.getReturnType(),
                                   t.getThrownTypes(),
                                   t.tsym);
+        } else if ((flags() & MATCHER) != 0) {
+            return new MethodType(List.of(owner.erasure(types)), types.syms.objectType, List.nil(), t.tsym);
         } else {
             return t;
         }
@@ -457,6 +460,18 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
      */
     public boolean isConstructor() {
         return name == name.table.names.init;
+    }
+
+    /** Is this symbol a matcher?
+     */
+    public boolean isMatcher() {
+        return (flags() & MATCHER) != 0;
+    }
+
+    /** Is this symbol a deconstructor?
+     */
+    public boolean isDeconstructor() {
+        return isMatcher() && name == owner.name;
     }
 
     public boolean isDynamic() {
@@ -986,7 +1001,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public Completer usesProvidesCompleter = Completer.NULL_COMPLETER;
         public final Set<ModuleFlags> flags = EnumSet.noneOf(ModuleFlags.class);
         public final Set<ModuleResolutionFlags> resolutionFlags = EnumSet.noneOf(ModuleResolutionFlags.class);
-
         /**
          * Create a ModuleSymbol with an associated module-info ClassSymbol.
          */
@@ -1130,6 +1144,24 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         private ModuleResolutionFlags(int value) {
+            this.value = value;
+        }
+
+        public final int value;
+    }
+
+    public enum MatcherFlags {
+        DECONSTRUCTOR(0x3000),
+        TOTAL(0x4000);
+
+        public static int value(Set<MatcherFlags> s) {
+            int v = 0;
+            for (MatcherFlags f: s)
+                v |= f.value;
+            return v;
+        }
+
+        private MatcherFlags(int value) {
             this.value = value;
         }
 
@@ -1935,6 +1967,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public Attribute defaultValue = null;
 
+        public final Set<MatcherFlags> matcherFlags = EnumSet.noneOf(MatcherFlags.class);
+
+
         /** Construct a method symbol, given its flags, name, type and owner.
          */
         public MethodSymbol(long flags, Name name, Type type, Symbol owner) {
@@ -1994,6 +2029,68 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return false;
         }
 
+        public Name externalName(Types types) {
+            if ((flags() & MATCHER) != 0) {
+                /** TODO: improve perf
+                 * e.g., Point\%Ljava\|lang\|Integer\?\%Ljava\|lang\|Integer\?(Point)
+                 */
+                Name postFix = name.table.names.fromString(params().map(param -> {
+                    var g = new UnSharedSignatureGenerator(types, name.table.names);
+                    g.assembleSig(param.erasure(types));
+                    return name.table.names.fromString(g.toName().toString().replace("/", "\\\u007C").replace(";", "\\\u003F"));
+                }).stream().collect(Collectors.joining("\\\u0025")));
+
+                return name.table.names.fromString(owner.name.toString() + "\\\u0025" + postFix);
+            } else {
+                return name;
+            }
+        }
+
+        static class UnSharedSignatureGenerator extends Types.SignatureGenerator {
+
+            /**
+             * An output buffer for type signatures.
+             */
+            ByteBuffer sigbuf = new ByteBuffer();
+            private final Names names;
+
+            UnSharedSignatureGenerator(Types types, Names names) {
+                super(types);
+                this.names = names;
+            }
+
+            @Override
+            protected void append(char ch) {
+                sigbuf.appendByte(ch);
+            }
+
+            @Override
+            protected void append(byte[] ba) {
+                sigbuf.appendBytes(ba);
+            }
+
+            @Override
+            protected void append(Name name) {
+                sigbuf.appendName(name);
+            }
+
+            @Override
+            protected void classReference(ClassSymbol c) {
+                //            enterInner(c);
+            }
+
+            protected void reset() {
+                sigbuf.reset();
+            }
+
+            protected Name toName() {
+                try {
+                    return sigbuf.toName(names);
+                } catch (InvalidUtfException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
 
         public MethodHandleSymbol asHandle() {
             return new MethodHandleSymbol(this);

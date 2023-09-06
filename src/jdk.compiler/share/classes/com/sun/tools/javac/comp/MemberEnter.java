@@ -188,6 +188,10 @@ public class MemberEnter extends JCTree.Visitor {
         m.flags_field = chk.checkFlags(tree.pos(), tree.mods.flags, m, tree);
         tree.sym = m;
 
+        if (tree.sym.isMatcher()) {
+            m.flags_field |= SYNTHETIC;
+        }
+
         //if this is a default method, add the DEFAULT flag to the enclosing interface
         if ((tree.mods.flags & DEFAULT) != 0) {
             m.owner.flags_field |= DEFAULT;
@@ -247,9 +251,14 @@ public class MemberEnter extends JCTree.Visitor {
             env.dup(tree, env.info.dup(env.info.scope.dupUnshared(tree.sym)));
         localEnv.enclMethod = tree;
         if (tree.sym.type != null) {
+            if (tree.sym.isMatcher()) {
+                localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
+                                                                 syms.objectType);
+            } else {
             //when this is called in the enter stage, there's no type to be set
             localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
                                                              tree.sym.type.getReturnType());
+            }
         }
         if ((tree.mods.flags & STATIC) != 0) localEnv.info.staticLevel++;
         localEnv.info.yieldResult = null;

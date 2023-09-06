@@ -48,6 +48,7 @@ import jdk.internal.classfile.attribute.LocalVariableInfo;
 import jdk.internal.classfile.attribute.LocalVariableTableAttribute;
 import jdk.internal.classfile.attribute.LocalVariableTypeInfo;
 import jdk.internal.classfile.attribute.LocalVariableTypeTableAttribute;
+import jdk.internal.classfile.attribute.MatcherAttribute;
 import jdk.internal.classfile.attribute.MethodParameterInfo;
 import jdk.internal.classfile.attribute.MethodParametersAttribute;
 import jdk.internal.classfile.attribute.ModuleAttribute;
@@ -130,6 +131,9 @@ public class Attributes {
 
     /** LocalVariableTypeTable */
     public static final String NAME_LOCAL_VARIABLE_TYPE_TABLE = "LocalVariableTypeTable";
+
+    /** Matcher */
+    public static final String NAME_MATCHER = "Matcher";
 
     /** MethodParameters */
     public static final String NAME_METHOD_PARAMETERS = "MethodParameters";
@@ -422,6 +426,23 @@ public class Attributes {
                     }
                 }
             };
+
+    /** Attribute mapper for the {@code Matcher} attribute */
+    public static final AttributeMapper<MatcherAttribute>
+            MATCHER = new AbstractAttributeMapper<>(NAME_MATCHER, Classfile.JAVA_22_VERSION) {
+        @Override
+        public MatcherAttribute readAttribute(AttributedElement e, ClassReader cf, int p) {
+            return new BoundAttribute.BoundMatcherAttribute(cf, this, p);
+        }
+
+        @Override
+        protected void writeBody(BufWriter buf, MatcherAttribute attr) {
+            buf.writeIndex(attr.matcherName());
+            buf.writeU2(attr.matcherFlagsMask());
+            buf.writeIndex(attr.matcherMethodType());
+            buf.writeList(attr.attributes());
+        }
+    };
 
     /** Attribute mapper for the {@code MethodParameters} attribute */
     public static final AttributeMapper<MethodParametersAttribute>
@@ -822,6 +843,7 @@ public class Attributes {
             LINE_NUMBER_TABLE,
             LOCAL_VARIABLE_TABLE,
             LOCAL_VARIABLE_TYPE_TABLE,
+            MATCHER,
             METHOD_PARAMETERS,
             MODULE,
             MODULE_HASHES,

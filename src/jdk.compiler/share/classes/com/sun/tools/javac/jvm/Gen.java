@@ -1886,6 +1886,10 @@ public class Gen extends JCTree.Visitor {
         int tmpPos = code.pendingStatPos;
         if (tree.expr != null) {
             Assert.check(code.isStatementStart());
+            Type pt = this.pt;
+            if (env.enclMethod != null && env.enclMethod.sym.isMatcher()) {
+                pt = syms.objectType;
+            }
             Item r = genExpr(tree.expr, pt).load();
             if (hasFinally(env.enclMethod, env)) {
                 r = makeTemp(pt);
@@ -2387,7 +2391,7 @@ public class Gen extends JCTree.Visitor {
             } else {
                 sym = binaryQualifier(sym, tree.selected.type);
             }
-            if ((sym.flags() & STATIC) != 0) {
+            if ((sym.flags() & STATIC) != 0 || sym.isMatcher()) {
                 if (!selectSuper && (ssym == null || ssym.kind != TYP))
                     base = base.load();
                 base.drop();

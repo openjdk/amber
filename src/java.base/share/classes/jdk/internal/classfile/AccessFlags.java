@@ -70,6 +70,14 @@ public sealed interface AccessFlags
     }
 
     /**
+     * {@return an {@linkplain AccessFlags} for a matcher}
+     * @param mask the flags to be set, as a bit mask
+     */
+    static AccessFlags ofMatcher(int mask) {
+        return new AccessFlagsImpl(AccessFlag.Location.MATCHER, mask);
+    }
+
+    /**
      * {@return an {@linkplain AccessFlags} for a class}
      * @param flags the flags to be set
      */

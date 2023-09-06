@@ -127,6 +127,10 @@ public class Flags {
      */
     public static final int UNNAMED_CLASS    = 1<<19;
 
+    /** Method is a matcher method.
+     */
+    public static final int MATCHER          = 1<<19; // MethodSymbols
+
     /** Flag is set for compiler-generated anonymous method symbols
      *  that `own' an initializer block.
      */
@@ -421,7 +425,9 @@ public class Flags {
         MethodFlags                       = AccessFlags | ABSTRACT | STATIC | NATIVE |
                                             SYNCHRONIZED | FINAL | STRICTFP,
         RecordMethodFlags                 = AccessFlags | ABSTRACT | STATIC |
-                                            SYNCHRONIZED | FINAL | STRICTFP;
+                                            SYNCHRONIZED | FINAL | STRICTFP,
+        MatcherMethodFlags                = AccessFlags | STATIC | FINAL | SYNCHRONIZED | ABSTRACT;
+
     public static final long
         ExtendedStandardFlags             = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
         ExtendedMemberClassFlags          = (long)MemberClassFlags | SEALED | NON_SEALED,
@@ -494,6 +500,7 @@ public class Flags {
         ANNOTATION(Flags.ANNOTATION),
         DEPRECATED(Flags.DEPRECATED),
         HASINIT(Flags.HASINIT),
+        MATCHER(Flags.MATCHER),
         UNNAMED_CLASS(Flags.UNNAMED_CLASS),
         BLOCK(Flags.BLOCK),
         FROM_SOURCE(Flags.FROM_SOURCE),

@@ -354,16 +354,20 @@ public class ClassWriter extends ClassFile {
     /** Write member (field or method) attributes;
      *  return number of attributes written.
      */
-    int writeMemberAttrs(Symbol sym, boolean isRecordComponent) {
+    int writeMemberAttrs(Symbol sym, boolean isRecordComponent, boolean fromMatcher) {
         int acount = 0;
         if (!isRecordComponent) {
             acount = writeFlagAttrs(sym.flags());
         }
         long flags = sym.flags();
-        if ((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
+        boolean needsSignature = !types.isSameType(sym.type, sym.erasure(types)) ||
+                poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes());
+        if (((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
             (flags & ANONCONSTR) == 0 &&
-            (!types.isSameType(sym.type, sym.erasure(types)) ||
-             poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes()))) {
+            needsSignature) ||
+                (needsSignature &&
+                    fromMatcher &&
+                    sym.isDeconstructor())) {
             // note that a local class with captured variables
             // will get a signature attribute
             int alenIdx = writeAttr(names.Signature);
@@ -371,8 +375,10 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        acount += writeJavaAnnotations(sym.getRawAttributes());
-        acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
+        if (!fromMatcher) {
+            acount += writeJavaAnnotations(sym.getRawAttributes());
+            acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
+        }
         return acount;
     }
 
@@ -381,7 +387,7 @@ public class ClassWriter extends ClassFile {
      */
     int writeMethodParametersAttr(MethodSymbol m, boolean writeParamNames) {
         MethodType ty = m.externalType(types).asMethodType();
-        final int allparams = ty.argtypes.size();
+        final int allparams = m.isDeconstructor() ? m.params.size() : ty.argtypes.size(); // signature changes and the size needs to refer to the original parameter/binding list
         if (m.params != null && allparams != 0) {
             final int attrIndex = writeAttr(names.MethodParameters);
             databuf.appendByte(allparams);
@@ -862,10 +868,33 @@ public class ClassWriter extends ClassFile {
             databuf.appendChar(poolWriter.putDescriptor(v));
             int acountIdx = beginAttrs();
             int acount = 0;
-            acount += writeMemberAttrs(v, true);
+            acount += writeMemberAttrs(v, true, false);
             endAttrs(acountIdx, acount);
         }
         endAttr(alenIdx);
+        return 1;
+    }
+
+    int writeMatcherAttribute(MethodSymbol m) {
+        final int attrIndex = writeAttr(names.Matcher);
+
+        databuf.appendChar(poolWriter.putName(m.name));
+        databuf.appendChar(MatcherFlags.value(m.matcherFlags));
+        databuf.appendChar(poolWriter.putConstant(m.type.asMethodType()));
+
+        int acountIdx = beginAttrs();
+        int acount = 0;
+
+        if (m.isMatcher() && target.hasMethodParameters()) {
+            acount += writeMethodParametersAttr(m, requiresParamNames(m));
+        }
+
+        acount += writeMemberAttrs(m, false, true);
+        acount += writeParameterAttrs(m.params);
+
+        endAttrs(acountIdx, acount);
+        endAttr(attrIndex);
+
         return 1;
     }
 
@@ -982,7 +1011,7 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        acount += writeMemberAttrs(v, false);
+        acount += writeMemberAttrs(v, false, false);
         acount += writeExtraAttributes(v);
         endAttrs(acountIdx, acount);
     }
@@ -991,13 +1020,14 @@ public class ClassWriter extends ClassFile {
      */
     void writeMethod(MethodSymbol m) {
         int flags = adjustFlags(m.flags());
-        databuf.appendChar(flags);
+        databuf.appendChar(flags | (m.isMatcher() ? Flags.STATIC : 0));
         if (dumpMethodModifiers) {
             PrintWriter pw = log.getWriter(Log.WriterKind.ERROR);
             pw.println("METHOD  " + m.name);
             pw.println("---" + flagNames(m.flags()));
         }
-        databuf.appendChar(poolWriter.putName(m.name));
+        Name name = m.externalName(types);
+        databuf.appendChar(poolWriter.putName(name));
         databuf.appendChar(poolWriter.putDescriptor(m));
         int acountIdx = beginAttrs();
         int acount = 0;
@@ -1023,16 +1053,21 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        if (target.hasMethodParameters()) {
+        if (!m.isDeconstructor() && target.hasMethodParameters()) {
             if (!m.isLambdaMethod()) { // Per JDK-8138729, do not emit parameters table for lambda bodies.
                 boolean requiresParamNames = requiresParamNames(m);
                 if (requiresParamNames || requiresParamFlags(m))
                     acount += writeMethodParametersAttr(m, requiresParamNames);
             }
         }
-        acount += writeMemberAttrs(m, false);
-        if (!m.isLambdaMethod())
+        acount += writeMemberAttrs(m, false, false);
+        if (!m.isLambdaMethod() && !m.isDeconstructor())
             acount += writeParameterAttrs(m.params);
+
+        if (m.isMatcher()) {
+            acount += writeMatcherAttribute(m);
+        }
+
         acount += writeExtraAttributes(m);
         endAttrs(acountIdx, acount);
     }
