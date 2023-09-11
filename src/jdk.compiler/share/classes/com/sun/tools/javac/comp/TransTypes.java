@@ -590,8 +590,6 @@ public class TransTypes extends TreeTranslator {
     }
 
     public void visitRecordPattern(JCRecordPattern tree) {
-        tree.fullComponentTypes = tree.record.getRecordComponents()
-                                             .map(rc -> types.memberType(tree.type, rc));
         tree.deconstructor = translate(tree.deconstructor, null);
         tree.nested = translate(tree.nested, null);
         result = tree;

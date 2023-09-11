@@ -1,0 +1,100 @@
+/*
+ * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
+ *
+ * This code is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 only, as
+ * published by the Free Software Foundation.
+ *
+ * This code is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * version 2 for more details (a copy is included in the LICENSE file that
+ * accompanied this code).
+ *
+ * You should have received a copy of the GNU General Public License version
+ * 2 along with this work; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
+ *
+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
+ * or visit www.oracle.com if you need additional information or have any
+ * questions.
+ */
+
+/**
+ * @test
+ * @enablePreview
+ * @compile MultipleMatchers.java
+ * @run main MultipleMatchers
+ */
+import java.util.Objects;
+
+public class MultipleMatchers {
+    public static void main(String... args) {
+        assertEquals("A:B", test1A(new Person1("A", "B")));
+        assertEquals("A", test1B(new Person1("A", "B")));
+        assertEquals("A:B", test2A(new Person2("A", "B")));
+        assertEquals("A", test2B(new Person2("A", "B")));
+    }
+
+    private static String test1A(Object o) {
+        if (o instanceof Person1(String name, String username)) {
+            return name + ":" + username;
+        }
+        return null;
+    }
+
+    private static String test1B(Object o) {
+        if (o instanceof Person1(String name)) {
+            return name;
+        }
+        return null;
+    }
+
+    private static String test2A(Object o) {
+        if (o instanceof Person2(String name, String username)) {
+            return name + ":" + username;
+        }
+        return null;
+    }
+
+    private static String test2B(Object o) {
+        if (o instanceof Person2(String name)) {
+            return name;
+        }
+        return null;
+    }
+
+    public record Person1(String name, String username) {
+
+        public Person1(String name) {
+            this(name, name);
+        }
+
+        public __matcher Person1(String name, String username) {
+             name = this.name;
+             username = this.username;
+        }
+
+        public __matcher Person1(String name) {
+             name = this.name;
+        }
+    }
+
+    public record Person2(String name, String username) {
+
+        public Person2(String name) {
+            this(name, name);
+        }
+
+        public __matcher Person2(String name) {
+             name = this.name;
+        }
+    }
+
+    private static <T> void assertEquals(T expected, T actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
+        }
+    }
+}

@@ -310,14 +310,14 @@ public class TransPatterns extends TreeTranslator {
         //      oi = (int) Carriers.component(methodType, 1).invoke(unmatched); // where Carriers.component(methodType, 1) is a DynamicVarSymbol
         //      ...
         // }
-        Type recordType = recordPattern.record.erasure(types);
+        Type recordType = recordPattern.type.tsym.erasure(types);
         BindingSymbol tempBind = new BindingSymbol(Flags.SYNTHETIC,
             names.fromString(target.syntheticNameChar() + "b" + target.syntheticNameChar() + variableIndex++), recordType,
                              currentMethodSym);
         JCVariableDecl recordBindingVar = make.at(recordPattern.pos()).VarDef(tempBind, null);
 
         VarSymbol recordBinding = recordBindingVar.sym;
-        List<? extends RecordComponent> components = recordPattern.record.getRecordComponents();
+        List<? extends RecordComponent> components;
         List<? extends Type> nestedFullComponentTypes = recordPattern.fullComponentTypes;
         List<? extends JCPattern> nestedPatterns = recordPattern.nested;
 
@@ -348,9 +348,12 @@ public class TransPatterns extends TreeTranslator {
                             names.component,
                             List.of(syms.methodTypeType, syms.intType),
                             List.nil());
+            components = List.nil();
+        } else {
+            components = recordPattern.record.getRecordComponents();
         }
 
-        while (components.nonEmpty()) {
+        while (nestedFullComponentTypes.nonEmpty()) {
             Type componentType = types.erasure(nestedFullComponentTypes.head);
             JCExpression accessedComponentValue;
             index++;
@@ -399,6 +402,7 @@ public class TransPatterns extends TreeTranslator {
                 }
                 deconstructorCalls.add(componentAccessor);
                 accessedComponentValue = convert(componentAccessor, componentType);
+                components = components.tail;
             }
 
             JCPattern nestedPattern = nestedPatterns.head;
@@ -435,12 +439,12 @@ public class TransPatterns extends TreeTranslator {
             } else {
                 firstLevelChecks = mergeConditions(firstLevelChecks, firstLevelCheck);
             }
-            components = components.tail;
             nestedFullComponentTypes = nestedFullComponentTypes.tail;
             nestedPatterns = nestedPatterns.tail;
         }
 
         Assert.check(components.isEmpty() == nestedPatterns.isEmpty());
+        Assert.check(nestedFullComponentTypes.isEmpty() == nestedPatterns.isEmpty());
         JCExpression guard = null;
         if (firstLevelChecks != null) {
             guard = firstLevelChecks;
