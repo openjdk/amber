@@ -248,6 +248,7 @@ public enum Source {
         UNNAMED_CLASSES(JDK21, Fragments.FeatureUnnamedClasses, DiagKind.PLURAL),
         WARN_ON_ILLEGAL_UTF8(MIN, JDK21),
         UNNAMED_VARIABLES(JDK21, Fragments.FeatureUnnamedVariables, DiagKind.PLURAL),
+        MATCHERS(JDK22, Fragments.FeatureMatchers, DiagKind.PLURAL),
         ;
 
         enum DiagKind {

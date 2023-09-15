@@ -116,6 +116,10 @@ public class ClassReader {
      */
     boolean allowRecords;
 
+    /** Switch: allow matchers
+     */
+    boolean allowMatchers;
+
    /** Lint option: warn about classfile issues
      */
     boolean lintClassfile;
@@ -283,6 +287,7 @@ public class ClassReader {
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = Feature.RECORDS.allowedInSource(source);
+        allowMatchers = Feature.MATCHERS.allowedInSource(source);
         allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
         warnOnIllegalUtf8 = Feature.WARN_ON_ILLEGAL_UTF8.allowedInSource(source);
 
@@ -1298,6 +1303,29 @@ public class ClassReader {
                         }
                         ((ClassSymbol)sym).permitted = subtypes.toList();
                     }
+                }
+            },
+            new AttributeReader(names.Matcher, V66, MEMBER_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowMatchers;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == MTH) {
+                        sym.flags_field |= MATCHER;
+                        System.out.println("Matcher Attribute Found");
+
+                    }
+//                    int componentCount = nextChar();
+//                    ListBuffer<RecordComponent> components = new ListBuffer<>();
+//                    for (int i = 0; i < componentCount; i++) {
+//                        Name name = poolReader.getName(nextChar());
+//                        Type type = poolReader.getType(nextChar());
+//                        RecordComponent c = new RecordComponent(name, type, sym);
+//                        readAttrs(c, AttributeKind.MEMBER);
+//                        components.add(c);
+//                    }
+//                    ((ClassSymbol) sym).setRecordComponents(components.toList());
                 }
             },
         };
@@ -2333,6 +2361,10 @@ public class ClassReader {
         }
         validateMethodType(name, m.type);
         setParameters(m, type);
+
+        if (m.isMatcher()) {
+            System.out.println("Matcher Found");
+        }
 
         if (Integer.bitCount(rawFlags & (PUBLIC | PRIVATE | PROTECTED)) > 1)
             throw badClassFile("illegal.flag.combo", Flags.toString((long)rawFlags), "method", m);
