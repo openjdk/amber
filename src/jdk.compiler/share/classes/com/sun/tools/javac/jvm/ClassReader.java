@@ -1312,10 +1312,25 @@ public class ClassReader {
                 }
                 protected void read(Symbol sym, int attrLen) {
                     if (sym.kind == MTH) {
+                        Name name = poolReader.getName(nextChar());
+                        int matcherFlags = nextChar();
+                        Type actualType = poolReader.getType(nextChar());
+
+                        int attributesCount = nextChar();
+                        for (int i = 0; i < attributesCount; i++) {
+                            Name attrName = poolReader.getName(nextChar());
+                            int attrLen2 = nextInt();
+                            bp += attrLen2;
+                        }
+                        sym.name = name;
                         sym.flags_field |= MATCHER;
+                        //TODO: flags
+                        sym.type = actualType;
+
                         System.out.println("Matcher Attribute Found");
 
                     }
+
 //                    int componentCount = nextChar();
 //                    ListBuffer<RecordComponent> components = new ListBuffer<>();
 //                    for (int i = 0; i < componentCount; i++) {
@@ -2453,7 +2468,7 @@ public class ClassReader {
                 firstParamLvt += 1;
         }
 
-        if (sym.type != jvmType) {
+        if (sym.type != jvmType && !sym.isMatcher()) {
             // reading the method attributes has caused the
             // symbol's type to be changed. (i.e. the Signature
             // attribute.)  This may happen if there are hidden

@@ -97,6 +97,7 @@ public class ClassReaderTestMatchers extends TestRunner {
                 .writeAll()
                 .getOutputLines(OutputKind.DIRECT);
 
+        //XXX: note the type is erased!!!
         // test file
         tb.writeJavaFiles(test,
                 "import test.Point;\n" +

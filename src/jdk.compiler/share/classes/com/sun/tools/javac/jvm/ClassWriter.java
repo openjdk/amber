@@ -880,7 +880,7 @@ public class ClassWriter extends ClassFile {
 
         databuf.appendChar(poolWriter.putName(m.name));
         databuf.appendChar(MatcherFlags.value(m.matcherFlags));
-        databuf.appendChar(poolWriter.putConstant(m.type.asMethodType()));
+        databuf.appendChar(poolWriter.putDescriptor(m.type.asMethodType()));
 
         int acountIdx = beginAttrs();
         int acount = 0;
