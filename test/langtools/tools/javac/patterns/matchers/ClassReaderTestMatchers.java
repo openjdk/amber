@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class ClassReaderTestMatchers extends TestRunner {
 
@@ -92,6 +93,7 @@ public class ClassReaderTestMatchers extends TestRunner {
 
         new JavacTask(tb)
                 .outdir(out)
+                .options(List.of("--enable-preview", "-source", System.getProperty("java.specification.version")))
                 .files(findJavaFiles(src))
                 .run(Task.Expect.SUCCESS)
                 .writeAll()
@@ -112,6 +114,7 @@ public class ClassReaderTestMatchers extends TestRunner {
 
         new JavacTask(tb)
                 .classpath(out)
+                .options(List.of("--enable-preview", "-source", System.getProperty("java.specification.version")))
                 .files(findJavaFiles(test))
                 .run(Task.Expect.SUCCESS)
                 .writeAll();

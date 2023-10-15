@@ -3498,7 +3498,7 @@ public class JavacParser implements Parser {
                     break;
                 }
                 if (token.name() == names.fromString("__matcher")) {
-                    // TODO: checkSourceLevel
+                    checkSourceLevel(Feature.MATCHERS);
                     flag = Flags.MATCHER;
                     break;
                 }
