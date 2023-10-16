@@ -366,8 +366,7 @@ public abstract sealed class BoundAttribute<T extends Attribute<T>>
 
         @Override
         public Utf8Entry matcherMethodType() {
-            // cast will be elided after we get the typed variant for entryByIndex
-            return ((MethodTypeEntry) classReader.entryByIndex(classReader.readU2(payloadStart + 4))).descriptor();
+            return classReader.readUtf8Entry(payloadStart + 4);
         }
 
         @Override
