@@ -1316,31 +1316,15 @@ public class ClassReader {
                         int matcherFlags = nextChar();
                         Type actualType = poolReader.getType(nextChar());
 
-                        int attributesCount = nextChar();
-                        for (int i = 0; i < attributesCount; i++) {
-                            Name attrName = poolReader.getName(nextChar());
-                            int attrLen2 = nextInt();
-                            bp += attrLen2;
-                        }
+                        // check parameter names (attribute or read from local variable table?
+
+                        readMemberAttrs(sym);
+
                         sym.name = name;
                         sym.flags_field |= MATCHER;
                         //TODO: flags
                         sym.type = actualType;
-
-                        System.out.println("Matcher Attribute Found");
-
                     }
-
-//                    int componentCount = nextChar();
-//                    ListBuffer<RecordComponent> components = new ListBuffer<>();
-//                    for (int i = 0; i < componentCount; i++) {
-//                        Name name = poolReader.getName(nextChar());
-//                        Type type = poolReader.getType(nextChar());
-//                        RecordComponent c = new RecordComponent(name, type, sym);
-//                        readAttrs(c, AttributeKind.MEMBER);
-//                        components.add(c);
-//                    }
-//                    ((ClassSymbol) sym).setRecordComponents(components.toList());
                 }
             },
         };
@@ -2376,11 +2360,6 @@ public class ClassReader {
         }
         validateMethodType(name, m.type);
         setParameters(m, type);
-
-        if (m.isMatcher()) {
-            System.out.println("Matcher Found");
-        }
-
         if (Integer.bitCount(rawFlags & (PUBLIC | PRIVATE | PROTECTED)) > 1)
             throw badClassFile("illegal.flag.combo", Flags.toString((long)rawFlags), "method", m);
         if ((flags & VARARGS) != 0) {
