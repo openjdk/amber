@@ -225,9 +225,9 @@ class JavaThread: public Thread {
   friend class AsyncExceptionHandshake;
   friend class HandshakeState;
 
-  void install_async_exception(AsyncExceptionHandshake* aec = nullptr);
   void handle_async_exception(oop java_throwable);
  public:
+  void install_async_exception(AsyncExceptionHandshake* aec = nullptr);
   bool has_async_exception_condition();
   inline void set_pending_unsafe_access_error();
   static void send_async_exception(JavaThread* jt, oop java_throwable);
@@ -900,6 +900,7 @@ private:
 
   // Misc. operations
   const char* name() const;
+  const char* name_raw() const;
   const char* type_name() const { return "JavaThread"; }
   static const char* name_for(oop thread_obj);
 

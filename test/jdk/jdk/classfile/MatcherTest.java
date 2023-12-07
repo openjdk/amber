@@ -32,8 +32,8 @@
  */
 
 import helpers.ClassRecord;
-import jdk.internal.classfile.*;
-import jdk.internal.classfile.attribute.MatcherAttribute;
+import java.lang.classfile.*;
+import java.lang.classfile.attribute.MatcherAttribute;
 
 import java.io.IOException;
 import java.lang.annotation.ElementType;
@@ -53,7 +53,7 @@ import static helpers.ClassRecord.assertEqualsDeep;
 import static helpers.TestUtil.assertEmpty;
 import static org.junit.jupiter.api.Assertions.*;
 
-import jdk.internal.classfile.components.ClassPrinter;
+import java.lang.classfile.components.ClassPrinter;
 import org.junit.jupiter.api.Test;
 
 class MatcherTest {
@@ -61,7 +61,7 @@ class MatcherTest {
     @Test
     void testReadDeconstructor() throws Exception {
         List<String> extractedInfo = new ArrayList<>();
-        Classfile cc = Classfile.of();
+        ClassFile cc = ClassFile.of();
         ClassTransform xform = (clb, cle) -> {
             if (cle instanceof MethodModel mm) {
                 clb.transformMethod(mm, (mb, me) -> {
@@ -85,15 +85,14 @@ class MatcherTest {
 
     @Test
     void testReadAndVerifyDeconstructor() throws IOException {
-        Classfile cc = Classfile.of();
+        byte[] bytes = MatcherTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes();
+        var cc = ClassFile.of().verify(bytes);
 
-        ClassModel classModel = cc.parse(MatcherTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes());
+        ClassModel classModel = ClassFile.of().parse(bytes);
 
-        var verres = classModel.verify(null);
-
-        if (!verres.isEmpty()) {
+        if (!cc.isEmpty()) {
             ClassPrinter.toYaml(classModel, ClassPrinter.Verbosity.TRACE_ALL, System.out::print);
-            assertEmpty(verres);
+            assertEmpty(cc);
         }
     }
 
