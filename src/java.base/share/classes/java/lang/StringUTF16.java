@@ -415,7 +415,7 @@ final class StringUTF16 {
         int n = computeCodePointSize(val, index, end);
 
         byte[] buf = newBytesFor(n);
-        return extractCodepoints(val, index, len, buf, 0);
+        return extractCodepoints(val, index, end, buf, 0);
      }
 
     public static byte[] toBytes(char c) {
@@ -449,20 +449,6 @@ final class StringUTF16 {
         for (int i = srcBegin + (1 >> LO_BYTE_SHIFT); i < srcEnd; i += 2) {
             dst[dstBegin++] = value[i];
         }
-    }
-
-    @IntrinsicCandidate
-    public static boolean equals(byte[] value, byte[] other) {
-        if (value.length == other.length) {
-            int len = value.length >> 1;
-            for (int i = 0; i < len; i++) {
-                if (getChar(value, i) != getChar(other, i)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        return false;
     }
 
     @IntrinsicCandidate
@@ -604,12 +590,8 @@ final class StringUTF16 {
         };
     }
 
+    // Caller must ensure that from- and toIndex are within bounds
     public static int indexOf(byte[] value, int ch, int fromIndex, int toIndex) {
-        fromIndex = Math.max(fromIndex, 0);
-        toIndex = Math.min(toIndex, value.length >> 1);
-        if (fromIndex >= toIndex) {
-            return -1;
-        }
         if (ch < Character.MIN_SUPPLEMENTARY_CODE_POINT) {
             // handle most cases here (ch is a BMP code point or a
             // negative value (invalid code point))
@@ -716,11 +698,6 @@ final class StringUTF16 {
 
     @IntrinsicCandidate
     private static int indexOfChar(byte[] value, int ch, int fromIndex, int max) {
-        checkBoundsBeginEnd(fromIndex, max, value);
-        return indexOfCharUnsafe(value, ch, fromIndex, max);
-    }
-
-    private static int indexOfCharUnsafe(byte[] value, int ch, int fromIndex, int max) {
         for (int i = fromIndex; i < max; i++) {
             if (getChar(value, i) == ch) {
                 return i;
