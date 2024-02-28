@@ -77,22 +77,22 @@ public class OverloadedMatchers {
     static class B extends A {}
 
     public record D() {
-        public __matcher D(Object out, Integer outI) {
+        public pattern D(Object out, Integer outI) {
             out = 42;
             outI = 1;
         }
 
-        public __matcher D(String out, Integer outI) {
+        public pattern D(String out, Integer outI) {
             out = "2";
             outI = 2;
         }
 
-        public __matcher D(A out, Integer outI) {
+        public pattern D(A out, Integer outI) {
             out = new A();
             outI = 3;
         }
 
-        public __matcher D(B out, Integer outI) {
+        public pattern D(B out, Integer outI) {
             out = new B();
             outI = 4;
         }

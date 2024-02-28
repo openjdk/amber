@@ -37,11 +37,11 @@ public class NoCompatibleMatcherFound {
     }
 
     public record D() {
-        public __matcher D(Object v1, Float out) {
+        public pattern D(Object v1, Float out) {
             out = 10.0f;
         }
 
-        public __matcher D(Float out, Integer v1) {
+        public pattern D(Float out, Integer v1) {
             out = 2;
         }
     }

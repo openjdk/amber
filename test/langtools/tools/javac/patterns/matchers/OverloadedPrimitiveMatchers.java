@@ -43,7 +43,7 @@ public class OverloadedPrimitiveMatchers {
     }
 
     public record D() {
-        public __matcher D(String out, int outI) {
+        public pattern D(String out, int outI) {
             out = "42";
             outI = 1;
         }

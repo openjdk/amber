@@ -35,11 +35,11 @@ public class MatcherOverloadingAmbiguity {
     }
 
     public record D() {
-        public __matcher D(Object v, Integer out) {
+        public pattern D(Object v, Integer out) {
             out = 1;
         }
 
-        public __matcher D(CharSequence v, Integer out) {
+        public pattern D(CharSequence v, Integer out) {
             out = 2;
         }
     }

@@ -75,7 +75,7 @@ public class RecordMatchers {
 
     public record Points(Collection<Integer> xs, Collection<Integer> ys) {
         @MatcherAnnotation(annotField = 42)
-        public __matcher Points(@BindingAnnotation Collection<Integer> xs, @BindingAnnotation Collection<Integer> ys) {
+        public pattern Points(@BindingAnnotation Collection<Integer> xs, @BindingAnnotation Collection<Integer> ys) {
             xs = this.xs;
             ys = this.ys;
         }
@@ -83,7 +83,7 @@ public class RecordMatchers {
 
     public record Point(Integer x, Integer y) {
         @MatcherAnnotation(annotField = 42)
-        public __matcher Point(Integer x, Integer y) {
+        public pattern Point(Integer x, Integer y) {
             x = this.x;
             y = this.y;
         }

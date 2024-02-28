@@ -3528,7 +3528,7 @@ public class JavacParser implements Parser {
                     flag = Flags.SEALED;
                     break;
                 }
-                if (token.name() == names.fromString("__matcher")) {
+                if (isPatternDeclarationStart()) {
                     checkSourceLevel(Feature.MATCHERS);
                     flag = Flags.MATCHER;
                     break;
@@ -4872,6 +4872,20 @@ public class JavacParser implements Parser {
                 checkSourceLevel(Feature.SEALED_CLASSES);
                 return true;
             }
+        }
+        return false;
+    }
+
+    protected boolean isPatternDeclarationStart() {
+        if (token.name() == names.fromString("pattern")) {
+            Token next = S.token(1);
+            return switch (next.kind) {
+                case IDENTIFIER -> {
+                    Token afterNext = S.token(2);
+                    yield afterNext.kind == LPAREN;
+                }
+                default -> false;
+            };
         }
         return false;
     }

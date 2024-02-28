@@ -85,7 +85,7 @@ public class ClassReaderTestMatchers extends TestRunner {
             "package test;\n" +
                     "public class Point {\n" +
                     "    public Integer x = 0, y = 0;\n" +
-                    "    public __matcher Point(Integer x, Integer y) {\n" +
+                    "    public pattern Point(Integer x, Integer y) {\n" +
                     "         x = this.x;\n" +
                     "         y = this.y;\n" +
                     "    }\n" +

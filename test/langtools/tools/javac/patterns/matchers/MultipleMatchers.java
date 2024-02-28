@@ -71,12 +71,12 @@ public class MultipleMatchers {
             this(name, name);
         }
 
-        public __matcher Person1(String name, String username) {
+        public pattern Person1(String name, String username) {
              name = this.name;
              username = this.username;
         }
 
-        public __matcher Person1(String name) {
+        public pattern Person1(String name) {
              name = this.name;
         }
     }
@@ -87,7 +87,7 @@ public class MultipleMatchers {
             this(name, name);
         }
 
-        public __matcher Person2(String name) {
+        public pattern Person2(String name) {
              name = this.name;
         }
     }

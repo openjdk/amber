@@ -20,21 +20,21 @@ public class OverloadedMatchersErrors {
     }
 
     public record D() {
-        public __matcher D(Object v1, Float out) {
+        public pattern D(Object v1, Float out) {
             out = 10.0f;
         }
 
-        public __matcher D(Float out, Integer v1) {
+        public pattern D(Float out, Integer v1) {
             out = 2;
         }
     }
 
     public record D2() {
-        public __matcher D2(Object v, Integer out) {
+        public pattern D2(Object v, Integer out) {
             out = 1;
         }
 
-        public __matcher D2(CharSequence v, Integer out) {
+        public pattern D2(CharSequence v, Integer out) {
             out = 2;
         }
     }

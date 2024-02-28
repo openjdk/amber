@@ -28,7 +28,7 @@
 public class Matchers {
 
     record Test(Integer x, Integer y) {
-        public __matcher Test(Integer x, Integer y) {
+        public pattern Test(Integer x, Integer y) {
             x = this.x;
             y = this.y;
         }
