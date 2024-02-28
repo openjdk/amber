@@ -1248,14 +1248,14 @@ public class TransPatterns extends TreeTranslator {
             if (tree.sym.isDeconstructor()) {
                 // Generate (without the bindings)
                 //     1. calculate the returnType MethodType as Constant_MethodType_info
-                //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.factory(returnType);)
+                //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)
                 //     3. generate invoke call to pass the bindings (e.g, return carrier.invoke(x, y);)
 
                 List<Type> params = List.nil();
                 List<JCExpression> invokeMethodParam = List.nil();
 
                 for (int i = 0; i < tree.params.length(); i++) {
-                    params = params.append(types.boxedTypeOrType(tree.params.get(i).type));
+                    params = params.append(tree.params.get(i).type);
                     invokeMethodParam = invokeMethodParam.append(make.Ident(tree.params.get(i)));
                 }
 
@@ -1263,12 +1263,14 @@ public class TransPatterns extends TreeTranslator {
                         rs.resolveInternalMethod(tree.pos(),
                                 env,
                                 syms.carriersType,
-                                names.fromString("factory"),
+                                names.fromString("initializingConstructor"),
                                 List.of(syms.methodTypeType),
                                 List.nil());
 
                 DynamicVarSymbol factoryMethodDynamicVar =
-                        (DynamicVarSymbol) invokeMethodWrapper(tree.pos(),
+                        (DynamicVarSymbol) invokeMethodWrapper(
+                                names.fromString("carrier"),
+                                tree.pos(),
                                 factoryMethodSym.asHandle(),
                                 new MethodType(params, syms.objectType, List.nil(), syms.methodClass));
 

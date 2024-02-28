@@ -18,6 +18,6 @@ DeconstructionPatternErrors.java:26:29: compiler.err.instanceof.reifiable.not.sa
 DeconstructionPatternErrors.java:27:44: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Integer)
 DeconstructionPatternErrors.java:27:13: compiler.err.instanceof.reifiable.not.safe: java.lang.Object, DeconstructionPatternErrors.GenRecord<java.lang.String>
 DeconstructionPatternErrors.java:28:40: compiler.err.match.binding.exists
-DeconstructionPatternErrors.java:29:56: compiler.err.already.defined: kindname.variable, v1, kindname.method, meth()
-DeconstructionPatternErrors.java:29:64: compiler.err.already.defined: kindname.variable, v2, kindname.method, meth()
+DeconstructionPatternErrors.java:29:56: compiler.err.match.binding.exists
+DeconstructionPatternErrors.java:29:64: compiler.err.match.binding.exists
 22 errors

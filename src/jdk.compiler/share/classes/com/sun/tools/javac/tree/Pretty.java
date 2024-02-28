@@ -609,7 +609,10 @@ public class Pretty extends JCTree.Visitor {
             printDocComment(tree);
             printExpr(tree.mods);
             printTypeParameters(tree.typarams);
-            if (tree.name == tree.name.table.names.init) {
+            if (tree.sym.isMatcher()) {
+                print("__matcher ");
+            }
+            if (tree.name == tree.name.table.names.init || tree.sym.isMatcher()) {
                 print(enclClassName != null ? enclClassName : tree.name);
             } else {
                 printExpr(tree.restype);

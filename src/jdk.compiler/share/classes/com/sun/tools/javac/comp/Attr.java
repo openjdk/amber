@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999, 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 1999, 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -28,7 +28,9 @@ package com.sun.tools.javac.comp;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -4250,14 +4252,72 @@ public class Attr extends JCTree.Visitor {
 
         if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
-            var matchers = site.tsym.members().getSymbols(sym -> (sym.flags() & MATCHER) != 0 && sym.type.getParameterTypes().size() == nestedPatternCount);
-            Iterator<Symbol> matchersIt = matchers.iterator();
 
-            if (matchersIt.hasNext()) {
-                MethodSymbol matcher = (MethodSymbol) matchers.iterator().next();
+            // precalculate types of pattern components (as in method invocation)
+            ListBuffer<Type> patternTypesBuffer = new ListBuffer<>();
+            for (JCTree arg : tree.nested.map(p -> p.getTree())) {
+                Type argtype = chk.checkNonVoid(arg, attribTree(arg, env, resultInfo));
+                patternTypesBuffer.append(argtype);
+            }
+            List<Type> patternTypes = patternTypesBuffer.toList();
 
-                tree.matcher = matcher;
-                expectedRecordTypes = types.memberType(site, matcher).getParameterTypes();
+            var matchersIt = site.tsym.members()
+                    .getSymbols(sym -> (sym.flags() & MATCHER) != 0 && sym.type.getParameterTypes().size() == nestedPatternCount)
+                    .iterator();
+            List<MethodSymbol> matchers = Stream.generate(() -> null)
+                    .takeWhile(x -> matchersIt.hasNext())
+                    .map(n -> (MethodSymbol) matchersIt.next())
+                    .collect(List.collector());
+
+            if (matchers.size() >= 1) {
+                ListBuffer<Integer> score = new ListBuffer<Integer>();
+
+                // overload resolution of matcher
+                for (MethodSymbol matcher : matchers) {
+                    int scoreForMatcher = 0;
+
+                    List<Type> matcherComponentTypes = matcher.getParameters()
+                            .stream()
+                            .map(rc -> types.memberType(site, rc))
+                            .map(t -> types.upward(t, types.captures(t)).baseType())
+                            .collect(List.collector());
+
+                    boolean applicable = true;
+                    for (int i = 0; applicable && i < patternTypes.size(); i++) {
+                        applicable &= types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i));
+                    }
+
+                    if (applicable) {
+                        // todo: need to separate scores for each parameter
+                        for (int i = 0; i < patternTypes.size(); i++) {
+                            if (types.isSameType(patternTypes.get(i), matcherComponentTypes.get(i))) {
+                                scoreForMatcher += 2;
+                            } else if (types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i))) {
+                                scoreForMatcher += 1;
+                            }
+                        }
+                        score.add(scoreForMatcher);
+                    } else {
+                        score.add(-1);
+                    }
+                }
+
+                var maxScore = Collections.max(score);
+                List<Integer> scoreList = score.toList();
+                var indexOfMaxScore = scoreList.indexOf(maxScore);
+
+                if (maxScore == -1) {
+                    log.error(tree.pos(),
+                            Errors.NoCompatibleMatcherFound);
+                } else if (scoreList.stream().filter(s -> s == maxScore).count() > 1) {
+                    log.error(tree.pos(),
+                            Errors.MatcherOverloadingAmbiguity);
+                } else {
+                    MethodSymbol matcher = matchers.get(indexOfMaxScore);
+                    tree.matcher = matcher;
+
+                    expectedRecordTypes = types.memberType(site, matcher).getParameterTypes();
+                }
             } else if (((ClassSymbol) site.tsym).isRecord()) {
                 ClassSymbol record = (ClassSymbol) site.tsym;
                 expectedRecordTypes = record.getRecordComponents()
