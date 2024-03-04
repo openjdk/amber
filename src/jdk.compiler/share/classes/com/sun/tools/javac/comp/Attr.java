@@ -28,9 +28,7 @@ package com.sun.tools.javac.comp;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import javax.lang.model.element.ElementKind;
 import javax.tools.JavaFileObject;
@@ -1179,7 +1177,7 @@ public class Attr extends JCTree.Visitor {
                 if (isDefaultMethod || (tree.sym.flags() & (ABSTRACT | NATIVE)) == 0)
                     log.error(tree.pos(), Errors.MissingMethBodyOrDeclAbstract);
             } else {
-                if ((tree.sym.flags() & (ABSTRACT|DEFAULT|PRIVATE)) == ABSTRACT) {
+                if ((tree.sym.flags() & (ABSTRACT|DEFAULT|PRIVATE)) == ABSTRACT && !m.isDeconstructor()) {
                     if ((owner.flags() & INTERFACE) != 0) {
                         log.error(tree.body.pos(), Errors.IntfMethCantHaveBody);
                     } else {
@@ -4262,7 +4260,7 @@ public class Attr extends JCTree.Visitor {
             List<Type> patternTypes = patternTypesBuffer.toList();
 
             var matchersIt = site.tsym.members()
-                    .getSymbols(sym -> (sym.flags() & MATCHER) != 0 && sym.type.getParameterTypes().size() == nestedPatternCount)
+                    .getSymbols(sym -> sym.isMatcher() && sym.type.getParameterTypes().size() == nestedPatternCount)
                     .iterator();
             List<MethodSymbol> matchers = Stream.generate(() -> null)
                     .takeWhile(x -> matchersIt.hasNext())

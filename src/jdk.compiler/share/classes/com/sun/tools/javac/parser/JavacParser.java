@@ -4712,6 +4712,14 @@ public class JavacParser implements Parser {
                     isInterface, true, isRecord, dc));
         }
 
+        if (token.kind == LPAREN && isInterface && type.hasTag(IDENT) && (mods.flags & Flags.MATCHER) != 0) {
+            mods.flags |= Flags.DEFAULT;
+            // pattern declaration in interface
+            return List.of(methodDeclaratorRest(
+                    pos, mods, null, (mods.flags & Flags.MATCHER) == 0 ? names.init : tk.name(), typarams,
+                    isInterface, true, isRecord, dc));
+        }
+
         // Record constructor
         if (isRecord && type.hasTag(IDENT) && token.kind == THROWS) {
             // trying to define a compact constructor with a throws clause
