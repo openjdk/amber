@@ -24,8 +24,8 @@
 /*
  * @test
  * @enablePreview
- * @compile RecordMatchers.java
- * @run main RecordMatchers
+ * @compile RecordPatternDeclarations.java
+ * @run main RecordPatternDeclarations
  */
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -35,7 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public class RecordMatchers {
+public class RecordPatternDeclarations {
     public static void main(String... args) {
         assertEquals(1, testPointX(new Point(1, 2)));
         assertEquals(2, testPointY(new Point(1, 2)));

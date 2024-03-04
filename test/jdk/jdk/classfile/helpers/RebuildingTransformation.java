@@ -471,8 +471,8 @@ class RebuildingTransformation {
                                     case RuntimeVisibleTypeAnnotationsAttribute a -> mb.with(RuntimeVisibleTypeAnnotationsAttribute.of(transformTypeAnnotations(a.annotations(), null, null)));
                                     case SignatureAttribute a -> mb.with(SignatureAttribute.of(MethodSignature.parseFrom(a.asMethodSignature().signatureString())));
                                     case SyntheticAttribute a -> mb.with(SyntheticAttribute.of());
-                                    case MatcherAttribute ma -> {
-                                        List<Attribute<?>> matcherAttributes = ma.attributes().stream().mapMulti((Attribute<?> rca, Consumer<Attribute<?>> rcac) -> {
+                                    case PatternAttribute ma -> {
+                                        List<Attribute<?>> patternAttributes = ma.attributes().stream().mapMulti((Attribute<?> rca, Consumer<Attribute<?>> rcac) -> {
                                             switch(rca) {
                                                 case RuntimeInvisibleParameterAnnotationsAttribute a ->
                                                         rcac.accept(RuntimeInvisibleParameterAnnotationsAttribute.of(a.parameterAnnotations().stream().map(pas -> List.of(transformAnnotations(pas))).toList()));
@@ -485,10 +485,10 @@ class RebuildingTransformation {
                                                 case MethodParametersAttribute a ->
                                                         rcac.accept(MethodParametersAttribute.of(a.parameters().stream().map(mp ->
                                                             MethodParameterInfo.ofParameter(mp.name().map(Utf8Entry::stringValue), mp.flagsMask())).toArray(MethodParameterInfo[]::new)));
-                                                default -> throw new AssertionError("Unexpected annotation in matcher attribute: " + rca.attributeName());
+                                                default -> throw new AssertionError("Unexpected annotation in pattern attribute: " + rca.attributeName());
                                             }}).toList();
 
-                                        mb.with(MatcherAttribute.of(ma.matcherName().stringValue(), ma.matcherFlagsMask(), ma.matcherTypeSymbol(), matcherAttributes));
+                                        mb.with(PatternAttribute.of(ma.patternName().stringValue(), ma.patternFlagsMask(), ma.patternTypeSymbol(), patternAttributes));
                                     }
                                     case CustomAttribute a -> throw new AssertionError("Unexpected custom attribute: " + a.attributeName());
                                     case UnknownAttribute a -> throw new AssertionError("Unexpected unknown attribute: " + a.attributeName());

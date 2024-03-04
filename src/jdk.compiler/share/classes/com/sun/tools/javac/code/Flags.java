@@ -129,7 +129,7 @@ public class Flags {
 
     /** Method is a matcher method.
      */
-    public static final int MATCHER          = 1<<19; // MethodSymbols
+    public static final int PATTERN = 1<<19; // MethodSymbols
 
     /** Flag is set for compiler-generated anonymous method symbols
      *  that `own' an initializer block.
@@ -438,7 +438,7 @@ public class Flags {
         ExtendedMemberClassFlags          = (long)MemberClassFlags | SEALED | NON_SEALED,
         ExtendedMemberStaticClassFlags    = (long) MemberStaticClassFlags | SEALED | NON_SEALED,
         ExtendedClassFlags                = (long)ClassFlags | SEALED | NON_SEALED,
-        ModifierFlags                     = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED | MATCHER,
+        ModifierFlags                     = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED | PATTERN,
         InterfaceMethodMask               = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
         AnnotationTypeElementMask         = ABSTRACT | PUBLIC,
         LocalVarFlags                     = FINAL | PARAMETER,
@@ -464,7 +464,7 @@ public class Flags {
             if (0 != (flags & NATIVE))    modifiers.add(Modifier.NATIVE);
             if (0 != (flags & STRICTFP))  modifiers.add(Modifier.STRICTFP);
             if (0 != (flags & DEFAULT))   modifiers.add(Modifier.DEFAULT);
-            if (0 != (flags & MATCHER))   modifiers.add(Modifier.MATCHER);
+            if (0 != (flags & PATTERN))   modifiers.add(Modifier.PATTERN);
 
             modifiers = Collections.unmodifiableSet(modifiers);
             modifierSets.put(flags, modifiers);
@@ -508,7 +508,7 @@ public class Flags {
         DEPRECATED(Flags.DEPRECATED),
         HASINIT(Flags.HASINIT),
         IMPLICIT_CLASS(Flags.IMPLICIT_CLASS),
-        MATCHER(Flags.MATCHER),
+        PATTERN(Flags.PATTERN),
         BLOCK(Flags.BLOCK),
         FROM_SOURCE(Flags.FROM_SOURCE),
         ENUM(Flags.ENUM),

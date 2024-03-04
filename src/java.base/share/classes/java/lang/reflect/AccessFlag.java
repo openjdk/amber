@@ -377,12 +377,12 @@ public enum AccessFlag {
      * The access flag {@code DECONSTRUCTOR} with a mask value of {@code
      * 0x3000}.
      */
-    DECONSTRUCTOR(0x3000, false, Location.SET_MATCHER,
+    DECONSTRUCTOR(0x3000, false, Location.SET_PATTERN,
             new Function<ClassFileFormatVersion, Set<Location>>() {
                 @Override
                 public Set<Location> apply(ClassFileFormatVersion cffv) {
                     return (cffv.compareTo(ClassFileFormatVersion.RELEASE_22) >= 0 ) ?
-                            Location.SET_MATCHER:
+                            Location.SET_PATTERN :
                             Location.EMPTY_SET;}
             }),
 
@@ -390,12 +390,12 @@ public enum AccessFlag {
      * The access flag {@code TOTAL} with a mask value of {@code
      * 0x4000}.
      */
-    TOTAL(0x4000, false, Location.SET_MATCHER,
+    TOTAL(0x4000, false, Location.SET_PATTERN,
             new Function<ClassFileFormatVersion, Set<Location>>() {
                 @Override
                 public Set<Location> apply(ClassFileFormatVersion cffv) {
                     return (cffv.compareTo(ClassFileFormatVersion.RELEASE_22) >= 0 ) ?
-                            Location.SET_MATCHER:
+                            Location.SET_PATTERN :
                             Location.EMPTY_SET;}
             }),
 
@@ -615,7 +615,7 @@ public enum AccessFlag {
             Set.of(FIELD, METHOD);
         private static final Set<Location> SET_FIELD_METHOD_INNER_CLASS =
             Set.of(FIELD, METHOD, INNER_CLASS);
-        private static final Set<Location> SET_MATCHER = Set.of(MATCHER);
+        private static final Set<Location> SET_PATTERN = Set.of(MATCHER);
 
         private static final Set<Location> SET_METHOD = Set.of(METHOD);
         private static final Set<Location> SET_METHOD_PARAM = Set.of(METHOD_PARAMETER);

@@ -36,7 +36,7 @@
  *          java.base/jdk.internal.classfile.components
  *          java.base/jdk.internal.classfile.impl
  * @build toolbox.JavacTask toolbox.ToolBox
- * @run main ClassReaderTestMatchers
+ * @run main ClassReaderTestPatternDeclarations
  */
 
 import toolbox.TestRunner;
@@ -51,16 +51,16 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
-public class ClassReaderTestMatchers extends TestRunner {
+public class ClassReaderTestPatternDeclarations extends TestRunner {
 
     public static void main(String... args) throws Exception {
-        ClassReaderTestMatchers t = new ClassReaderTestMatchers();
+        ClassReaderTestPatternDeclarations t = new ClassReaderTestPatternDeclarations();
         t.runTests();
     }
 
     ToolBox tb;
 
-    ClassReaderTestMatchers() {
+    ClassReaderTestPatternDeclarations() {
         super(System.err);
         tb = new ToolBox();
     }

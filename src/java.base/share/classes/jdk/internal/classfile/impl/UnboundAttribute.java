@@ -32,7 +32,6 @@ import java.lang.classfile.Annotation;
 import java.lang.classfile.AnnotationElement;
 import java.lang.classfile.AnnotationValue;
 import java.lang.classfile.Attribute;
-import java.lang.classfile.AccessFlags;
 import java.lang.classfile.AttributeMapper;
 import java.lang.classfile.Attributes;
 import java.lang.classfile.BootstrapMethodEntry;
@@ -57,7 +56,7 @@ import java.lang.classfile.attribute.LocalVariableInfo;
 import java.lang.classfile.attribute.LocalVariableTableAttribute;
 import java.lang.classfile.attribute.LocalVariableTypeInfo;
 import java.lang.classfile.attribute.LocalVariableTypeTableAttribute;
-import java.lang.classfile.attribute.MatcherAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.lang.classfile.attribute.MethodParameterInfo;
 import java.lang.classfile.attribute.MethodParametersAttribute;
 import java.lang.classfile.attribute.ModuleAttribute;
@@ -313,8 +312,8 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
     }
 
     public static final class UnboundMatcherAttribute
-            extends UnboundAttribute<MatcherAttribute>
-            implements MatcherAttribute {
+            extends UnboundAttribute<PatternAttribute>
+            implements PatternAttribute {
         private final int matcherFlags;
         private final Utf8Entry matcherName;
         private final Utf8Entry matcherMethodType;
@@ -329,17 +328,17 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         }
 
         @Override
-        public int matcherFlagsMask() {
+        public int patternFlagsMask() {
             return matcherFlags;
         }
 
         @Override
-        public Utf8Entry matcherName() {
+        public Utf8Entry patternName() {
             return matcherName;
         }
 
         @Override
-        public Utf8Entry matcherMethodType() {
+        public Utf8Entry patternMethodType() {
             return matcherMethodType;
         }
 

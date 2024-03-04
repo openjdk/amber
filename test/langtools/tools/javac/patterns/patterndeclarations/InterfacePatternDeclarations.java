@@ -24,13 +24,13 @@
 /**
  * @test
  * @enablePreview
- * @compile InterfaceMatchers.java
- * @run main InterfaceMatchers
+ * @compile InterfacePatternDeclarations.java
+ * @run main InterfacePatternDeclarations
  */
 import java.util.*;
 import java.util.function.BiConsumer;
 
-public class InterfaceMatchers {
+public class InterfacePatternDeclarations {
 
     interface Map<K, V> {
         interface Entry<K,V> {

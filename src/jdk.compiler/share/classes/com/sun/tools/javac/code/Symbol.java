@@ -30,7 +30,6 @@ import java.lang.annotation.Inherited;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -364,7 +363,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                                   t.getReturnType(),
                                   t.getThrownTypes(),
                                   t.tsym);
-        } else if ((flags() & MATCHER) != 0) {
+        } else if ((flags() & PATTERN) != 0) {
             return new MethodType(List.of(owner.erasure(types)), types.syms.objectType, List.nil(), t.tsym);
         } else {
             return t;
@@ -469,14 +468,14 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
     /** Is this symbol a matcher?
      */
-    public boolean isMatcher() {
-        return (flags() & MATCHER) != 0;
+    public boolean isPattern() {
+        return (flags() & PATTERN) != 0;
     }
 
     /** Is this symbol a deconstructor?
      */
     public boolean isDeconstructor() {
-        return isMatcher() && name == owner.name;
+        return isPattern() && name == owner.name;
     }
 
     public boolean isDynamic() {
@@ -2062,7 +2061,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         public Name externalName(Types types) {
-            if ((flags() & MATCHER) != 0) {
+            if ((flags() & PATTERN) != 0) {
                 /** TODO: improve perf
                  * e.g., Point\%Ljava\|lang\|Integer\?\%Ljava\|lang\|Integer\?(Point)
                  */

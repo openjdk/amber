@@ -25,11 +25,9 @@
 
 package java.lang.classfile.attribute;
 
-import java.lang.classfile.AccessFlags;
 import java.lang.classfile.Attribute;
 import java.lang.classfile.AttributedElement;
 import java.lang.classfile.MethodElement;
-import java.lang.classfile.constantpool.IntegerEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.classfile.impl.TemporaryConstantPool;
@@ -49,32 +47,32 @@ import java.util.Set;
  * Delivered as a {@link MethodElement} when
  * traversing the elements of a {@link java.lang.classfile.MethodModel}.
  */
-public sealed interface MatcherAttribute
-        extends Attribute<MatcherAttribute>, MethodElement, AttributedElement
-        permits BoundAttribute.BoundMatcherAttribute,
+public sealed interface PatternAttribute
+        extends Attribute<PatternAttribute>, MethodElement, AttributedElement
+        permits BoundAttribute.BoundPatternAttribute,
                 UnboundAttribute.UnboundMatcherAttribute {
 
     /**
      * {@return the the module flags of the module, as a bit mask}
      */
-    int matcherFlagsMask();
+    int patternFlagsMask();
 
     /**
      * {@return the the module flags of the module, as a set of enum constants}
      */
-    default Set<AccessFlag> matcherFlags() {
-        return AccessFlag.maskToAccessFlags(matcherFlagsMask(), AccessFlag.Location.MATCHER);
+    default Set<AccessFlag> patternFlags() {
+        return AccessFlag.maskToAccessFlags(patternFlagsMask(), AccessFlag.Location.MATCHER);
     }
 
     /** {@return the name of this method} */
-    Utf8Entry matcherName();
+    Utf8Entry patternName();
 
     /** {@return the method descriptor of this method} */
-    Utf8Entry matcherMethodType();
+    Utf8Entry patternMethodType();
 
     /** {@return the method descriptor of this method, as a symbolic descriptor} */
-    default MethodTypeDesc matcherTypeSymbol() {
-        return MethodTypeDesc.ofDescriptor(matcherMethodType().stringValue());
+    default MethodTypeDesc patternTypeSymbol() {
+        return MethodTypeDesc.ofDescriptor(patternMethodType().stringValue());
     }
 
     /**
@@ -84,7 +82,7 @@ public sealed interface MatcherAttribute
      * @param matcherDescriptor the descriptor of the matcher
      * @param matcherAttributes the list of attributes of the matcher
      */
-    static MatcherAttribute of(String matcherName,
+    static PatternAttribute of(String matcherName,
                                int matcherFlags,
                                MethodTypeDesc matcherDescriptor,
                                List<Attribute<?>> matcherAttributes) {
@@ -102,7 +100,7 @@ public sealed interface MatcherAttribute
      * @param matcherDescriptor the descriptor of the matcher
      * @param matcherAttributes the list of attributes of the matcher
      */
-    static MatcherAttribute of(Utf8Entry matcherName,
+    static PatternAttribute of(Utf8Entry matcherName,
                                int matcherFlags,
                                Utf8Entry matcherDescriptor,
                                List<Attribute<?>> matcherAttributes) {

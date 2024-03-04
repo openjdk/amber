@@ -48,7 +48,7 @@ import java.lang.classfile.attribute.LocalVariableInfo;
 import java.lang.classfile.attribute.LocalVariableTableAttribute;
 import java.lang.classfile.attribute.LocalVariableTypeInfo;
 import java.lang.classfile.attribute.LocalVariableTypeTableAttribute;
-import java.lang.classfile.attribute.MatcherAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.lang.classfile.attribute.MethodParameterInfo;
 import java.lang.classfile.attribute.MethodParametersAttribute;
 import java.lang.classfile.attribute.ModuleAttribute;
@@ -497,18 +497,18 @@ public class Attributes {
             };
 
     /** Attribute mapper for the {@code Matcher} attribute */
-    public static final AttributeMapper<MatcherAttribute>
+    public static final AttributeMapper<PatternAttribute>
             MATCHER = new AbstractAttributeMapper<>(NAME_MATCHER) {
         @Override
-        public MatcherAttribute readAttribute(AttributedElement e, ClassReader cf, int p) {
-            return new BoundAttribute.BoundMatcherAttribute(cf, this, p);
+        public PatternAttribute readAttribute(AttributedElement e, ClassReader cf, int p) {
+            return new BoundAttribute.BoundPatternAttribute(cf, this, p);
         }
 
         @Override
-        protected void writeBody(BufWriter buf, MatcherAttribute attr) {
-            buf.writeIndex(attr.matcherName());
-            buf.writeU2(attr.matcherFlagsMask());
-            buf.writeIndex(attr.matcherMethodType());
+        protected void writeBody(BufWriter buf, PatternAttribute attr) {
+            buf.writeIndex(attr.patternName());
+            buf.writeU2(attr.patternFlagsMask());
+            buf.writeIndex(attr.patternMethodType());
             buf.writeList(attr.attributes());
         }
 

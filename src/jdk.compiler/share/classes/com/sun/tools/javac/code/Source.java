@@ -256,7 +256,7 @@ public enum Source {
         UNNAMED_VARIABLES(JDK22, Fragments.FeatureUnnamedVariables, DiagKind.PLURAL),
         PRIMITIVE_PATTERNS(JDK23, Fragments.FeaturePrimitivePatterns, DiagKind.PLURAL),
         SUPER_INIT(JDK22, Fragments.FeatureSuperInit, DiagKind.NORMAL),
-        MATCHERS(JDK23, Fragments.FeaturePatternDeclarations, DiagKind.PLURAL),
+        PATTERN_DECLARATIONS(JDK23, Fragments.FeaturePatternDeclarations, DiagKind.PLURAL),
         ;
 
         enum DiagKind {

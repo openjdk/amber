@@ -27,7 +27,7 @@ package java.lang.classfile;
 import java.lang.classfile.attribute.AnnotationDefaultAttribute;
 import java.lang.classfile.attribute.DeprecatedAttribute;
 import java.lang.classfile.attribute.ExceptionsAttribute;
-import java.lang.classfile.attribute.MatcherAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.lang.classfile.attribute.MethodParametersAttribute;
 import java.lang.classfile.attribute.RuntimeInvisibleAnnotationsAttribute;
 import java.lang.classfile.attribute.RuntimeInvisibleParameterAnnotationsAttribute;
@@ -52,7 +52,7 @@ public sealed interface MethodElement
         extends ClassFileElement
         permits AccessFlags, CodeModel, CustomAttribute,
                 AnnotationDefaultAttribute, DeprecatedAttribute,
-                ExceptionsAttribute, MatcherAttribute, MethodParametersAttribute,
+                ExceptionsAttribute, PatternAttribute, MethodParametersAttribute,
                 RuntimeInvisibleAnnotationsAttribute, RuntimeInvisibleParameterAnnotationsAttribute,
                 RuntimeInvisibleTypeAnnotationsAttribute, RuntimeVisibleAnnotationsAttribute,
                 RuntimeVisibleParameterAnnotationsAttribute, RuntimeVisibleTypeAnnotationsAttribute,

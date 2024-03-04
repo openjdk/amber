@@ -24,12 +24,12 @@
 /**
  * @test
  * @enablePreview
- * @compile ClassMatchers.java
- * @run main ClassMatchers
+ * @compile ClassPatternDeclarations.java
+ * @run main ClassPatternDeclarations
  */
 import java.util.Objects;
 
-public class ClassMatchers {
+public class ClassPatternDeclarations {
     public static void main(String... args) {
         assertEquals("A:B", test1A(new Person1("A", "B")));
         assertEquals("A", test1B(new Person1("A", "B")));

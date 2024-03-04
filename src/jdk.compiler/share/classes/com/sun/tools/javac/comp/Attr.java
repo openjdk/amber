@@ -4260,7 +4260,7 @@ public class Attr extends JCTree.Visitor {
             List<Type> patternTypes = patternTypesBuffer.toList();
 
             var matchersIt = site.tsym.members()
-                    .getSymbols(sym -> sym.isMatcher() && sym.type.getParameterTypes().size() == nestedPatternCount)
+                    .getSymbols(sym -> sym.isPattern() && sym.type.getParameterTypes().size() == nestedPatternCount)
                     .iterator();
             List<MethodSymbol> matchers = Stream.generate(() -> null)
                     .takeWhile(x -> matchersIt.hasNext())

@@ -885,7 +885,7 @@ public class ClassWriter extends ClassFile {
         int acountIdx = beginAttrs();
         int acount = 0;
 
-        if (m.isMatcher() && target.hasMethodParameters()) {
+        if (m.isPattern() && target.hasMethodParameters()) {
             acount += writeMethodParametersAttr(m, requiresParamNames(m));
         }
 
@@ -1020,7 +1020,7 @@ public class ClassWriter extends ClassFile {
      */
     void writeMethod(MethodSymbol m) {
         int flags = adjustFlags(m.flags());
-        databuf.appendChar(flags | (m.isMatcher() ? Flags.STATIC : 0));
+        databuf.appendChar(flags | (m.isPattern() ? Flags.STATIC : 0));
         if (dumpMethodModifiers) {
             PrintWriter pw = log.getWriter(Log.WriterKind.ERROR);
             pw.println("METHOD  " + m.name);
@@ -1064,7 +1064,7 @@ public class ClassWriter extends ClassFile {
         if (!m.isLambdaMethod() && !m.isDeconstructor())
             acount += writeParameterAttrs(m.params);
 
-        if (m.isMatcher()) {
+        if (m.isPattern()) {
             acount += writeMatcherAttribute(m);
         }
 

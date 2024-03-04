@@ -85,8 +85,6 @@ import com.sun.tools.javac.util.Log.WriterKind;
 
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 
-import com.sun.tools.javac.code.Lint;
-import com.sun.tools.javac.code.Lint.LintCategory;
 import com.sun.tools.javac.code.Symbol.ModuleSymbol;
 
 import com.sun.tools.javac.resources.CompilerProperties.Errors;
@@ -1572,7 +1570,7 @@ public class JavaCompiler {
             }
             @Override
             public void visitMethodDef(JCMethodDecl tree) {
-                hasMatchers |= tree.sym.isMatcher();
+                hasMatchers |= tree.sym.isPattern();
                 super.visitMethodDef(tree);
             }
         }

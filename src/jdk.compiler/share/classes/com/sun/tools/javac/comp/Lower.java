@@ -3907,7 +3907,7 @@ public class Lower extends TreeTranslator {
     public void visitReturn(JCReturn tree) {
         if (tree.expr != null)
             tree.expr = translate(tree.expr,
-                                  types.erasure(currentMethodDef.sym.isMatcher() ? syms.objectType : currentMethodDef
+                                  types.erasure(currentMethodDef.sym.isPattern() ? syms.objectType : currentMethodDef
                                                 .restype.type));
         result = tree;
     }

@@ -289,7 +289,7 @@ public class ClassReader {
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = Feature.RECORDS.allowedInSource(source);
-        allowMatchers = Feature.MATCHERS.allowedInSource(source);
+        allowMatchers = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
         allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
         warnOnIllegalUtf8 = Feature.WARN_ON_ILLEGAL_UTF8.allowedInSource(source);
 
@@ -1323,7 +1323,7 @@ public class ClassReader {
                         readMemberAttrs(sym);
 
                         sym.name = name;
-                        sym.flags_field |= MATCHER;
+                        sym.flags_field |= PATTERN;
                         //TODO: flags
                         sym.type = actualType;
                     }
@@ -2764,7 +2764,7 @@ public class ClassReader {
                 firstParamLvt += 1;
         }
 
-        if (sym.type != jvmType && !sym.isMatcher()) {
+        if (sym.type != jvmType && !sym.isPattern()) {
             // reading the method attributes has caused the
             // symbol's type to be changed. (i.e. the Signature
             // attribute.)  This may happen if there are hidden

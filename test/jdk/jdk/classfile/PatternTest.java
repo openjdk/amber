@@ -28,25 +28,15 @@
  * @summary Testing parsing of a matcher method.
  * @enablePreview
  * @build testdata.*
- * @run junit MatcherTest
+ * @run junit PatternTest
  */
 
-import helpers.ClassRecord;
 import java.lang.classfile.*;
-import java.lang.classfile.attribute.MatcherAttribute;
 
 import java.io.IOException;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.lang.reflect.AccessFlag;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import static helpers.ClassRecord.assertEqualsDeep;
@@ -56,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.classfile.components.ClassPrinter;
 import org.junit.jupiter.api.Test;
 
-class MatcherTest {
+class PatternTest {
 
     @Test
     void testReadDeconstructor() throws Exception {
@@ -65,10 +55,10 @@ class MatcherTest {
         ClassTransform xform = (clb, cle) -> {
             if (cle instanceof MethodModel mm) {
                 clb.transformMethod(mm, (mb, me) -> {
-                    if (me instanceof MatcherAttribute ma) {
-                        extractedInfo.add(ma.matcherName().toString());
-                        extractedInfo.add(String.valueOf(ma.matcherFlags().contains(AccessFlag.DECONSTRUCTOR)));
-                        extractedInfo.add(ma.matcherTypeSymbol().toString());
+                    if (me instanceof PatternAttribute ma) {
+                        extractedInfo.add(ma.patternName().toString());
+                        extractedInfo.add(String.valueOf(ma.patternFlags().contains(AccessFlag.DECONSTRUCTOR)));
+                        extractedInfo.add(ma.patternTypeSymbol().toString());
                         extractedInfo.add(ma.attributes().toString());
                         mb.with(me);
                     } else {
@@ -79,13 +69,13 @@ class MatcherTest {
             else
                 clb.with(cle);
         };
-        cc.transform(cc.parse(MatcherTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes()), xform);
+        cc.transform(cc.parse(PatternTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes()), xform);
         assertEquals(extractedInfo.toString(), "[Points, true, MethodTypeDesc[(Collection,Collection)void], [Attribute[name=MethodParameters], Attribute[name=Signature], Attribute[name=RuntimeVisibleParameterAnnotations]]]");
     }
 
     @Test
     void testReadAndVerifyDeconstructor() throws IOException {
-        byte[] bytes = MatcherTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes();
+        byte[] bytes = PatternTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes();
         var cc = ClassFile.of().verify(bytes);
 
         ClassModel classModel = ClassFile.of().parse(bytes);

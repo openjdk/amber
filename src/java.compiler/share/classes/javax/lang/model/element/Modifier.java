@@ -64,7 +64,7 @@ public enum Modifier {
      * The modifier {@code default}
      * @since 23
      */
-    MATCHER,
+    PATTERN,
     /** The modifier {@code static} */          STATIC,
 
     /**

@@ -251,7 +251,7 @@ public class MemberEnter extends JCTree.Visitor {
             env.dup(tree, env.info.dup(env.info.scope.dupUnshared(tree.sym)));
         localEnv.enclMethod = tree;
         if (tree.sym.type != null) {
-            if (tree.sym.isMatcher()) {
+            if (tree.sym.isPattern()) {
                 localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
                                                                  syms.objectType);
             } else {

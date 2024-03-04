@@ -22,7 +22,7 @@
  */
 
 // key: compiler.err.matcher.overloading.ambiguity
-// key: compiler.misc.feature.matchers
+// key: compiler.misc.feature.pattern.declarations
 // key: compiler.warn.preview.feature.use.plural
 // options: --enable-preview -source ${jdk.version} -Xlint:preview
 

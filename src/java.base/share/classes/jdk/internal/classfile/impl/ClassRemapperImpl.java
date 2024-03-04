@@ -54,7 +54,7 @@ import java.lang.classfile.attribute.EnclosingMethodAttribute;
 import java.lang.classfile.attribute.ExceptionsAttribute;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
-import java.lang.classfile.attribute.MatcherAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.lang.classfile.attribute.MethodParametersAttribute;
 import java.lang.classfile.attribute.MethodParameterInfo;
 import java.lang.classfile.attribute.ModuleAttribute;
@@ -225,12 +225,12 @@ public record ClassRemapperImpl(Function<ClassDesc, ClassDesc> mapFunction) impl
                 case RuntimeInvisibleTypeAnnotationsAttribute aa ->
                     mb.with(RuntimeInvisibleTypeAnnotationsAttribute.of(
                             mapTypeAnnotations(aa.annotations())));
-                case MatcherAttribute ma -> {
+                case PatternAttribute ma -> {
                     List<Attribute<?>> matcherAttrs = ma.attributes().stream().<Attribute<?>>map(this::mapMatcherAttributes).toList();
-                    mb.with(MatcherAttribute.of(
-                                    ma.matcherName().stringValue(),
-                                    ma.matcherFlagsMask(),
-                                    ma.matcherTypeSymbol(),
+                    mb.with(PatternAttribute.of(
+                                    ma.patternName().stringValue(),
+                                    ma.patternFlagsMask(),
+                                    ma.patternTypeSymbol(),
                                     matcherAttrs));
                 }
                 default ->

@@ -24,7 +24,7 @@
 // key: compiler.err.no.compatible.matcher.found
 // key: compiler.err.prob.found.req
 // key: compiler.misc.inconvertible.types
-// key: compiler.misc.feature.matchers
+// key: compiler.misc.feature.pattern.declarations
 // key: compiler.warn.preview.feature.use.plural
 // options: --enable-preview -source ${jdk.version} -Xlint:preview
 

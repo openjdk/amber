@@ -24,12 +24,12 @@
 /**
  * @test
  * @enablePreview
- * @compile MultipleMatchers.java
- * @run main MultipleMatchers
+ * @compile MultiplePatternDeclarations.java
+ * @run main MultiplePatternDeclarations
  */
 import java.util.Objects;
 
-public class MultipleMatchers {
+public class MultiplePatternDeclarations {
     public static void main(String... args) {
         assertEquals("A:B", test1A(new Person1("A", "B")));
         assertEquals("A", test1B(new Person1("A", "B")));

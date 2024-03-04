@@ -2,9 +2,9 @@
  * @test /nodynamiccopyright/
  * @summary Verify error related to annotations and patterns
  * @enablePreview
- * @compile/fail/ref=OverloadedMatchersErrors.out -XDrawDiagnostics OverloadedMatchersErrors.java
+ * @compile/fail/ref=OverloadedPatternDeclarationErrors.out -XDrawDiagnostics OverloadedPatternDeclarationErrors.java
  */
-public class OverloadedMatchersErrors {
+public class OverloadedPatternDeclarationErrors {
     private static int test(D o) {
         if (o instanceof D(String data, Integer out)) { // no compatible matcher found
             return out;

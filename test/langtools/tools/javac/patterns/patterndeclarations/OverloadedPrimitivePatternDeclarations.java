@@ -26,75 +26,26 @@ import java.util.Objects;
 /**
  * @test
  * @enablePreview
- * @compile OverloadedMatchers.java
- * @run main OverloadedMatchers
+ * @compile OverloadedPrimitivePatternDeclarations.java
+ * @run main OverloadedPrimitivePatternDeclarations
  */
-public class OverloadedMatchers {
+
+public class OverloadedPrimitivePatternDeclarations {
     public static void main(String... args) {
-        assertEquals( 2, test1(new D()));
-        assertEquals( 1, test2(new D()));
-        assertEquals( 1, test3(new D()));
-        assertEquals( 3, test4(new D()));
-        assertEquals( 4, test5(new D()));
+        assertEquals( 1, testBoxing(new D()));
     }
 
-    private static int test1(D o) {
+    private static int testBoxing(D o) {
         if (o instanceof D(String data, Integer outI)) {
             return outI;
         }
         return -1;
     }
 
-    private static int test2(D o) {
-        if (o instanceof D(Object data, Integer outI)) {
-            return outI;
-        }
-        return -1;
-    }
-
-    private static int test3(D o) {
-        if (o instanceof D(Integer data, Integer outI)) {
-            return outI;
-        }
-        return -1;
-    }
-
-    private static int test4(D o) {
-        if (o instanceof D(A data, Integer outI)) {
-            return outI;
-        }
-        return -1;
-    }
-
-    private static Integer test5(D o) {
-        if (o instanceof D(B data, Integer outI)) {
-            return outI;
-        }
-        return null;
-    }
-
-    static class A {}
-    static class B extends A {}
-
     public record D() {
-        public pattern D(Object out, Integer outI) {
-            out = 42;
+        public pattern D(String out, int outI) {
+            out = "42";
             outI = 1;
-        }
-
-        public pattern D(String out, Integer outI) {
-            out = "2";
-            outI = 2;
-        }
-
-        public pattern D(A out, Integer outI) {
-            out = new A();
-            outI = 3;
-        }
-
-        public pattern D(B out, Integer outI) {
-            out = new B();
-            outI = 4;
         }
     }
 

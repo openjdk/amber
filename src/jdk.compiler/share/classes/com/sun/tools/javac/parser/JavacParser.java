@@ -3529,8 +3529,8 @@ public class JavacParser implements Parser {
                     break;
                 }
                 if (isPatternDeclarationStart()) {
-                    checkSourceLevel(Feature.MATCHERS);
-                    flag = Flags.MATCHER;
+                    checkSourceLevel(Feature.PATTERN_DECLARATIONS);
+                    flag = Flags.PATTERN;
                     break;
                 }
                 break loop;
@@ -4708,15 +4708,15 @@ public class JavacParser implements Parser {
             }
 
             return List.of(methodDeclaratorRest(
-                    pos, mods, null, (mods.flags & Flags.MATCHER) == 0 ? names.init : tk.name(), typarams,
+                    pos, mods, null, (mods.flags & Flags.PATTERN) == 0 ? names.init : tk.name(), typarams,
                     isInterface, true, isRecord, dc));
         }
 
-        if (token.kind == LPAREN && isInterface && type.hasTag(IDENT) && (mods.flags & Flags.MATCHER) != 0) {
+        if (token.kind == LPAREN && isInterface && type.hasTag(IDENT) && (mods.flags & Flags.PATTERN) != 0) {
             mods.flags |= Flags.DEFAULT;
             // pattern declaration in interface
             return List.of(methodDeclaratorRest(
-                    pos, mods, null, (mods.flags & Flags.MATCHER) == 0 ? names.init : tk.name(), typarams,
+                    pos, mods, null, (mods.flags & Flags.PATTERN) == 0 ? names.init : tk.name(), typarams,
                     isInterface, true, isRecord, dc));
         }
 

@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import java.lang.classfile.*;
@@ -44,8 +43,6 @@ import java.lang.classfile.constantpool.NameAndTypeEntry;
 import java.lang.classfile.constantpool.PackageEntry;
 import java.lang.classfile.constantpool.Utf8Entry;
 import jdk.internal.access.SharedSecrets;
-
-import static java.lang.classfile.Attributes.CONSTANT_VALUE;
 
 public abstract sealed class BoundAttribute<T extends Attribute<T>>
         extends AbstractElement
@@ -333,34 +330,34 @@ public abstract sealed class BoundAttribute<T extends Attribute<T>>
         }
     }
 
-    public static final class BoundMatcherAttribute extends BoundAttribute<MatcherAttribute>
-            implements MatcherAttribute {
+    public static final class BoundPatternAttribute extends BoundAttribute<PatternAttribute>
+            implements PatternAttribute {
         private MethodTypeDesc mDesc;
         private List<Attribute<?>> attributes;
 
-        public BoundMatcherAttribute(ClassReader cf, AttributeMapper<MatcherAttribute> mapper, int pos) {
+        public BoundPatternAttribute(ClassReader cf, AttributeMapper<PatternAttribute> mapper, int pos) {
             super(cf, mapper, pos);
         }
 
         @Override
-        public Utf8Entry matcherName() {
+        public Utf8Entry patternName() {
             return classReader.readUtf8Entry(payloadStart);
         }
 
         @Override
-        public int matcherFlagsMask() {
+        public int patternFlagsMask() {
             return classReader.readU2(payloadStart + 2);
         }
 
         @Override
-        public Utf8Entry matcherMethodType() {
+        public Utf8Entry patternMethodType() {
             return classReader.readUtf8Entry(payloadStart + 4);
         }
 
         @Override
-        public MethodTypeDesc matcherTypeSymbol() {
+        public MethodTypeDesc patternTypeSymbol() {
             if (mDesc == null) {
-                mDesc = MethodTypeDesc.ofDescriptor(matcherMethodType().stringValue());
+                mDesc = MethodTypeDesc.ofDescriptor(patternMethodType().stringValue());
             }
             return mDesc;
         }
