@@ -2,7 +2,7 @@
  * @test /nodynamiccopyright/
  * @summary Verify error related to annotations and patterns
  * @enablePreview
- * @compile/fail/ref=OverloadedPatternDeclarationErrors.out -XDrawDiagnostics OverloadedPatternDeclarationErrors.java
+ * @compile/fail/ref=OverloadedPatternDeclarationErrors.out -XDrawDiagnostics -XDdev OverloadedPatternDeclarationErrors.java
  */
 public class OverloadedPatternDeclarationErrors {
     private static int test(D o) {
@@ -21,21 +21,21 @@ public class OverloadedPatternDeclarationErrors {
 
     public record D() {
         public pattern D(Object v1, Float out) {
-            out = 10.0f;
+            match D(10.0f, 10.0f);
         }
 
         public pattern D(Float out, Integer v1) {
-            out = 2;
+            match D(10.0f, 2);
         }
     }
 
     public record D2() {
         public pattern D2(Object v, Integer out) {
-            out = 1;
+            match D2("", 1);
         }
 
         public pattern D2(CharSequence v, Integer out) {
-            out = 2;
+            match D2("", 2);
         }
     }
 }

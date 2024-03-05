@@ -21,37 +21,17 @@
  * questions.
  */
 
-import java.util.Objects;
+// key: compiler.misc.feature.pattern.declarations
+// key: compiler.warn.preview.feature.use.plural
+// key: compiler.err.match.outside.pattern.declaration
+// options: --enable-preview -source ${jdk.version} -Xlint:preview
 
-/**
- * @test
- * @enablePreview
- * @compile OverloadedPrimitivePatternDeclarations.java
- * @run main OverloadedPrimitivePatternDeclarations
- */
+public class PatternDeclarationMatchOutside {
 
-public class OverloadedPrimitivePatternDeclarations {
-    public static void main(String... args) {
-        assertEquals( 1, testBoxing(new D()));
-    }
-
-    private static int testBoxing(D o) {
-        if (o instanceof D(String data, Integer outI)) {
-            return outI;
-        }
-        return -1;
-    }
-
-    public record D() {
-        public pattern D(String out, int outI) {
-            out = "42";
-            outI = 1;
+    record Test(Integer x, Integer y) {
+        public void meth(Integer x, Integer y) {
+            match Test(1, 2);
         }
     }
 
-    private static void assertEquals(int expected, int actual) {
-        if (!Objects.equals(expected, actual)) {
-            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
-        }
-    }
 }

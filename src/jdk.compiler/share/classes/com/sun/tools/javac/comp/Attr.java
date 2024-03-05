@@ -2364,6 +2364,35 @@ public class Attr extends JCTree.Visitor {
         result = null;
     }
 
+    public void visitMatch(JCMatch tree) {
+        Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
+        tree.meth = localEnv.enclMethod;
+
+        List<Type> parameterTypes = tree.meth.sym.type.getParameterTypes();
+        List<JCExpression>   args = tree.args;
+
+        if (parameterTypes.size() != args.size()) {
+            log.error(tree.pos(), Errors.MatchNotMatchingPatternDeclarationSignature);
+        }
+
+        if (!tree.meth.sym.isPattern()) {
+            log.error(tree.pos(), Errors.MatchOutsidePatternDeclaration);
+        }
+
+        while (parameterTypes.nonEmpty() && args.nonEmpty()) {
+            attribExpr(args.head, localEnv, parameterTypes.head);
+
+            parameterTypes = parameterTypes.tail;
+            args = args.tail;
+        }
+
+        if (tree.clazz != tree.meth.name) {
+            log.error(tree.pos(), Errors.MatchPatternNameWrong);
+        }
+
+        result = null;
+    }
+
     public void visitContinue(JCContinue tree) {
         tree.target = findJumpTarget(tree.pos(), tree.getTag(), tree.label, env);
         result = null;

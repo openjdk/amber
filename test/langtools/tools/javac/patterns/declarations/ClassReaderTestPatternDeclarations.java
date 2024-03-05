@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -86,8 +86,7 @@ public class ClassReaderTestPatternDeclarations extends TestRunner {
                     "public class Point {\n" +
                     "    public Integer x = 0, y = 0;\n" +
                     "    public pattern Point(Integer x, Integer y) {\n" +
-                    "         x = this.x;\n" +
-                    "         y = this.y;\n" +
+                    "         match Point(this.x, this.y);" +
                     "    }\n" +
                     "}");
 

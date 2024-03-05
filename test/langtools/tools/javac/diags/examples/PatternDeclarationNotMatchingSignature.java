@@ -21,26 +21,17 @@
  * questions.
  */
 
-// key: compiler.err.matcher.overloading.ambiguity
 // key: compiler.misc.feature.pattern.declarations
 // key: compiler.warn.preview.feature.use.plural
+// key: compiler.err.match.not.matching.pattern.declaration.signature
 // options: --enable-preview -source ${jdk.version} -Xlint:preview
 
-public class MatcherOverloadingAmbiguity {
-    private static int test(D o) {
-        if (o instanceof D(String data, Integer out)) {
-            return out;
+public class PatternDeclarationNotMatchingSignature {
+
+    record Test(Integer x, Integer y) {
+        public pattern Test(Integer x, Integer y) {
+            match Test(this.y);
         }
-        return -1;
     }
 
-    public record D() {
-        public pattern D(Object v, Integer out) {
-            out = 1;
-        }
-
-        public pattern D(CharSequence v, Integer out) {
-            out = 2;
-        }
-    }
 }

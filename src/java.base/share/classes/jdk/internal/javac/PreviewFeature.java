@@ -81,6 +81,8 @@ public @interface PreviewFeature {
         CLASSFILE_API,
         @JEP(number=461, title="Stream Gatherers", status="Preview")
         STREAM_GATHERERS,
+        @JEP(number=999, title="Pattern Declarations", status="Preview")
+        PATTERN_DECLARATIONS,
         /**
          * A key for testing.
          */

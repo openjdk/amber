@@ -648,6 +648,15 @@ public class TransTypes extends TreeTranslator {
         result = tree;
     }
 
+    @Override
+    public void visitMatch(JCMatch tree) {
+        List<Type> argtypes = tree.meth.type.getParameterTypes();
+
+        tree.args = translateArgs(tree.args, argtypes, null);
+
+        result = tree;
+    }
+
     public void visitThrow(JCThrow tree) {
         tree.expr = translate(tree.expr, erasure(tree.expr.type));
         result = tree;

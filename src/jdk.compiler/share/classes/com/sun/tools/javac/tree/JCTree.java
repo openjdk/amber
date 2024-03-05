@@ -205,6 +205,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         ASSERT,
 
+        /** Match statements, of type Match.
+         */
+        MATCH,
+
         /** Method invocation expressions, of type Apply.
          */
         APPLY,
@@ -1686,6 +1690,35 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return YIELD;
+        }
+    }
+
+    /**
+     * The match statement
+     */
+    public static class JCMatch extends JCStatement implements MatchTree {
+        public  List<JCExpression> args;
+        public  Name clazz;
+        public  JCMethodDecl meth;
+
+        protected JCMatch(Name clazz, List<JCExpression> args) {
+            this.args = args;
+            this.clazz = clazz;
+        }
+        @Override
+        public void accept(Visitor v) { v.visitMatch(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.MATCH; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public List<JCExpression> getArguments() { return args; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitMatchStatement(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return MATCH;
         }
     }
 
@@ -3489,6 +3522,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCYield Yield(JCExpression value);
         JCContinue Continue(Name label);
         JCReturn Return(JCExpression expr);
+        JCMatch Match(Name expr, List<JCExpression> args);
         JCThrow Throw(JCExpression expr);
         JCAssert Assert(JCExpression cond, JCExpression detail);
         JCMethodInvocation Apply(List<JCExpression> typeargs,
@@ -3562,6 +3596,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitExec(JCExpressionStatement that)    { visitTree(that); }
         public void visitBreak(JCBreak that)                 { visitTree(that); }
         public void visitYield(JCYield that)                 { visitTree(that); }
+        public void visitMatch(JCMatch that)                 { visitTree(that); }
         public void visitContinue(JCContinue that)           { visitTree(that); }
         public void visitReturn(JCReturn that)               { visitTree(that); }
         public void visitThrow(JCThrow that)                 { visitTree(that); }

@@ -29,14 +29,9 @@ import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.CaseTree.CaseKind;
 import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Flags;
-import static com.sun.tools.javac.code.Flags.FINAL;
-import static com.sun.tools.javac.code.Flags.PUBLIC;
-import static com.sun.tools.javac.code.Flags.STATIC;
 import com.sun.tools.javac.code.Kinds;
 import com.sun.tools.javac.code.Kinds.Kind;
 
-import static com.sun.tools.javac.code.Kinds.Kind.MTH;
-import static com.sun.tools.javac.code.Kinds.Kind.VAR;
 import static com.sun.tools.javac.code.TypeTag.*;
 
 import com.sun.tools.javac.code.Preview;
@@ -63,6 +58,7 @@ import com.sun.tools.javac.tree.JCTree.JCIf;
 import com.sun.tools.javac.tree.JCTree.JCInstanceOf;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCSwitch;
+import com.sun.tools.javac.tree.JCTree.JCMatch;
 import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
 import com.sun.tools.javac.tree.JCTree.JCBindingPattern;
 import com.sun.tools.javac.tree.JCTree.JCWhileLoop;
@@ -108,7 +104,6 @@ import com.sun.tools.javac.tree.JCTree.LetExpr;
 import com.sun.tools.javac.tree.TreeInfo;
 import com.sun.tools.javac.tree.TreeScanner;
 import com.sun.tools.javac.util.Assert;
-import com.sun.tools.javac.util.JCDiagnostic;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
@@ -860,6 +855,41 @@ public class TransPatterns extends TreeTranslator {
                 new Symbol.MethodHandleSymbol(bsm),
                 types.boxedTypeOrType(syms.booleanType),
                 new LoadableConstant[]{});
+    }
+
+    /**
+     * A statement of the form
+     * <pre>{@code
+     *   pattern <Name> (parameter1, parameter2) {
+     *       match <Name> (arg1, arg2) ;
+     *   }
+     * }
+     * </pre>
+     *
+     * is translated to:
+     *
+     * <pre>{@code
+     *     parameter1 = arg1;
+     *     parameter2 = arg2;
+     * }</pre>
+     *
+     */
+    @Override
+    public void visitMatch(JCMatch tree) {
+        List<JCExpression> args = tree.getArguments();
+        List<JCVariableDecl> parameters = tree.meth.getParameters();
+
+        ListBuffer<JCStatement> stats = new ListBuffer<>();
+        while (args.nonEmpty() && parameters.nonEmpty()) {
+            JCExpressionStatement stat =
+                    make.Exec(make.Assign(make.Ident(parameters.head),
+                                    args.head).setType(parameters.head.type));
+            stats.add(stat);
+            parameters = parameters.tail;
+            args = args.tail;
+        }
+
+        result = make.at(tree.pos).Block(0, stats.toList());
     }
 
     private class PrimitiveGenerator extends Types.SignatureGenerator {

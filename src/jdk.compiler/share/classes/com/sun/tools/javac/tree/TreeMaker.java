@@ -389,6 +389,12 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCMatch Match(Name clazz, List<JCExpression> args) {
+        JCMatch tree = new JCMatch(clazz, args);
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCMethodInvocation Apply(List<JCExpression> typeargs,
                        JCExpression fn,
                        List<JCExpression> args)

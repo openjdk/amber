@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,17 +21,36 @@
  * questions.
  */
 
- // key: compiler.misc.feature.pattern.declarations
- // key: compiler.warn.preview.feature.use.plural
- // options: --enable-preview -source ${jdk.version} -Xlint:preview
+import java.util.Objects;
 
-public class Matchers {
+/**
+ * @test
+ * @enablePreview
+ * @compile OverloadedPrimitivePatternDeclarations.java
+ * @run main OverloadedPrimitivePatternDeclarations
+ */
 
-    record Test(Integer x, Integer y) {
-        public pattern Test(Integer x, Integer y) {
-            x = this.x;
-            y = this.y;
+public class OverloadedPrimitivePatternDeclarations {
+    public static void main(String... args) {
+        assertEquals( 1, testBoxing(new D()));
+    }
+
+    private static int testBoxing(D o) {
+        if (o instanceof D(String data, Integer outI)) {
+            return outI;
+        }
+        return -1;
+    }
+
+    public record D() {
+        public pattern D(String out, int outI) {
+            match D("42", 1);
         }
     }
 
+    private static void assertEquals(int expected, int actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
+        }
+    }
 }

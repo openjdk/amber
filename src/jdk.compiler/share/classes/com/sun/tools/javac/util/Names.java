@@ -73,6 +73,8 @@ public class Names {
     public final Name when;
     public final Name with;
     public final Name yield;
+    public final Name match;
+    public final Name pattern;
 
     // field and method names
     public final Name _name;
@@ -271,6 +273,8 @@ public class Names {
         when = fromString("when");
         with = fromString("with");
         yield = fromString("yield");
+        match = fromString("match");
+        pattern = fromString("pattern");
 
         // field and method names
         _name = fromString("name");

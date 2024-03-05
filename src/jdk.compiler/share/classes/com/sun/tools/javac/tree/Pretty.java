@@ -1140,6 +1140,18 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
+    public void visitMatch(JCMatch tree) {
+        try {
+            print("match ");
+            print(tree.clazz);
+            print('(');
+            printExprs(tree.args);
+            print(')');
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void visitApply(JCMethodInvocation tree) {
         try {
             if (!tree.typeargs.isEmpty()) {

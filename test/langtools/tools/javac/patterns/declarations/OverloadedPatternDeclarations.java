@@ -78,23 +78,19 @@ public class OverloadedPatternDeclarations {
 
     public record D() {
         public pattern D(Object out, Integer outI) {
-            out = 42;
-            outI = 1;
+            match D(42, 1);
         }
 
         public pattern D(String out, Integer outI) {
-            out = "2";
-            outI = 2;
+            match D("2", 2);
         }
 
         public pattern D(A out, Integer outI) {
-            out = new A();
-            outI = 3;
+            match D(new A(), 3);
         }
 
         public pattern D(B out, Integer outI) {
-            out = new B();
-            outI = 4;
+            match D(new B(), 4);
         }
     }
 

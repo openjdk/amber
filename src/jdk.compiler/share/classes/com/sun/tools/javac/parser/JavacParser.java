@@ -191,6 +191,7 @@ public class JavacParser implements Parser {
         this.allowYieldStatement = Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = Feature.RECORDS.allowedInSource(source);
         this.allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
+        this.allowPatternDeclarations = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
     }
 
     /** Construct a parser from an existing parser, with minimal overhead.
@@ -214,6 +215,7 @@ public class JavacParser implements Parser {
         this.allowYieldStatement = Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = Feature.RECORDS.allowedInSource(source);
         this.allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
+        this.allowPatternDeclarations = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {
@@ -254,6 +256,10 @@ public class JavacParser implements Parser {
     /** Switch: are sealed types allowed in this source level?
      */
     boolean allowSealedTypes;
+
+    /** Switch: are pattern declarations allowed in this source level?
+     */
+    boolean allowPatternDeclarations;
 
     /** The type of the method receiver, as specified by a first "this" parameter.
      */
@@ -2872,6 +2878,19 @@ public class JavacParser implements Parser {
             dc = token.docComment();
             return List.of(classOrRecordOrInterfaceOrEnumDeclaration(modifiersOpt(), dc));
         case IDENTIFIER:
+            if (token.name() == names.match && allowPatternDeclarations) {
+                Token next = S.token(1);
+
+                if(next.kind == IDENTIFIER) {
+                    checkSourceLevel(Feature.PATTERN_DECLARATIONS);
+                    nextToken();
+                    Name name = ident();
+                    int identPos = token.pos;
+                    List<JCExpression> args = arguments();
+                    accept(SEMI);
+                    return List.of(toP(F.at(pos).Match(name, args)));
+                }
+            } else
             if (token.name() == names.yield && allowYieldStatement) {
                 Token next = S.token(1);
                 boolean isYieldStatement;
@@ -4885,15 +4904,20 @@ public class JavacParser implements Parser {
     }
 
     protected boolean isPatternDeclarationStart() {
-        if (token.name() == names.fromString("pattern")) {
+        if (token.name() == names.pattern) {
             Token next = S.token(1);
-            return switch (next.kind) {
+            var allowPattern = switch (next.kind) {
                 case IDENTIFIER -> {
                     Token afterNext = S.token(2);
                     yield afterNext.kind == LPAREN;
                 }
                 default -> false;
             };
+
+            if (allowPattern) {
+                checkSourceLevel(Feature.PATTERN_DECLARATIONS);
+                return true;
+            }
         }
         return false;
     }

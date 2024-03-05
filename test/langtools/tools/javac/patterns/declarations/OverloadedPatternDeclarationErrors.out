@@ -1,6 +1,5 @@
 OverloadedPatternDeclarationErrors.java:9:26: compiler.err.no.compatible.matcher.found
 OverloadedPatternDeclarationErrors.java:16:26: compiler.err.matcher.overloading.ambiguity
-OverloadedPatternDeclarationErrors.java:28:19: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: int, java.lang.Float)
 - compiler.note.preview.filename: OverloadedPatternDeclarationErrors.java, DEFAULT
 - compiler.note.preview.recompile
-3 errors
+2 errors

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -77,12 +77,11 @@ public class ClassPatternDeclarations {
         }
 
         public pattern Person1(String name, String username) {
-             name = this.name;
-             username = this.username;
+             match Person1(this.name, this.username);
         }
 
         public pattern Person1(String name) {
-             name = this.name;
+             match Person1(this.name);
         }
     }
 
