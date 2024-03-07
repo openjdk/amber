@@ -3291,7 +3291,7 @@ public class Lower extends TreeTranslator {
 
     public void visitApply(JCMethodInvocation tree) {
         Symbol meth = TreeInfo.symbol(tree.meth);
-        List<Type> argtypes = meth.isDeconstructor() ? List.of(tree.args.head.type)
+        List<Type> argtypes = meth.isPattern() ? List.of(tree.args.head.type)
                                                             : meth.type.getParameterTypes();
         if (meth.name == names.init && meth.owner == syms.enumSym)
             argtypes = argtypes.tail.tail;

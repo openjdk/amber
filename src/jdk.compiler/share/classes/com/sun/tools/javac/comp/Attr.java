@@ -1177,7 +1177,7 @@ public class Attr extends JCTree.Visitor {
                 if (isDefaultMethod || (tree.sym.flags() & (ABSTRACT | NATIVE)) == 0)
                     log.error(tree.pos(), Errors.MissingMethBodyOrDeclAbstract);
             } else {
-                if ((tree.sym.flags() & (ABSTRACT|DEFAULT|PRIVATE)) == ABSTRACT && !m.isDeconstructor()) {
+                if ((tree.sym.flags() & (ABSTRACT|DEFAULT|PRIVATE)) == ABSTRACT && !m.isPattern()) {
                     if ((owner.flags() & INTERFACE) != 0) {
                         log.error(tree.body.pos(), Errors.IntfMethCantHaveBody);
                     } else {

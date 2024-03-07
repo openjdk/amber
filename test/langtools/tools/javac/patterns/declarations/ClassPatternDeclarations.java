@@ -31,8 +31,12 @@ import java.util.Objects;
 
 public class ClassPatternDeclarations {
     public static void main(String... args) {
-        assertEquals("A:B", test1A(new Person1("A", "B")));
-        assertEquals("A", test1B(new Person1("A", "B")));
+        assertEquals("A:B", test1A(new Person1("A", "B", false)));
+        assertEquals("A", test1B(new Person1("A", "B", false)));
+
+        assertEquals("Duke", test2(new Person1("Duke", "Java", false)));
+        assertEquals("DUKE", test2(new Person1("Duke", "Java", true)));
+
     }
 
     private static String test1A(Object o) {
@@ -49,14 +53,7 @@ public class ClassPatternDeclarations {
         return null;
     }
 
-    private static String test2A(Object o) {
-        if (o instanceof Person1(String name, String username)) {
-            return name + ":" + username;
-        }
-        return null;
-    }
-
-    private static String test2B(Object o) {
+    private static String test2(Object o) {
         if (o instanceof Person1(String name)) {
             return name;
         }
@@ -66,14 +63,16 @@ public class ClassPatternDeclarations {
     public static class Person1 {
         private final String name;
         private final String username;
+        private boolean capitalize;
 
         public Person1(String name) {
-            this(name, name);
+            this(name, "default", false);
         }
 
-        public Person1(String name, String username) {
+        public Person1(String name, String username, boolean capitalize) {
             this.name = name;
             this.username = username;
+            this.capitalize = capitalize;
         }
 
         public pattern Person1(String name, String username) {
@@ -81,7 +80,11 @@ public class ClassPatternDeclarations {
         }
 
         public pattern Person1(String name) {
-             match Person1(this.name);
+            if (capitalize) {
+                match Person1(this.name.toUpperCase());
+            } else {
+                match Person1(this.name);
+            }
         }
     }
 

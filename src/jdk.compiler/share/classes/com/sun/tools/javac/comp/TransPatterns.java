@@ -1276,7 +1276,7 @@ public class TransPatterns extends TreeTranslator {
             currentMethodSym = tree.sym;
             variableIndex = 0;
             deconstructorCalls = null;
-            if (tree.sym.isDeconstructor()) {
+            if (tree.sym.isPattern()) {
                 // Generate (without the bindings)
                 //     1. calculate the returnType MethodType as Constant_MethodType_info
                 //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)

@@ -367,7 +367,7 @@ public class ClassWriter extends ClassFile {
             needsSignature) ||
                 (needsSignature &&
                     fromMatcher &&
-                    sym.isDeconstructor())) {
+                    sym.isPattern())) {
             // note that a local class with captured variables
             // will get a signature attribute
             int alenIdx = writeAttr(names.Signature);
@@ -386,8 +386,15 @@ public class ClassWriter extends ClassFile {
      * Write method parameter names attribute.
      */
     int writeMethodParametersAttr(MethodSymbol m, boolean writeParamNames) {
-        MethodType ty = m.externalType(types).asMethodType();
-        final int allparams = m.isDeconstructor() ? m.params.size() : ty.argtypes.size(); // signature changes and the size needs to refer to the original parameter/binding list
+        // todo: refactor, same code in Code::getInitialFrame
+        List<Type> arg_types;
+        if (m.isPattern()) {
+            arg_types = m.type.getParameterTypes();
+        } else {
+            arg_types = ((MethodType)m.externalType(types)).argtypes;
+        }
+
+        final int allparams = arg_types.size();
         if (m.params != null && allparams != 0) {
             final int attrIndex = writeAttr(names.MethodParameters);
             databuf.appendByte(allparams);
@@ -1053,7 +1060,7 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        if (!m.isDeconstructor() && target.hasMethodParameters()) {
+        if (!m.isPattern() && target.hasMethodParameters()) {
             if (!m.isLambdaMethod()) { // Per JDK-8138729, do not emit parameters table for lambda bodies.
                 boolean requiresParamNames = requiresParamNames(m);
                 if (requiresParamNames || requiresParamFlags(m))
@@ -1061,7 +1068,7 @@ public class ClassWriter extends ClassFile {
             }
         }
         acount += writeMemberAttrs(m, false, false);
-        if (!m.isLambdaMethod() && !m.isDeconstructor())
+        if (!m.isLambdaMethod() && !m.isPattern())
             acount += writeParameterAttrs(m.params);
 
         if (m.isPattern()) {

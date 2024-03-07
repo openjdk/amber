@@ -612,7 +612,11 @@ public class Pretty extends JCTree.Visitor {
             if (tree.name == tree.name.table.names.init) {
                 print(enclClassName != null ? enclClassName : tree.name);
             } else {
-                printExpr(tree.restype);
+                if  ((tree.mods.flags & PATTERN) != 0) {
+                    print("pattern");
+                } else {
+                    printExpr(tree.restype);
+                }
                 print(' ');
                 print(tree.name);
             }
