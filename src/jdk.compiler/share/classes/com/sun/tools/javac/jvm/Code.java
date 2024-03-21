@@ -2229,7 +2229,6 @@ public class Code {
 
     public int newLocal(VarSymbol v) {
         int reg = v.adr = newLocal(v.erasure(types));
-        System.out.println(v.name.toString() + "," + reg);
         addLocalVar(v);
         return reg;
     }
