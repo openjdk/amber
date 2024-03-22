@@ -1140,6 +1140,10 @@ public class Attr extends JCTree.Visitor {
                 }
             }
 
+            if (m.isPattern() && tree.thrown.nonEmpty()) {
+                log.error(tree.pos(), Errors.PatternDeclarationCantThrowException);
+            }
+
             if (m.isDeconstructor()) {
                 m.matcherFlags.add(MatcherFlags.DECONSTRUCTOR);
             }
@@ -2500,9 +2504,12 @@ public class Attr extends JCTree.Visitor {
         }
 
     public void visitReturn(JCReturn tree) {
-        // Check that there is an enclosing method which is
-        // nested within than the enclosing class.
-        if (env.info.returnResult == null) {
+        // Check that there is an enclosing method (not a pattern declaration)
+        // which is nested within than the enclosing class.
+        if (env.enclMethod != null && env.info.returnResult != null && env.enclMethod.sym.isPattern()) {
+            log.error(tree.pos(), Errors.RetOutsideMeth);
+        }
+        else if (env.info.returnResult == null) {
             log.error(tree.pos(), Errors.RetOutsideMeth);
         } else if (env.info.yieldResult != null) {
             log.error(tree.pos(), Errors.ReturnOutsideSwitchExpression);
@@ -2532,7 +2539,11 @@ public class Attr extends JCTree.Visitor {
 
     public void visitThrow(JCThrow tree) {
         Type owntype = attribExpr(tree.expr, env, Type.noType);
-        chk.checkType(tree, owntype, syms.throwableType);
+        if (env.info.returnResult != null && env.enclMethod !=null && env.enclMethod.sym.isPattern()) {
+            log.error(tree.pos(), Errors.PatternDeclarationNoThrows);
+        } else {
+            chk.checkType(tree, owntype, syms.throwableType);
+        }
         result = null;
     }
 
