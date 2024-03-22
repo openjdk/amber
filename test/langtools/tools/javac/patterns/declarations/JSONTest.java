@@ -31,8 +31,35 @@
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Function;
 
 public class JSONTest {
+
+    public static void main(String[] args) {
+        JSONObject j = new JSONObject(
+            Map.of("configuration", new JSONString("7"), "services", new JSONArray(List.of(
+                new JSONObject(Map.of("name", new JSONString("a"), "id", new JSONNumber(3))),
+                new JSONObject(Map.of("name", new JSONString("b"), "id", new JSONNumber(4)))))));
+
+        assertEquals("a", serviceToNameView().apply(j));
+    }
+
+    record View<A, B>(Function<A, B> f) implements Function<A, B> {
+        @Override
+        public B apply(A a) {
+            return f.apply(a);
+        }
+        public static <A, B> View<A, B> of(Function<A, B> f) {
+            return new View<>(f);
+        }
+    }
+
+    private static View<JSONObject, String> serviceToNameView() {
+        return View.of((JSONObject j) -> switch (Service.Of(j)) {
+            case Service(String name, int id) -> name;
+            default -> throw new IllegalStateException("Unexpected value: " + j);
+        });
+    }
 
     sealed interface JSONValue {
     }
@@ -78,24 +105,9 @@ public class JSONTest {
         }
     }
 
-    public static void main(String[] args) {
-        JSONObject j = new JSONObject(
-                Map.of(
-                        "configuration", new JSONString("7"),
-                        "services", new JSONArray(List.of(
-                                new JSONObject(
-                                        Map.of("name", new JSONString("a"),
-                                                "id", new JSONNumber(3))),
-                                new JSONObject(
-                                        Map.of("name", new JSONString("b"),
-                                                "id", new JSONNumber(4)))))));
-
-        switch (Service.Of(j)) {
-            case Service(String name, int id):
-                System.out.println("Service name: " + name);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + j);
+    private static <T> void assertEquals(T expected, T actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
         }
     }
 }
