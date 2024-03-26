@@ -24,8 +24,8 @@
 /**
  * @test
  * @enablePreview
- * @compile JSONTest.java
- * @run main JSONTest
+ * @compile ExampleJSONTest.java
+ * @run main ExampleJSONTest
  */
 
 import java.util.List;
@@ -33,7 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 
-public class JSONTest {
+public class ExampleJSONTest {
 
     public static void main(String[] args) {
         JSONObject j = new JSONObject(
