@@ -1145,7 +1145,7 @@ public class Attr extends JCTree.Visitor {
             }
 
             if (m.isDeconstructor()) {
-                m.matcherFlags.add(MatcherFlags.DECONSTRUCTOR);
+                m.patternFlags.add(PatternFlags.DECONSTRUCTOR);
             }
 
             // annotation method checks

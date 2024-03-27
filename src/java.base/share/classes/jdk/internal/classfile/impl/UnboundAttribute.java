@@ -311,35 +311,35 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         }
     }
 
-    public static final class UnboundMatcherAttribute
+    public static final class UnboundPatternAttribute
             extends UnboundAttribute<PatternAttribute>
             implements PatternAttribute {
-        private final int matcherFlags;
-        private final Utf8Entry matcherName;
-        private final Utf8Entry matcherMethodType;
+        private final int patternFlags;
+        private final Utf8Entry patternName;
+        private final Utf8Entry patternMethodType;
         private final List<Attribute<?>> attributes;
 
-        public UnboundMatcherAttribute(Utf8Entry matcherName, int matcherFlags, Utf8Entry matcherMethodType, List<Attribute<?>> attributes) {
-            super(Attributes.MATCHER);
-            this.matcherName = matcherName;
-            this.matcherFlags = matcherFlags;
-            this.matcherMethodType = matcherMethodType;
+        public UnboundPatternAttribute(Utf8Entry matcherName, int matcherFlags, Utf8Entry matcherMethodType, List<Attribute<?>> attributes) {
+            super(Attributes.PATTERN);
+            this.patternName = matcherName;
+            this.patternFlags = matcherFlags;
+            this.patternMethodType = matcherMethodType;
             this.attributes = List.copyOf(attributes);
         }
 
         @Override
         public int patternFlagsMask() {
-            return matcherFlags;
+            return patternFlags;
         }
 
         @Override
         public Utf8Entry patternName() {
-            return matcherName;
+            return patternName;
         }
 
         @Override
         public Utf8Entry patternMethodType() {
-            return matcherMethodType;
+            return patternMethodType;
         }
 
         @Override

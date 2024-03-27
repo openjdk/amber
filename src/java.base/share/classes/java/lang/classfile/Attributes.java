@@ -136,8 +136,8 @@ public class Attributes {
     /** LocalVariableTypeTable */
     public static final String NAME_LOCAL_VARIABLE_TYPE_TABLE = "LocalVariableTypeTable";
 
-    /** Matcher */
-    public static final String NAME_MATCHER = "Matcher";
+    /** Pattern */
+    public static final String NAME_PATTERN = "Pattern";
 
     /** MethodParameters */
     public static final String NAME_METHOD_PARAMETERS = "MethodParameters";
@@ -496,9 +496,9 @@ public class Attributes {
                 }
             };
 
-    /** Attribute mapper for the {@code Matcher} attribute */
+    /** Attribute mapper for the {@code Pattern} attribute */
     public static final AttributeMapper<PatternAttribute>
-            MATCHER = new AbstractAttributeMapper<>(NAME_MATCHER) {
+            PATTERN = new AbstractAttributeMapper<>(NAME_PATTERN) {
         @Override
         public PatternAttribute readAttribute(AttributedElement e, ClassReader cf, int p) {
             return new BoundAttribute.BoundPatternAttribute(cf, this, p);
@@ -1032,7 +1032,7 @@ public class Attributes {
             LINE_NUMBER_TABLE,
             LOCAL_VARIABLE_TABLE,
             LOCAL_VARIABLE_TYPE_TABLE,
-            MATCHER,
+            PATTERN,
             METHOD_PARAMETERS,
             MODULE,
             MODULE_HASHES,

@@ -118,9 +118,9 @@ public class ClassReader {
      */
     boolean allowRecords;
 
-    /** Switch: allow matchers
+    /** Switch: allow pattern declarations
      */
-    boolean allowMatchers;
+    boolean allowPatterns;
 
    /** Lint option: warn about classfile issues
      */
@@ -289,7 +289,7 @@ public class ClassReader {
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = Feature.RECORDS.allowedInSource(source);
-        allowMatchers = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
+        allowPatterns = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
         allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
         warnOnIllegalUtf8 = Feature.WARN_ON_ILLEGAL_UTF8.allowedInSource(source);
 
@@ -309,7 +309,8 @@ public class ClassReader {
     private void enterMember(ClassSymbol c, Symbol sym) {
         // Synthetic members are not entered -- reason lost to history (optimization?).
         // Lambda methods must be entered because they may have inner classes (which reference them)
-        if ((sym.flags_field & (SYNTHETIC|BRIDGE)) != SYNTHETIC || sym.name.startsWith(names.lambda))
+        // Pattern declarations must be entered because a client needs to link to those methods
+        if ((sym.flags_field & (SYNTHETIC|BRIDGE)) != SYNTHETIC || sym.name.startsWith(names.lambda) || sym.isPattern())
             c.members_field.enter(sym);
     }
 
@@ -1307,10 +1308,10 @@ public class ClassReader {
                     }
                 }
             },
-            new AttributeReader(names.Matcher, V66, MEMBER_ATTRIBUTE) {
+            new AttributeReader(names.Pattern, V66, MEMBER_ATTRIBUTE) {
                 @Override
                 protected boolean accepts(AttributeKind kind) {
-                    return super.accepts(kind) && allowMatchers;
+                    return super.accepts(kind) && allowPatterns;
                 }
                 protected void read(Symbol sym, int attrLen) {
                     if (sym.kind == MTH) {

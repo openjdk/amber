@@ -40,8 +40,7 @@ record Points(Collection<Integer> xs, Collection<Integer> ys) {
 
     @MatcherAnnot
     public pattern Points(@BindingAnnot Collection<Integer> xs, @BindingAnnot Collection<Integer> ys) {
-        xs = this.xs;
-        ys = this.ys;
+        match Points(this.xs, this.ys);
     }
 
     @Target(ElementType.METHOD)

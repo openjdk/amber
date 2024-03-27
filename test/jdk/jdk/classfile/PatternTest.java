@@ -25,7 +25,7 @@
 
 /*
  * @test
- * @summary Testing parsing of a matcher method.
+ * @summary Testing parsing of a pattern declaration.
  * @enablePreview
  * @build testdata.*
  * @run junit PatternTest
@@ -70,7 +70,7 @@ class PatternTest {
                 clb.with(cle);
         };
         cc.transform(cc.parse(PatternTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes()), xform);
-        assertEquals(extractedInfo.toString(), "[Points, true, MethodTypeDesc[(Collection,Collection)void], [Attribute[name=MethodParameters], Attribute[name=Signature], Attribute[name=RuntimeVisibleParameterAnnotations]]]");
+        assertEquals("[Points, true, MethodTypeDesc[(Collection,Collection)void], [Attribute[name=MethodParameters], Attribute[name=Signature], Attribute[name=RuntimeVisibleParameterAnnotations]]]", extractedInfo.toString());
     }
 
     @Test
@@ -87,9 +87,6 @@ class PatternTest {
     }
 
     private static void assertOut(StringBuilder out, String expected) {
-//        System.out.println("-----------------");
-//        System.out.println(out.toString());
-//        System.out.println("-----------------");
         assertArrayEquals(out.toString().trim().split(" *\r?\n"), expected.trim().split("\n"));
     }
 }

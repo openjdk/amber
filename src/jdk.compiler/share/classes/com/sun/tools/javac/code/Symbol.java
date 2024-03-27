@@ -1154,18 +1154,18 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public final int value;
     }
 
-    public enum MatcherFlags {
+    public enum PatternFlags {
         DECONSTRUCTOR(0x3000),
         TOTAL(0x4000);
 
-        public static int value(Set<MatcherFlags> s) {
+        public static int value(Set<PatternFlags> s) {
             int v = 0;
-            for (MatcherFlags f: s)
+            for (PatternFlags f: s)
                 v |= f.value;
             return v;
         }
 
-        private MatcherFlags(int value) {
+        private PatternFlags(int value) {
             this.value = value;
         }
 
@@ -1998,7 +1998,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public Attribute defaultValue = null;
 
-        public final Set<MatcherFlags> matcherFlags = EnumSet.noneOf(MatcherFlags.class);
+        public final Set<PatternFlags> patternFlags = EnumSet.noneOf(PatternFlags.class);
 
 
         /** Construct a method symbol, given its flags, name, type and owner.

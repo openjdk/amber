@@ -558,9 +558,9 @@ public enum AccessFlag {
         METHOD,
 
         /**
-         * Matcher location.
+         * Pattern location.
          */
-        MATCHER,
+        PATTERN,
 
         /**
          * Inner class location.
@@ -615,7 +615,7 @@ public enum AccessFlag {
             Set.of(FIELD, METHOD);
         private static final Set<Location> SET_FIELD_METHOD_INNER_CLASS =
             Set.of(FIELD, METHOD, INNER_CLASS);
-        private static final Set<Location> SET_PATTERN = Set.of(MATCHER);
+        private static final Set<Location> SET_PATTERN = Set.of(PATTERN);
 
         private static final Set<Location> SET_METHOD = Set.of(METHOD);
         private static final Set<Location> SET_METHOD_PARAM = Set.of(METHOD_PARAMETER);
@@ -668,7 +668,7 @@ public enum AccessFlag {
                                        STATIC, FINAL, SYNCHRONIZED,
                                        BRIDGE, VARARGS, NATIVE,
                                        ABSTRACT, STRICT, SYNTHETIC)),
-                          entry(Location.MATCHER,
+                          entry(Location.PATTERN,
                                 Set.of(DECONSTRUCTOR, TOTAL)),
                           entry(Location.INNER_CLASS,
                                 Set.of(PUBLIC, PRIVATE, PROTECTED,

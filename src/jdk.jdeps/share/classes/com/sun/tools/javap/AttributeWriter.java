@@ -466,6 +466,25 @@ public class AttributeWriter extends BasicWriter {
                 println("// " + attr.targetPlatform().stringValue());
                 indent(-1);
             }
+            case PatternAttribute attr -> {
+                println("Pattern:");
+                indent(+1);
+
+                String nameString = attr.patternName().index() != 0 ?
+                        constantWriter.stringValue(attr.patternName().index()) : "<no name>";
+                println("pattern_name: " + nameString);
+
+                String flagString =
+                        (attr.patternFlags().contains(AccessFlag.DECONSTRUCTOR) ? "deconstructor " : "") +
+                                (attr.patternFlags().contains(AccessFlag.TOTAL) ? "total" : "");
+                println("pattern_flags: " + flagString);
+                println("pattern_type: " + attr.patternMethodType().stringValue());
+
+                if (options.showAllAttrs && attr.attributes().size() > 0) {
+                    write(attr.attributes());
+                }
+                indent(-1);
+            }
             case NestMembersAttribute attr -> {
                 println("NestMembers:");
                 indent(+1);

@@ -354,7 +354,7 @@ public class ClassWriter extends ClassFile {
     /** Write member (field or method) attributes;
      *  return number of attributes written.
      */
-    int writeMemberAttrs(Symbol sym, boolean isRecordComponent, boolean fromMatcher) {
+    int writeMemberAttrs(Symbol sym, boolean isRecordComponent, boolean fromPattern) {
         int acount = 0;
         if (!isRecordComponent) {
             acount = writeFlagAttrs(sym.flags());
@@ -366,7 +366,7 @@ public class ClassWriter extends ClassFile {
             (flags & ANONCONSTR) == 0 &&
             needsSignature) ||
                 (needsSignature &&
-                    fromMatcher &&
+                    fromPattern &&
                     sym.isPattern())) {
             // note that a local class with captured variables
             // will get a signature attribute
@@ -375,7 +375,7 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        if (!fromMatcher) {
+        if (!fromPattern) {
             acount += writeJavaAnnotations(sym.getRawAttributes());
             acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
         }
@@ -882,11 +882,11 @@ public class ClassWriter extends ClassFile {
         return 1;
     }
 
-    int writeMatcherAttribute(MethodSymbol m) {
-        final int attrIndex = writeAttr(names.Matcher);
+    int writePatternAttribute(MethodSymbol m) {
+        final int attrIndex = writeAttr(names.Pattern);
 
         databuf.appendChar(poolWriter.putName(m.name));
-        databuf.appendChar(MatcherFlags.value(m.matcherFlags));
+        databuf.appendChar(PatternFlags.value(m.patternFlags));
         databuf.appendChar(poolWriter.putDescriptor(m.type.asMethodType()));
 
         int acountIdx = beginAttrs();
@@ -1027,7 +1027,7 @@ public class ClassWriter extends ClassFile {
      */
     void writeMethod(MethodSymbol m) {
         int flags = adjustFlags(m.flags());
-        databuf.appendChar(flags | (m.isPattern() ? Flags.STATIC : 0));
+        databuf.appendChar(flags | (m.isPattern() ? Flags.STATIC | Flags.SYNTHETIC : 0));
         if (dumpMethodModifiers) {
             PrintWriter pw = log.getWriter(Log.WriterKind.ERROR);
             pw.println("METHOD  " + m.name);
@@ -1072,7 +1072,7 @@ public class ClassWriter extends ClassFile {
             acount += writeParameterAttrs(m.params);
 
         if (m.isPattern()) {
-            acount += writeMatcherAttribute(m);
+            acount += writePatternAttribute(m);
         }
 
         acount += writeExtraAttributes(m);

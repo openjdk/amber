@@ -35,23 +35,23 @@ import static com.sun.tools.classfile.ConstantPool.*;
  *  This code and its internal interfaces are subject to change or
  *  deletion without notice.</b>
  */
-public class Matcher_attribute extends Attribute {
+public class Pattern_attribute extends Attribute {
     public static final int DECONSTRUCTOR = 0x3000;
     public static final int TOTAL = 0x4000;
 
-    Matcher_attribute(ClassReader cr, int name_index, int length) throws IOException, ConstantPoolException {
+    Pattern_attribute(ClassReader cr, int name_index, int length) throws IOException, ConstantPoolException {
         super(name_index, length);
-        matcher_name_index = cr.readUnsignedShort();
-        matcher_flags = cr.readUnsignedShort();
-        matcher_methodtype = new CONSTANT_MethodType_info(cr.getConstantPool(), cr.readUnsignedShort());
+        pattern_name_index = cr.readUnsignedShort();
+        pattern_flags = cr.readUnsignedShort();
+        pattern_methodtype = new CONSTANT_MethodType_info(cr.getConstantPool(), cr.readUnsignedShort());
         attributes = new Attributes(cr);
     }
 
-    public Matcher_attribute(int name_index, int pattern_flags, int matcher_name_index, CONSTANT_MethodType_info matcher_methodtype, Attributes attributes) {
+    public Pattern_attribute(int name_index, int pattern_flags, int pattern_name_index, CONSTANT_MethodType_info pattern_methodtype, Attributes attributes) {
         super(name_index, 4);
-        this.matcher_name_index = matcher_name_index;
-        this.matcher_flags = pattern_flags;
-        this.matcher_methodtype = matcher_methodtype;
+        this.pattern_name_index = pattern_name_index;
+        this.pattern_flags = pattern_flags;
+        this.pattern_methodtype = pattern_methodtype;
         this.attributes = attributes;
     }
 
@@ -60,8 +60,8 @@ public class Matcher_attribute extends Attribute {
         return visitor.visitMatcher(this, data);
     }
 
-    public final int matcher_name_index;
-    public final int matcher_flags;
-    public final CONSTANT_MethodType_info matcher_methodtype;
+    public final int pattern_name_index;
+    public final int pattern_flags;
+    public final CONSTANT_MethodType_info pattern_methodtype;
     public final Attributes attributes;
 }

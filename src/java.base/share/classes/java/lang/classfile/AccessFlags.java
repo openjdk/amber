@@ -78,7 +78,7 @@ public sealed interface AccessFlags
      * @param mask the flags to be set, as a bit mask
      */
     static AccessFlags ofMatcher(int mask) {
-        return new AccessFlagsImpl(AccessFlag.Location.MATCHER, mask);
+        return new AccessFlagsImpl(AccessFlag.Location.PATTERN, mask);
     }
 
     /**

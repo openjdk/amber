@@ -24,7 +24,7 @@
 /*
  * @test
  * @enablePreview
- * @compile RecordPatternDeclarations.java
+ * @compile -parameters RecordPatternDeclarations.java
  * @run main RecordPatternDeclarations
  */
 import java.lang.annotation.ElementType;

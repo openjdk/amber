@@ -150,7 +150,7 @@ public class Names {
     public final Name LineNumberTable;
     public final Name LocalVariableTable;
     public final Name LocalVariableTypeTable;
-    public final Name Matcher;
+    public final Name Pattern;
     public final Name MethodParameters;
     public final Name Module;
     public final Name ModuleResolution;
@@ -351,7 +351,7 @@ public class Names {
         LineNumberTable = fromString("LineNumberTable");
         LocalVariableTable = fromString("LocalVariableTable");
         LocalVariableTypeTable = fromString("LocalVariableTypeTable");
-        Matcher = fromString("Matcher");
+        Pattern = fromString("Pattern");
         MethodParameters = fromString("MethodParameters");
         Module = fromString("Module");
         ModuleResolution = fromString("ModuleResolution");

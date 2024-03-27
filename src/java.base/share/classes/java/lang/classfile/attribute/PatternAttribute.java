@@ -39,9 +39,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Models the {@code Matcher} attribute {@jvms X.X.XX}, which can
- * appear on matchers, and records additional information about the
- * nature of this matcher represented as a method.
+ * Models the {@code pattern} attribute {@jvms X.X.XX}, which can
+ * appear on patterns, and records additional information about the
+ * nature of this pattern represented as a method.
  *
  * TODO
  * Delivered as a {@link MethodElement} when
@@ -50,7 +50,7 @@ import java.util.Set;
 public sealed interface PatternAttribute
         extends Attribute<PatternAttribute>, MethodElement, AttributedElement
         permits BoundAttribute.BoundPatternAttribute,
-                UnboundAttribute.UnboundMatcherAttribute {
+                UnboundAttribute.UnboundPatternAttribute {
 
     /**
      * {@return the the module flags of the module, as a bit mask}
@@ -58,10 +58,10 @@ public sealed interface PatternAttribute
     int patternFlagsMask();
 
     /**
-     * {@return the the module flags of the module, as a set of enum constants}
+     * {@return the flags of the module, as a set of enum constants}
      */
     default Set<AccessFlag> patternFlags() {
-        return AccessFlag.maskToAccessFlags(patternFlagsMask(), AccessFlag.Location.MATCHER);
+        return AccessFlag.maskToAccessFlags(patternFlagsMask(), AccessFlag.Location.PATTERN);
     }
 
     /** {@return the name of this method} */
@@ -76,34 +76,34 @@ public sealed interface PatternAttribute
     }
 
     /**
-     * {@return a {@code MatcherAttribute} attribute}
-     * @param matcherName the name of the matcher
-     * @param matcherFlags the flags of the matcher
-     * @param matcherDescriptor the descriptor of the matcher
-     * @param matcherAttributes the list of attributes of the matcher
+     * {@return a {@code patternAttribute} attribute}
+     * @param patternName the name of the pattern
+     * @param patternFlags the flags of the pattern
+     * @param patternDescriptor the descriptor of the pattern
+     * @param patternAttributes the list of attributes of the pattern
      */
-    static PatternAttribute of(String matcherName,
-                               int matcherFlags,
-                               MethodTypeDesc matcherDescriptor,
-                               List<Attribute<?>> matcherAttributes) {
-        return new UnboundAttribute.UnboundMatcherAttribute(
-                TemporaryConstantPool.INSTANCE.utf8Entry(matcherName),
-                matcherFlags,
-                TemporaryConstantPool.INSTANCE.utf8Entry(matcherDescriptor.descriptorString()),
-                matcherAttributes);
+    static PatternAttribute of(String patternName,
+                               int patternFlags,
+                               MethodTypeDesc patternDescriptor,
+                               List<Attribute<?>> patternAttributes) {
+        return new UnboundAttribute.UnboundPatternAttribute(
+                TemporaryConstantPool.INSTANCE.utf8Entry(patternName),
+                patternFlags,
+                TemporaryConstantPool.INSTANCE.utf8Entry(patternDescriptor.descriptorString()),
+                patternAttributes);
     }
 
     /**
-     * {@return a {@code MatcherAttribute} attribute}
-     * @param matcherName the name of the matcher
-     * @param matcherFlags the flags of the matcher
-     * @param matcherDescriptor the descriptor of the matcher
-     * @param matcherAttributes the list of attributes of the matcher
+     * {@return a {@code patternAttribute} attribute}
+     * @param patternName the name of the pattern
+     * @param patternFlags the flags of the pattern
+     * @param patternDescriptor the descriptor of the pattern
+     * @param patternAttributes the list of attributes of the pattern
      */
-    static PatternAttribute of(Utf8Entry matcherName,
-                               int matcherFlags,
-                               Utf8Entry matcherDescriptor,
-                               List<Attribute<?>> matcherAttributes) {
-        return new UnboundAttribute.UnboundMatcherAttribute(matcherName, matcherFlags, matcherDescriptor, matcherAttributes);
+    static PatternAttribute of(Utf8Entry patternName,
+                               int patternFlags,
+                               Utf8Entry patternDescriptor,
+                               List<Attribute<?>> patternAttributes) {
+        return new UnboundAttribute.UnboundPatternAttribute(patternName, patternFlags, patternDescriptor, patternAttributes);
     }
 }

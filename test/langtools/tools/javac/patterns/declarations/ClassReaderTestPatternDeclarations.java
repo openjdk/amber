@@ -80,7 +80,7 @@ public class ClassReaderTestPatternDeclarations extends TestRunner {
         Path out = base.resolve("out");
         Files.createDirectories(out);
 
-        // record with matcher
+        // record with pattern declaration
         tb.writeJavaFiles(src,
             "package test;\n" +
                     "public class Point {\n" +

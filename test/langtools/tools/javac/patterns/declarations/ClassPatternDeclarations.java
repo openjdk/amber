@@ -24,7 +24,7 @@
 /**
  * @test
  * @enablePreview
- * @compile ClassPatternDeclarations.java
+ * @compile -parameters ClassPatternDeclarations.java
  * @run main ClassPatternDeclarations
  */
 import java.util.Objects;
