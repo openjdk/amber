@@ -298,6 +298,11 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     }
 
     @Override
+    public ResolvedJavaMethod[] getDeclaredPatternDeclarations() {
+        return new ResolvedJavaMethod[0];
+    }
+
+    @Override
     public ResolvedJavaMethod getClassInitializer() {
         return null;
     }

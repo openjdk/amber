@@ -70,10 +70,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import jdk.internal.javac.PreviewFeature;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
-import jdk.internal.misc.PreviewFeatures;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.module.Resources;
 import jdk.internal.reflect.CallerSensitive;
@@ -2736,6 +2734,44 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     /**
+     * Obtains pattern declarations of a class
+     *
+     * @return  the array of {@code Method} objects representing all the
+     *          declared methods of this class
+     * @throws  SecurityException
+     *          If a security manager, <i>s</i>, is present and any of the
+     *          following conditions is met:
+     *
+     *          <ul>
+     *
+     *          <li> the caller's class loader is not the same as the
+     *          class loader of this class and invocation of
+     *          {@link SecurityManager#checkPermission
+     *          s.checkPermission} method with
+     *          {@code RuntimePermission("accessDeclaredMembers")}
+     *          denies access to the declared methods within this class
+     *
+     *          <li> the caller's class loader is not the same as or an
+     *          ancestor of the class loader for the current class and
+     *          invocation of {@link SecurityManager#checkPackageAccess
+     *          s.checkPackageAccess()} denies access to the package
+     *          of this class
+     *
+     *          </ul>
+     *
+     * @since 23
+     */
+    @CallerSensitive
+    public Method[] getDeclaredPatternDeclarations() throws SecurityException {
+        @SuppressWarnings("removal")
+        SecurityManager sm = System.getSecurityManager();
+        if (sm != null) {
+            checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
+        }
+        return copyMethods(privateGetDeclaredPatternDeclarations(false));
+    }
+
+    /**
      * Returns an array of {@code Constructor} objects reflecting all the
      * constructors implicitly or explicitly declared by the class represented by this
      * {@code Class} object. These are public, protected, default
@@ -3427,11 +3463,14 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] publicFields;
         volatile Method[] declaredMethods;
         volatile Method[] publicMethods;
+        volatile Method[] declaredPatternDeclarations;
+        volatile Method[] publicPatternDeclarations;
         volatile Constructor<T>[] declaredConstructors;
         volatile Constructor<T>[] publicConstructors;
         // Intermediate results for getFields and getMethods
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
+        volatile Method[] declaredPublicPatternDeclarations;
         volatile Class<?>[] interfaces;
 
         // Cached names
@@ -3657,6 +3696,29 @@ public final class Class<T> implements java.io.Serializable,
         }
         return res;
     }
+
+    // Returns an array of "root" methods. These Method objects must NOT
+    // be propagated to the outside world, but must instead be copied
+    // via ReflectionFactory.copyMethod.
+    private Method[] privateGetDeclaredPatternDeclarations(boolean publicOnly) {
+        Method[] res;
+        ReflectionData<T> rd = reflectionData();
+        if (rd != null) {
+            res = publicOnly ? rd.declaredPublicPatternDeclarations : rd.declaredPatternDeclarations;
+            if (res != null) return res;
+        }
+        // No cached value available; request value from VM
+        res = Reflection.filterMethods(this, getDeclaredPatternDeclarations0(publicOnly));
+        if (rd != null) {
+            if (publicOnly) {
+                rd.declaredPublicPatternDeclarations = res;
+            } else {
+                rd.declaredPatternDeclarations = res;
+            }
+        }
+        return res;
+    }
+
 
     // Returns an array of "root" methods. These Method objects must NOT
     // be propagated to the outside world, but must instead be copied
@@ -3888,6 +3950,7 @@ public final class Class<T> implements java.io.Serializable,
 
     private native Field[]       getDeclaredFields0(boolean publicOnly);
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
+    private native Method[]      getDeclaredPatternDeclarations0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]    getDeclaredClasses0();
 

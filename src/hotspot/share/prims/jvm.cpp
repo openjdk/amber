@@ -1939,6 +1939,84 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredMethods(JNIEnv *env, jclass ofClass,
 }
 JVM_END
 
+static jobjectArray get_class_declared_pattern_declarations_helper(
+        JNIEnv *env,
+        jclass ofClass, jboolean publicOnly,
+        bool want_constructor,
+        Klass* klass, TRAPS) {
+
+    JvmtiVMObjectAllocEventCollector oam;
+
+    oop ofMirror = JNIHandles::resolve_non_null(ofClass);
+    // Exclude primitive types and array types
+    if (java_lang_Class::is_primitive(ofMirror)
+        || java_lang_Class::as_Klass(ofMirror)->is_array_klass()) {
+        // Return empty array
+        oop res = oopFactory::new_objArray(klass, 0, CHECK_NULL);
+        return (jobjectArray) JNIHandles::make_local(THREAD, res);
+    }
+
+    InstanceKlass* k = InstanceKlass::cast(java_lang_Class::as_Klass(ofMirror));
+
+    // Ensure class is linked
+    k->link_class(CHECK_NULL);
+
+    Array<Method*>* methods = k->methods();
+    int methods_length = methods->length();
+
+    // Save original method_idnum in case of redefinition, which can change
+    // the idnum of obsolete methods.  The new method will have the same idnum
+    // but if we refresh the methods array, the counts will be wrong.
+    ResourceMark rm(THREAD);
+    GrowableArray<int>* idnums = new GrowableArray<int>(methods_length);
+    int num_methods = 0;
+
+    for (int i = 0; i < methods_length; i++) {
+        methodHandle method(THREAD, methods->at(i));
+        if (select_method(method, want_constructor)) {
+            if (!publicOnly || method->is_public()) {
+                idnums->push(method->method_idnum());
+                ++num_methods;
+            }
+        }
+    }
+
+    // Allocate result
+    objArrayOop r = oopFactory::new_objArray(klass, num_methods, CHECK_NULL);
+    objArrayHandle result (THREAD, r);
+
+    // Now just put the methods that we selected above, but go by their idnum
+    // in case of redefinition.  The methods can be redefined at any safepoint,
+    // so above when allocating the oop array and below when creating reflect
+    // objects.
+    for (int i = 0; i < num_methods; i++) {
+        methodHandle method(THREAD, k->method_with_idnum(idnums->at(i)));
+        if (method.is_null()) {
+            // Method may have been deleted and seems this API can handle null
+            // Otherwise should probably put a method that throws NSME
+            result->obj_at_put(i, nullptr);
+        } else {
+            oop m;
+            if (want_constructor) {
+                m = Reflection::new_constructor(method, CHECK_NULL);
+            } else {
+                m = Reflection::new_method(method, false, CHECK_NULL);
+            }
+            result->obj_at_put(i, m);
+        }
+    }
+
+    return (jobjectArray) JNIHandles::make_local(THREAD, result());
+}
+
+JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredPatternDeclarations(JNIEnv *env, jclass ofClass, jboolean publicOnly))
+{
+  return get_class_declared_pattern_declarations_helper(env, ofClass, publicOnly,
+                                           /*want_constructor*/ false,
+                                           vmClasses::reflect_Method_klass(), THREAD);
+}
+JVM_END
+
 JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredConstructors(JNIEnv *env, jclass ofClass, jboolean publicOnly))
 {
   return get_class_declared_methods_helper(env, ofClass, publicOnly,

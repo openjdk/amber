@@ -1072,6 +1072,19 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     @Override
+    public ResolvedJavaMethod[] getDeclaredPatternDeclarations() {
+        return getDeclaredPatternDeclarations(true);
+    }
+
+    @Override
+    public ResolvedJavaMethod[] getDeclaredPatternDeclarations(boolean forceLink) {
+        if (forceLink) {
+            link();
+        }
+        return runtime().compilerToVm.getDeclaredPatternDeclarations(this);
+    }
+
+    @Override
     public ResolvedJavaMethod getClassInitializer() {
         if (!isArray()) {
             return compilerToVM().getClassInitializer(this);

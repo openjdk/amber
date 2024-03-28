@@ -606,6 +606,9 @@ JNIEXPORT jobjectArray JNICALL
 JVM_GetClassDeclaredMethods(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 
 JNIEXPORT jobjectArray JNICALL
+JVM_GetClassDeclaredPatternDeclarations(JNIEnv *env, jclass ofClass, jboolean publicOnly);
+
+JNIEXPORT jobjectArray JNICALL
 JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 
 JNIEXPORT jobjectArray JNICALL
