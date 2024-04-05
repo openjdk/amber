@@ -92,9 +92,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .getOutput(Task.OutputKind.DIRECT);
 
             System.out.println(javapOut);
-            if (!javapOut.contains("""
-                    public static java.lang.Object Test\\%Ljava\\|lang\\|String\\?\\%Ljava\\|lang\\|String\\?(test.Test);                                   
-                    """))
+            if (!javapOut.contains("public static java.lang.Object Test\\%Ljava\\|lang\\|String\\?\\%Ljava\\|lang\\|String\\?(test.Test);"))
                 throw new AssertionError("Wrongly generated signature of pattern declaration");
         }
 
