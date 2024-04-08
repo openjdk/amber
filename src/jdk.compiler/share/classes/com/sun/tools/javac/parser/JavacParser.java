@@ -51,6 +51,7 @@ import com.sun.tools.javac.util.JCDiagnostic.Error;
 import com.sun.tools.javac.util.JCDiagnostic.Fragment;
 import com.sun.tools.javac.util.List;
 
+import static com.sun.tools.javac.code.Flags.PATTERN;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.*;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.ASSERT;
 import static com.sun.tools.javac.parser.Tokens.TokenKind.CASE;

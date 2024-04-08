@@ -2372,21 +2372,22 @@ public class Attr extends JCTree.Visitor {
         Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
         tree.meth = localEnv.enclMethod;
 
-        List<Type> parameterTypes = tree.meth.sym.type.getParameterTypes();
+        List<Type> bindingTypes = tree.meth.sym.type.getBindingTypes();
         List<JCExpression>   args = tree.args;
-
-        if (parameterTypes.size() != args.size()) {
-            log.error(tree.pos(), Errors.MatchNotMatchingPatternDeclarationSignature);
-        }
 
         if (!tree.meth.sym.isPattern()) {
             log.error(tree.pos(), Errors.MatchOutsidePatternDeclaration);
+            return;
         }
 
-        while (parameterTypes.nonEmpty() && args.nonEmpty()) {
-            attribExpr(args.head, localEnv, parameterTypes.head);
+        if (bindingTypes.size() != args.size()) {
+            log.error(tree.pos(), Errors.MatchNotMatchingPatternDeclarationSignature);
+        }
 
-            parameterTypes = parameterTypes.tail;
+        while (bindingTypes.nonEmpty() && args.nonEmpty()) {
+            attribExpr(args.head, localEnv, bindingTypes.head);
+
+            bindingTypes = bindingTypes.tail;
             args = args.tail;
         }
 
@@ -4300,7 +4301,7 @@ public class Attr extends JCTree.Visitor {
             List<Type> patternTypes = patternTypesBuffer.toList();
 
             var matchersIt = site.tsym.members()
-                    .getSymbols(sym -> sym.isPattern() && sym.type.getParameterTypes().size() == nestedPatternCount)
+                    .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                     .iterator();
             List<MethodSymbol> matchers = Stream.generate(() -> null)
                     .takeWhile(x -> matchersIt.hasNext())
@@ -4314,7 +4315,7 @@ public class Attr extends JCTree.Visitor {
                 for (MethodSymbol matcher : matchers) {
                     int scoreForMatcher = 0;
 
-                    List<Type> matcherComponentTypes = matcher.getParameters()
+                    List<Type> matcherComponentTypes = matcher.getBindings()
                             .stream()
                             .map(rc -> types.memberType(site, rc))
                             .map(t -> types.upward(t, types.captures(t)).baseType())
@@ -4354,7 +4355,7 @@ public class Attr extends JCTree.Visitor {
                     MethodSymbol matcher = matchers.get(indexOfMaxScore);
                     tree.matcher = matcher;
 
-                    expectedRecordTypes = types.memberType(site, matcher).getParameterTypes();
+                    expectedRecordTypes = types.memberType(site, matcher).getBindingTypes();
                 }
             } else if (((ClassSymbol) site.tsym).isRecord()) {
                 ClassSymbol record = (ClassSymbol) site.tsym;

@@ -43,6 +43,7 @@ import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
+import static com.sun.tools.javac.code.Flags.PATTERN;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import javax.tools.JavaFileManager.Location;
@@ -881,6 +882,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCVariableDecl recvparam;
         /** value parameters */
         public List<JCVariableDecl> params;
+        /** binding parameters */
+        public List<JCVariableDecl> bindings;
         /** exceptions thrown by this method */
         public List<JCExpression> thrown;
         /** statements in the method */

@@ -298,11 +298,14 @@ public class TransPatterns extends TreeTranslator {
         //$record $r; type-test-of($nestedPattern1) && type-test-of($nestedPattern2) && ... &&
         //            nested-conditions-of($nestedPattern1) && nested-conditions-of($nestedPattern2)
 
-        // A record pattern that comes with a matcher is desugared into the following structure (utilizing DynamicVarSymbols)
-        // if (o instanceof Matcher $m && Matcher."Matcher$Ljava\\|lang\\|String\\?$I"($m)) instanceof Object unmatched) {
-        //      MethodType methodType = MethodType.methodType(Object.class, String.class, int.class); // represented as a Constant_MethodType_info
-        //      os = (String) Carriers.component(methodType, 0).invoke(unmatched); // where Carriers.component(methodType, 0) is a DynamicVarSymbol
-        //      oi = (int) Carriers.component(methodType, 1).invoke(unmatched); // where Carriers.component(methodType, 1) is a DynamicVarSymbol
+        // A record pattern that comes with a pattern declaration is desugared into the
+        // following structure (utilizing DynamicVarSymbols).
+        //
+        // if (o instanceof Matcher $m$1 &&
+        //     Matcher."Matcher$Ljava\\|lang\\|String\\?$I"($m$1)) instanceof Object unmatched) {
+        //      MethodType methodType = MethodType.methodType(Object.class, String.class, int.class);   // represented as a Constant_MethodType_info
+        //      os = (String) Carriers.component(methodType, 0).invoke($m$1);                           // where Carriers.component(methodType, 0) is a DynamicVarSymbol
+        //      oi =    (int) Carriers.component(methodType, 1).invoke($m$1);                           // where Carriers.component(methodType, 1) is a DynamicVarSymbol
         //      ...
         // }
         Type recordType = recordPattern.type.tsym.erasure(types);
@@ -320,18 +323,18 @@ public class TransPatterns extends TreeTranslator {
         JCExpression secondLevelChecks = null;
         int index = -1; // needed for the Carriers.component in the case of a matcher
 
-        BindingSymbol    unmatched = null;
+        BindingSymbol    mSymbol = null;
         MethodSymbol     carriersComponentCallSym = null;
 
         if (recordPattern.matcher != null) {
-            unmatched = new BindingSymbol(Flags.SYNTHETIC,
+            mSymbol = new BindingSymbol(Flags.SYNTHETIC,
                     names.fromString(target.syntheticNameChar() + "m" + target.syntheticNameChar() + variableIndex++), syms.objectType,
                     currentMethodSym);
-            JCVariableDecl unmatchedVar = make.VarDef(unmatched, null);
+            JCVariableDecl mVar = make.VarDef(mSymbol, null);
             JCExpression nullCheck = make.TypeTest(
                     make.App(make.Select(make.Ident(recordPattern.matcher.owner), recordPattern.matcher),
                                      List.of(make.Ident(tempBind))).setType(syms.objectType),
-                    make.BindingPattern(unmatchedVar).setType(unmatched.type)).setType(syms.booleanType);
+                    make.BindingPattern(mVar).setType(mSymbol.type)).setType(syms.booleanType);
 
             firstLevelChecks = nullCheck;
 
@@ -357,7 +360,7 @@ public class TransPatterns extends TreeTranslator {
                  *  Generate invoke call for component X
                  *       component$X.invoke(carrier);
                  * */
-                List<Type> params = recordPattern.matcher.params
+                List<Type> params = recordPattern.matcher.bindings
                         .map(v -> types.erasure(v.type));
 
                 MethodType methodType = new MethodType(params, syms.objectType, List.nil(), syms.methodClass);
@@ -371,7 +374,7 @@ public class TransPatterns extends TreeTranslator {
                                 carriersComponentCallSym.asHandle(),
                                 carriersComponentParams.toArray(LoadableConstant[]::new));
 
-                List<JCExpression> invokeComponentParams = List.of(make.Ident(unmatched));
+                List<JCExpression> invokeComponentParams = List.of(make.Ident(mSymbol));
 
                 MethodSymbol invokeComponentCallSym =
                         rs.resolveInternalMethod(recordPattern.pos(),

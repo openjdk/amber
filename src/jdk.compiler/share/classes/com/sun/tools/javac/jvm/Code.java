@@ -1371,13 +1371,7 @@ public class Code {
 
     StackMapFrame getInitialFrame() {
         StackMapFrame frame = new StackMapFrame();
-        // todo: refactor, same code in ClassWriter::writeMethodParametersAttr
-        List<Type> arg_types = null;
-        if (meth.isPattern()) {
-            arg_types = meth.type.getParameterTypes();
-        } else {
-            arg_types = ((MethodType)meth.externalType(types)).argtypes;
-        }
+        List<Type> arg_types = ((MethodType)meth.externalType(types)).argtypes;
         int len = arg_types.length();
         int count = 0;
         if (!(meth.isStatic() || meth.isPattern())) {

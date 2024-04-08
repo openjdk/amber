@@ -1315,18 +1315,34 @@ public class ClassReader {
                 }
                 protected void read(Symbol sym, int attrLen) {
                     if (sym.kind == MTH) {
-                        Name name = poolReader.getName(nextChar());
-                        int matcherFlags = nextChar();
-                        Type actualType = poolReader.getType(nextChar());
+                        Name patternName  = poolReader.getName(nextChar());
+                        int  patternFlags = nextChar();
+                        Type patternType  = poolReader.getType(nextChar());
 
-                        // check parameter names (attribute or read from local variable table?
+                        var oldParameterAnnotations = parameterAnnotations;
+                        var oldParameterNameIndicesLvt = parameterNameIndicesLvt;
+                        var oldParameterAccessFlags = parameterAccessFlags;
+                        var oldParameterNameIndicesMp = parameterNameIndicesMp;
+                        parameterAnnotations = null;
+                        parameterNameIndicesLvt = null;
+                        parameterNameIndicesMp = null;
+                        parameterAccessFlags = null;
 
                         readMemberAttrs(sym);
 
-                        sym.name = name;
-                        sym.flags_field |= PATTERN;
-                        //TODO: flags
-                        sym.type = actualType;
+                        MethodSymbol msym = (MethodSymbol) sym;
+                        msym.bindings = computeParamsFromAttribute(msym, patternType.getParameterTypes(), 0);
+
+                        parameterAnnotations = oldParameterAnnotations;
+                        parameterNameIndicesLvt = oldParameterNameIndicesLvt;
+                        parameterNameIndicesMp = oldParameterNameIndicesMp;
+                        parameterAccessFlags = oldParameterAccessFlags;
+
+                        msym.name = patternName;
+                        msym.flags_field |= PATTERN;
+                        // todo: check if special handling is needed similar to generic methods for binding types
+
+                        msym.type.asMethodType().bindingtypes = patternType.getParameterTypes();
                     }
                 }
             },
@@ -2779,6 +2795,15 @@ public class ClassReader {
                     - Code.width(sym.type.getParameterTypes());
             firstParamLvt += skip;
         }
+
+        List<VarSymbol> params = computeParamsFromAttribute(sym, sym.type.getParameterTypes(), firstParamLvt);
+
+        Assert.checkNull(sym.params);
+
+        sym.params = params;
+    }
+
+    private List<VarSymbol> computeParamsFromAttribute(MethodSymbol sym, List<Type> parameterTypes, int firstParamLvt) {
         Set<Name> paramNames = new HashSet<>();
         ListBuffer<VarSymbol> params = new ListBuffer<>();
         // we maintain two index pointers, one for the LocalVariableTable attribute
@@ -2789,7 +2814,7 @@ public class ClassReader {
         int nameIndexLvt = firstParamLvt;
         int nameIndexMp = 0;
         int annotationIndex = 0;
-        for (Type t: sym.type.getParameterTypes()) {
+        for (Type t: parameterTypes) {
             VarSymbol param = parameter(nameIndexMp, nameIndexLvt, t, sym, paramNames);
             params.append(param);
             if (parameterAnnotations != null) {
@@ -2806,12 +2831,11 @@ public class ClassReader {
         if (parameterAnnotations != null && parameterAnnotations.length != annotationIndex) {
             throw badClassFile("bad.runtime.invisible.param.annotations", sym);
         }
-        Assert.checkNull(sym.params);
-        sym.params = params.toList();
         parameterAnnotations = null;
         parameterNameIndicesLvt = null;
         parameterNameIndicesMp = null;
         parameterAccessFlags = null;
+        return params.toList();
     }
 
     /**

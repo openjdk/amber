@@ -188,10 +188,6 @@ public class MemberEnter extends JCTree.Visitor {
         m.flags_field = chk.checkFlags(tree.pos(), tree.mods.flags, m, tree);
         tree.sym = m;
 
-//        if (tree.sym.isMatcher()) {
-//            m.flags_field |= SYNTHETIC;
-//        }
-
         //if this is a default method, add the DEFAULT flag to the enclosing interface
         if ((tree.mods.flags & DEFAULT) != 0) {
             m.owner.flags_field |= DEFAULT;
@@ -201,10 +197,15 @@ public class MemberEnter extends JCTree.Visitor {
         DiagnosticPosition prevLintPos = deferredLintHandler.setPos(tree.pos());
         try {
             // Compute the method type
-            m.type = signature(m, tree.typarams, tree.params,
+            Type t = signature(m, tree.typarams, tree.params,
                                tree.restype, tree.recvparam,
                                tree.thrown,
                                localEnv);
+            if (t instanceof MethodType mt && m.isPattern()) {
+                mt.bindingtypes = mt.argtypes;
+                mt.argtypes = List.nil();
+            }
+            m.type = t;
         } finally {
             deferredLintHandler.setPos(prevLintPos);
         }
@@ -220,7 +221,14 @@ public class MemberEnter extends JCTree.Visitor {
             JCVariableDecl param = lastParam = l.head;
             params.append(Assert.checkNonNull(param.sym));
         }
-        m.params = params.toList();
+
+        if (m.isPattern()) {
+            m.bindings = params.toList();
+            m.params = List.nil();
+        } else {
+            m.params = params.toList();
+            m.bindings = List.nil();
+        }
 
         // mark the method varargs, if necessary
         if (lastParam != null && (lastParam.mods.flags & Flags.VARARGS) != 0)

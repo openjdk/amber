@@ -77,6 +77,9 @@ public enum ElementKind {
     METHOD,
     /** A constructor. */
     CONSTRUCTOR,
+
+    // todo: PATTERN_DECLARATION
+
     /** A static initializer. */
     STATIC_INIT,
     /** An instance initializer. */
@@ -120,6 +123,8 @@ public enum ElementKind {
     /**
      * A binding variable in a pattern.
      * @since 16
+     *
+     * todo: think about reusing it for bindings of pattern declarations
      */
     BINDING_VARIABLE;
 

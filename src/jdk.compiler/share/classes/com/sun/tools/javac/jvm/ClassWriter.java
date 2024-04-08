@@ -385,17 +385,9 @@ public class ClassWriter extends ClassFile {
     /**
      * Write method parameter names attribute.
      */
-    int writeMethodParametersAttr(MethodSymbol m, boolean writeParamNames) {
-        // todo: refactor, same code in Code::getInitialFrame
-        List<Type> arg_types;
-        if (m.isPattern()) {
-            arg_types = m.type.getParameterTypes();
-        } else {
-            arg_types = ((MethodType)m.externalType(types)).argtypes;
-        }
-
+    int writeMethodParametersAttr(MethodSymbol m, List<VarSymbol> params, List<Type> arg_types, boolean writeParamNames) {
         final int allparams = arg_types.size();
-        if (m.params != null && allparams != 0) {
+        if (params != null && allparams != 0) {
             final int attrIndex = writeAttr(names.MethodParameters);
             databuf.appendByte(allparams);
             // Write extra parameters first
@@ -410,7 +402,7 @@ public class ClassWriter extends ClassFile {
                 databuf.appendChar(flags);
             }
             // Now write the real parameters
-            for (VarSymbol s : m.params) {
+            for (VarSymbol s : params) {
                 final int flags =
                     ((int) s.flags() & (FINAL | SYNTHETIC | MANDATED)) |
                     ((int) m.flags() & SYNTHETIC);
@@ -887,17 +879,22 @@ public class ClassWriter extends ClassFile {
 
         databuf.appendChar(poolWriter.putName(m.name));
         databuf.appendChar(PatternFlags.value(m.patternFlags));
-        databuf.appendChar(poolWriter.putDescriptor(m.type.asMethodType()));
+        MethodType mt = new MethodType(
+                m.type.getBindingTypes(),
+                m.type.asMethodType().restype,
+                m.type.getThrownTypes(),
+                m.type.tsym);
+        databuf.appendChar(poolWriter.putDescriptor(mt));
 
         int acountIdx = beginAttrs();
         int acount = 0;
 
-        if (m.isPattern() && target.hasMethodParameters()) {
-            acount += writeMethodParametersAttr(m, requiresParamNames(m));
+        if (target.hasMethodParameters()) {
+            acount += writeMethodParametersAttr(m, m.getBindings(), m.type.getBindingTypes(), requiresParamNames(m));
         }
 
         acount += writeMemberAttrs(m, false, true);
-        acount += writeParameterAttrs(m.params);
+        acount += writeParameterAttrs(m.bindings);
 
         endAttrs(acountIdx, acount);
         endAttr(attrIndex);
@@ -1064,7 +1061,7 @@ public class ClassWriter extends ClassFile {
             if (!m.isLambdaMethod()) { // Per JDK-8138729, do not emit parameters table for lambda bodies.
                 boolean requiresParamNames = requiresParamNames(m);
                 if (requiresParamNames || requiresParamFlags(m))
-                    acount += writeMethodParametersAttr(m, requiresParamNames);
+                    acount += writeMethodParametersAttr(m, m.params, ((MethodType)m.externalType(types)).argtypes, requiresParamNames);
             }
         }
         acount += writeMemberAttrs(m, false, false);

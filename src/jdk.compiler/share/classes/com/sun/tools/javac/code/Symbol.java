@@ -466,7 +466,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return name == name.table.names.init;
     }
 
-    /** Is this symbol a matcher?
+    /** Is this symbol a pattern declaration?
      */
     public boolean isPattern() {
         return (flags() & PATTERN) != 0;
@@ -1992,6 +1992,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         /** The parameters of the method. */
         public List<VarSymbol> params = null;
 
+        /** The bindings of the method if it is a pattern declaration. */
+        public List<VarSymbol> bindings = null;
+
         /** For an annotation type element, its default value if any.
          *  The value is null if none appeared in the method
          *  declaration.
@@ -2065,7 +2068,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 /** TODO: improve perf
                  * e.g., Point\%Ljava\|lang\|Integer\?\%Ljava\|lang\|Integer\?(Point)
                  */
-                Name postFix = name.table.names.fromString(params().map(param -> {
+                Name postFix = name.table.names.fromString(bindings().map(param -> {
                     var g = new UnSharedSignatureGenerator(types, name.table.names);
                     g.assembleSig(param.erasure(types));
                     return name.table.names.fromString(g.toName().toString().replace("/", "\\\u007C").replace(";", "\\\u003F"));
@@ -2349,6 +2352,23 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return params;
         }
 
+        public List<VarSymbol> bindings() {
+            owner.complete();
+            if (bindings == null) {
+                ListBuffer<VarSymbol> newBindings = new ListBuffer<>();
+                int i = 0;
+                for (Type t : type.getParameterTypes()) {
+                    Name bindingName = name.table.fromString("bind" + i);
+                    VarSymbol binding = new VarSymbol(MATCH_BINDING, bindingName, t, this);
+                    newBindings.append(binding);
+                    i++;
+                }
+                bindings = newBindings.toList();
+            }
+            Assert.checkNonNull(bindings);
+            return bindings;
+        }
+
         public Symbol asMemberOf(Type site, Types types) {
             return new MethodSymbol(flags_field, name, types.memberType(site, this), owner);
         }
@@ -2378,6 +2398,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<VarSymbol> getParameters() {
             return params();
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<VarSymbol> getBindings() {
+            return bindings();
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)

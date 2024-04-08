@@ -28,7 +28,6 @@
  *          jdk.compiler/com.sun.tools.javac.main
  *          jdk.jdeps/com.sun.tools.javap
  * @build toolbox.ToolBox toolbox.JavapTask
- * @compile PatternDeclarationsBytecodeTest.java
  * @run main PatternDeclarationsBytecodeTest
  */
 
@@ -67,7 +66,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                 public class Test {
                      private final String name = "";
                      private final String username = "";
-             
+
                      public pattern Test(String name, String username) {
                           match Test(this.name, this.username);
                      }
@@ -91,7 +90,6 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            System.out.println(javapOut);
             if (!javapOut.contains("public static java.lang.Object Test\\%Ljava\\|lang\\|String\\?\\%Ljava\\|lang\\|String\\?(test.Test);"))
                 throw new AssertionError("Wrongly generated signature of pattern declaration");
         }
@@ -109,7 +107,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                 public class Test {
                      private final String name = "";
                      private final String username = "";
-             
+
                      public pattern Test(String name, String username) {
                           match Test(this.name, this.username);
                      }
@@ -160,11 +158,12 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                 import java.util.Objects;
                                 
                 public class Test {
-                  public record Points(Collection<Integer> xs, Collection<Integer> ys) {
-                      @MatcherAnnotation(annotField = 42)
-                      public pattern Points(@BindingAnnotation Collection<Integer> xs, @BindingAnnotation Collection<Integer> ys) {
-                          match Points(this.xs, this.ys);
-                      }
+                  private Collection<Integer> xs = null;
+                  private Collection<Integer> ys = null;
+                  
+                  @MatcherAnnotation(annotField = 42)
+                  public pattern Test(@BindingAnnotation Collection<Integer> xs, @BindingAnnotation Collection<Integer> ys) {
+                      match Test(this.xs, this.ys);
                   }
               
                   @Target(ElementType.METHOD)
@@ -192,20 +191,21 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
             String javapOut = new JavapTask(tb)
                     .options("-v")
                     .classpath(classes.toString())
-                    .classes("test.Test$Points")
+                    .classes("test.Test")
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
             String[] outputs = {
-                "Signature: #44                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
+                "Signature: #32                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
                 "RuntimeVisibleParameterAnnotations:",
                     "parameter 0:",
-                        "0: #54()",
+                        "0: #42()",
                             "test.Test$BindingAnnotation",
                     "parameter 1:",
-                        "0: #54()",
+                        "0: #42()",
                             "test.Test$BindingAnnotation"
             };
+
             if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
                 throw new AssertionError("Wrongly generated Pattern attribute with binding annotations and generic arguments");
         }
