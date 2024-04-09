@@ -1541,6 +1541,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public boolean isErroneous() {
             return
                 isErroneous(argtypes) ||
+                bindingtypes != null && isErroneous(bindingtypes) ||
                 restype != null && restype.isErroneous();
         }
 
@@ -1557,6 +1558,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
         public void complete() {
             for (List<Type> l = argtypes; l.nonEmpty(); l = l.tail)
+                l.head.complete();
+            for (List<Type> l = bindingtypes; l.nonEmpty(); l = l.tail)
                 l.head.complete();
             restype.complete();
             recvtype.complete();

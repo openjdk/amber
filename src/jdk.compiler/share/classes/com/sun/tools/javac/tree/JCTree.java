@@ -43,7 +43,6 @@ import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.JCDiagnostic.DiagnosticPosition;
 import com.sun.tools.javac.util.List;
 
-import static com.sun.tools.javac.code.Flags.PATTERN;
 import static com.sun.tools.javac.tree.JCTree.Tag.*;
 
 import javax.tools.JavaFileManager.Location;
@@ -2473,7 +2472,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public List<JCPattern> nested;
         public ClassSymbol record;
         public List<Type> fullComponentTypes;
-        public MethodSymbol matcher;
+        public MethodSymbol patternDeclaration;
 
         protected JCRecordPattern(JCExpression deconstructor, List<JCPattern> nested) {
             this.deconstructor = deconstructor;

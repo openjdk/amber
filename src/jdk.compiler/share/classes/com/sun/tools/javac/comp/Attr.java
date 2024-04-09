@@ -4300,63 +4300,18 @@ public class Attr extends JCTree.Visitor {
             }
             List<Type> patternTypes = patternTypesBuffer.toList();
 
-            var matchersIt = site.tsym.members()
-                    .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
-                    .iterator();
-            List<MethodSymbol> matchers = Stream.generate(() -> null)
-                    .takeWhile(x -> matchersIt.hasNext())
-                    .map(n -> (MethodSymbol) matchersIt.next())
-                    .collect(List.collector());
+            List<MethodSymbol> patternDeclarations = getPatternDeclarationCandidates(site, nestedPatternCount);
 
-            if (matchers.size() >= 1) {
-                ListBuffer<Integer> score = new ListBuffer<Integer>();
-
-                // overload resolution of matcher
-                for (MethodSymbol matcher : matchers) {
-                    int scoreForMatcher = 0;
-
-                    List<Type> matcherComponentTypes = matcher.getBindings()
-                            .stream()
-                            .map(rc -> types.memberType(site, rc))
-                            .map(t -> types.upward(t, types.captures(t)).baseType())
-                            .collect(List.collector());
-
-                    boolean applicable = true;
-                    for (int i = 0; applicable && i < patternTypes.size(); i++) {
-                        applicable &= types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i));
-                    }
-
-                    if (applicable) {
-                        // todo: need to separate scores for each parameter
-                        for (int i = 0; i < patternTypes.size(); i++) {
-                            if (types.isSameType(patternTypes.get(i), matcherComponentTypes.get(i))) {
-                                scoreForMatcher += 2;
-                            } else if (types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i))) {
-                                scoreForMatcher += 1;
-                            }
-                        }
-                        score.add(scoreForMatcher);
-                    } else {
-                        score.add(-1);
-                    }
+            if (patternDeclarations.size() >= 1) {
+                MethodSymbol patternDeclaration = selectBestPatternDeclarationInScope(tree,
+                        site,
+                        patternDeclarations,
+                        patternTypes);
+                if (patternDeclaration != null) {
+                    expectedRecordTypes = types.memberType(site, patternDeclaration).getBindingTypes();
+                    tree.patternDeclaration = patternDeclaration;
                 }
 
-                var maxScore = Collections.max(score);
-                List<Integer> scoreList = score.toList();
-                var indexOfMaxScore = scoreList.indexOf(maxScore);
-
-                if (maxScore == -1) {
-                    log.error(tree.pos(),
-                            Errors.NoCompatibleMatcherFound);
-                } else if (scoreList.stream().filter(s -> s == maxScore).count() > 1) {
-                    log.error(tree.pos(),
-                            Errors.MatcherOverloadingAmbiguity);
-                } else {
-                    MethodSymbol matcher = matchers.get(indexOfMaxScore);
-                    tree.matcher = matcher;
-
-                    expectedRecordTypes = types.memberType(site, matcher).getBindingTypes();
-                }
             } else if (((ClassSymbol) site.tsym).isRecord()) {
                 ClassSymbol record = (ClassSymbol) site.tsym;
                 expectedRecordTypes = record.getRecordComponents()
@@ -4408,6 +4363,70 @@ public class Attr extends JCTree.Visitor {
         chk.validate(tree.deconstructor, env, true);
         result = tree.type;
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
+    }
+
+    // todo: follow the protocol in Resolve::selectBest
+    private MethodSymbol selectBestPatternDeclarationInScope(JCRecordPattern tree,
+                                                           Type site,
+                                                           List<MethodSymbol> patternDeclarations,
+                                                           List<Type> patternTypes) {
+        List<Type> expectedRecordTypes = null;
+        ListBuffer<Integer> score = new ListBuffer<Integer>();
+
+        for (MethodSymbol matcher : patternDeclarations) {
+            int scoreForMatcher = 0;
+
+            List<Type> matcherComponentTypes = matcher.getBindings()
+                    .stream()
+                    .map(rc -> types.memberType(site, rc))
+                    .map(t -> types.upward(t, types.captures(t)).baseType())
+                    .collect(List.collector());
+
+            boolean applicable = true;
+            for (int i = 0; applicable && i < patternTypes.size(); i++) {
+                applicable &= types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i));
+            }
+
+            if (applicable) {
+                // todo: need to separate scores for each parameter
+                for (int i = 0; i < patternTypes.size(); i++) {
+                    if (types.isSameType(patternTypes.get(i), matcherComponentTypes.get(i))) {
+                        scoreForMatcher += 2;
+                    } else if (types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i))) {
+                        scoreForMatcher += 1;
+                    }
+                }
+                score.add(scoreForMatcher);
+            } else {
+                score.add(-1);
+            }
+        }
+
+        var maxScore = Collections.max(score);
+        List<Integer> scoreList = score.toList();
+        var indexOfMaxScore = scoreList.indexOf(maxScore);
+
+        if (maxScore == -1) {
+            log.error(tree.pos(),
+                    Errors.NoCompatibleMatcherFound);
+        } else if (scoreList.stream().filter(s -> s == maxScore).count() > 1) {
+            log.error(tree.pos(),
+                    Errors.MatcherOverloadingAmbiguity);
+        } else {
+            return patternDeclarations.get(indexOfMaxScore);
+        }
+        return null;
+    }
+
+    private static List<MethodSymbol> getPatternDeclarationCandidates(Type site, int nestedPatternCount) {
+        var matchersIt = site.tsym.members()
+                .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
+                .iterator();
+        List<MethodSymbol> patternDeclarations = Stream.generate(() -> null)
+                .takeWhile(x -> matchersIt.hasNext())
+                .map(n -> (MethodSymbol) matchersIt.next())
+                .collect(List.collector());
+        return patternDeclarations;
     }
 
     public void visitIndexed(JCArrayAccess tree) {
