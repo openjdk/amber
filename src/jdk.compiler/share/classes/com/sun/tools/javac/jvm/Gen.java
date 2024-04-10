@@ -1050,7 +1050,7 @@ public class Gen extends JCTree.Visitor {
                         code.newLocal(
                                 new VarSymbol(FINAL, names._this, selfType, meth.owner)));
 
-                for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
+                for (List<JCVariableDecl> l = tree.bindings; l.nonEmpty(); l = l.tail) {
                     checkDimension(l.head.pos(), l.head.sym.type);
                     code.newLocal(l.head.sym);
                 }

@@ -938,6 +938,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
             return params;
         }
         @DefinedBy(Api.COMPILER_TREE)
+        public List<JCVariableDecl> getBindings() {
+            return bindings;
+        }
+        @DefinedBy(Api.COMPILER_TREE)
         public JCVariableDecl getReceiverParameter() { return recvparam; }
         @DefinedBy(Api.COMPILER_TREE)
         public List<JCExpression> getThrows() {

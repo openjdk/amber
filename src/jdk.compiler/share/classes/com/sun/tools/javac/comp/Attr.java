@@ -1021,6 +1021,11 @@ public class Attr extends JCTree.Visitor {
                 attribStat(l.head, localEnv);
             }
 
+            // Attribute all bindings.
+            for (List<JCVariableDecl> l = tree.bindings; l != null && l.nonEmpty(); l = l.tail) {
+                attribStat(l.head, localEnv);
+            }
+
             chk.checkVarargsMethodDecl(localEnv, tree);
 
             // Check that type parameters are well-formed.

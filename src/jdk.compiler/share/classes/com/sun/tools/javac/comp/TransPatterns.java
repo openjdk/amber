@@ -861,7 +861,7 @@ public class TransPatterns extends TreeTranslator {
     /**
      * A statement of the form
      * <pre>{@code
-     *   pattern <Name> (parameter1, parameter2) {
+     *   pattern <Name> (binding1, binding2) {
      *       match <Name> (arg1, arg2) ;
      *   }
      * }
@@ -870,39 +870,25 @@ public class TransPatterns extends TreeTranslator {
      * is translated to:
      *
      * <pre>{@code
-     *     parameter1 = arg1;
-     *     parameter2 = arg2;
+     *     binding1 = arg1;
+     *     binding2 = arg2;
+     *     return carrier.invoke(binding1, binding2);
      * }</pre>
      *
      */
     @Override
     public void visitMatch(JCMatch tree) {
-        List<JCExpression> args = tree.getArguments();
-        List<JCVariableDecl> parameters = tree.meth.getParameters();
+        List<JCExpression>   matchArguments = tree.getArguments();
+        List<JCVariableDecl> bindings = tree.meth.bindings;
+        List<Type>           bindingTypes = tree.meth.type.getBindingTypes();
+        List<JCExpression>   invokeMethodParam = List.nil();
 
         ListBuffer<JCStatement> stats = new ListBuffer<>();
-        while (args.nonEmpty() && parameters.nonEmpty()) {
-            JCExpressionStatement stat =
-                    make.Exec(make.Assign(make.Ident(parameters.head),
-                                    translate(args.head)).setType(parameters.head.type));
-            stats.add(stat);
-            parameters = parameters.tail;
-            args = args.tail;
-        }
 
-        // Generate (without the bindings)
+        // Generate:
         //     1. calculate the returnType MethodType as Constant_MethodType_info
         //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)
         //     3. generate invoke call to pass the bindings (e.g, return carrier.invoke(x, y);)
-
-        List<Type> params = List.nil();
-        List<JCExpression> invokeMethodParam = List.nil();
-
-        for (int i = 0; i < tree.meth.params.length(); i++) {
-            params = params.append(tree.meth.params.get(i).type);
-            invokeMethodParam = invokeMethodParam.append(make.Ident(tree.meth.params.get(i)));
-        }
-
         MethodSymbol factoryMethodSym =
                 rs.resolveInternalMethod(tree.pos(),
                         env,
@@ -916,7 +902,22 @@ public class TransPatterns extends TreeTranslator {
                         names.fromString("carrier"),
                         tree.pos(),
                         factoryMethodSym.asHandle(),
-                        new MethodType(params, syms.objectType, List.nil(), syms.methodClass));
+                        new MethodType(tree.meth.type.getBindingTypes(), syms.objectType, List.nil(), syms.methodClass));
+
+        // Generate:
+        //      parameter1 = arg1;
+        while (matchArguments.nonEmpty() && bindings.nonEmpty() && bindingTypes.nonEmpty()) {
+            JCExpressionStatement stat =
+                    make.Exec(make.Assign(make.Ident(bindings.head),
+                            translate(matchArguments.head)).setType(bindings.head.type));
+            stats.add(stat);
+
+            invokeMethodParam = invokeMethodParam.append(make.Ident(bindings.head));
+
+            bindings = bindings.tail;
+            bindingTypes = bindingTypes.tail;
+            matchArguments = matchArguments.tail;
+        }
 
         JCIdent factoryMethodCall = make.Ident(factoryMethodDynamicVar);
 

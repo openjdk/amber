@@ -225,6 +225,8 @@ public class MemberEnter extends JCTree.Visitor {
         if (m.isPattern()) {
             m.bindings = params.toList();
             m.params = List.nil();
+            tree.bindings = tree.params;
+            tree.params = List.nil();
         } else {
             m.params = params.toList();
             m.bindings = List.nil();

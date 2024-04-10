@@ -219,6 +219,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
         r = scanAndReduce(node.getReturnType(), p, r);
         r = scanAndReduce(node.getTypeParameters(), p, r);
         r = scanAndReduce(node.getParameters(), p, r);
+        r = scanAndReduce(node.getBindings(), p, r);
         r = scanAndReduce(node.getReceiverParameter(), p, r);
         r = scanAndReduce(node.getThrows(), p, r);
         r = scanAndReduce(node.getBody(), p, r);
