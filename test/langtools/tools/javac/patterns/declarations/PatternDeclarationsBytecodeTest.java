@@ -27,6 +27,7 @@
  * @modules jdk.compiler/com.sun.tools.javac.api
  *          jdk.compiler/com.sun.tools.javac.main
  *          jdk.jdeps/com.sun.tools.javap
+ * @enablePreview
  * @build toolbox.ToolBox toolbox.JavapTask
  * @run main PatternDeclarationsBytecodeTest
  */
@@ -37,6 +38,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Gatherers;
+import java.util.stream.Stream;
 
 public class PatternDeclarationsBytecodeTest extends TestRunner  {
     private ToolBox tb;
@@ -93,24 +97,31 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
             if (!javapOut.contains("public static java.lang.Object Test\\%Ljava\\|lang\\|String\\?\\%Ljava\\|lang\\|String\\?(test.Test);"))
                 throw new AssertionError("Wrongly generated signature of pattern declaration:\n" + javapOut);
         }
-
     }
 
     @Test
-    public void testPatternAttribute(Path base) throws Exception {
+    public void testPolymorphicSignatureInPatternAttribute(Path base) throws Exception {
         Path current = base.resolve(".");
         Path src = current.resolve("src");
         Path classes = current.resolve("classes");
         tb.writeJavaFiles(src,
                 """
                 package test;
+                import java.lang.annotation.ElementType;
+                import java.lang.annotation.Retention;
+                import java.lang.annotation.RetentionPolicy;
+                import java.lang.annotation.Target;
+                import java.util.Collection;
+                import java.util.List;
+                import java.util.Objects;
+                                
                 public class Test {
-                     private final String name = "";
-                     private final String username = "";
-
-                     public pattern Test(String name, String username) {
-                          match Test(this.name, this.username);
-                     }
+                  private Collection<Integer> xs = null;
+                  private Collection<Integer> ys = null;
+                  
+                  public pattern Test(Collection<Integer> xs, Collection<Integer> ys) {
+                      match Test(this.xs, this.ys);
+                  }
                  }
                  """);
 
@@ -131,14 +142,12 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            String o = """
-                    Pattern:
-                          pattern_name: Test
-                          pattern_flags: deconstructor
-                          pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
-                    """;
-            if (!javapOut.contains(o))
-                throw new AssertionError("Wrongly generated basic structure of Pattern attribute:\n" + javapOut);
+            String[] outputs = {
+                    "Signature: #36                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
+            };
+
+            if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
+                throw new AssertionError("Wrongly generated Signature in Pattern attribute with generic bindings:\n" + javapOut);
         }
     }
 
@@ -199,35 +208,25 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                                 test.Test$BindingAnnotation
                     """;
 
-            if (!javapOut.contains(o))
-                throw new AssertionError("Wrongly generated Pattern attribute with binding annotations:\n" + javapOut);
+            containsOrdered(o, javapOut, "Wrongly generated Pattern attribute with binding annotations:\n");
         }
-
     }
 
     @Test
-    public void testPolymorphicSignatureInPatternAttribute(Path base) throws Exception {
+    public void testPatternAttribute(Path base) throws Exception {
         Path current = base.resolve(".");
         Path src = current.resolve("src");
         Path classes = current.resolve("classes");
         tb.writeJavaFiles(src,
                 """
                 package test;
-                import java.lang.annotation.ElementType;
-                import java.lang.annotation.Retention;
-                import java.lang.annotation.RetentionPolicy;
-                import java.lang.annotation.Target;
-                import java.util.Collection;
-                import java.util.List;
-                import java.util.Objects;
-                                
                 public class Test {
-                  private Collection<Integer> xs = null;
-                  private Collection<Integer> ys = null;
-                  
-                  public pattern Test(Collection<Integer> xs, Collection<Integer> ys) {
-                      match Test(this.xs, this.ys);
-                  }
+                     private final String name = "";
+                     private final String username = "";
+
+                     public pattern Test(String name, String username) {
+                          match Test(this.name, this.username);
+                     }
                  }
                  """);
 
@@ -247,13 +246,13 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .classes("test.Test")
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
-
-            String[] outputs = {
-                    "Signature: #36                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
-            };
-
-            if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
-                throw new AssertionError("Wrongly generated Signature in Pattern attribute with generic bindings:\n" + javapOut);
+            String o = """
+                    Pattern:
+                          pattern_name: Test
+                          pattern_flags: deconstructor
+                          pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
+                    """;
+            containsOrdered(o, javapOut, "Wrongly generated basic structure of Pattern attribute:\n");
         }
     }
 
@@ -293,18 +292,25 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .getOutput(Task.OutputKind.DIRECT);
 
             String output = """
-                    Pattern:
-                          pattern_name: Test
-                          pattern_flags: deconstructor
-                          pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
-                          MethodParameters:
-                            Name                           Flags
-                            name                           synthetic
-                            username                       synthetic
+                  Pattern:
+                      pattern_name: Test
+                      pattern_flags: deconstructor
+                      pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
+                      MethodParameters:
+                        Name                           Flags
+                        name                           synthetic
+                        username                       synthetic
                     """;
 
-            if (!javapOut.contains(output))
-                throw new AssertionError("Wrongly MethodParameters attribute:\n" + javapOut);
+            containsOrdered(output, javapOut, "Wrongly MethodParameters attribute:\n");
         }
+    }
+
+    private static void containsOrdered(String expected, String actual, String message) {
+        List<String> expectedLines = expected.lines().map(s -> s.strip()).toList();
+        Stream<String> actualLines = actual.lines().map(s -> s.strip());
+
+        if (!actualLines.gather(Gatherers.windowSliding(expectedLines.size())).anyMatch(window -> window.equals(expectedLines)))
+            throw new AssertionError(message + actual);
     }
 }
