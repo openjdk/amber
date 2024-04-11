@@ -131,12 +131,13 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            String[] outputs = {
-                    "pattern_name: Test",
-                    "pattern_flags: deconstructor",
-                    "pattern_type: (Ljava/lang/String;Ljava/lang/String;)V"
-            };
-            if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
+            String o = """
+                    Pattern:
+                          pattern_name: Test
+                          pattern_flags: deconstructor
+                          pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
+                    """;
+            if (!javapOut.contains(o))
                 throw new AssertionError("Wrongly generated basic structure of Pattern attribute:\n" + javapOut);
         }
     }
@@ -188,17 +189,17 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            String[] outputs = {
-                "RuntimeVisibleParameterAnnotations:",
-                    "parameter 0:",
-                        "0: #35()",
-                            "test.Test$BindingAnnotation",
-                    "parameter 1:",
-                        "0: #35()",
-                            "test.Test$BindingAnnotation"
-            };
+            String o = """
+                    RuntimeVisibleParameterAnnotations:
+                            parameter 0:
+                              0: #35()
+                                test.Test$BindingAnnotation
+                            parameter 1:
+                              0: #35()
+                                test.Test$BindingAnnotation
+                    """;
 
-            if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
+            if (!javapOut.contains(o))
                 throw new AssertionError("Wrongly generated Pattern attribute with binding annotations:\n" + javapOut);
         }
 
@@ -248,7 +249,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .getOutput(Task.OutputKind.DIRECT);
 
             String[] outputs = {
-                    "Signature: #32                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
+                    "Signature: #36                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
             };
 
             if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
@@ -291,14 +292,18 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            String[] outputs = {
-                    "MethodParameters:",
-                    "Name                           Flags",
-                    "name",
-                    "username"
-            };
+            String output = """
+                    Pattern:
+                          pattern_name: Test
+                          pattern_flags: deconstructor
+                          pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
+                          MethodParameters:
+                            Name                           Flags
+                            name                           synthetic
+                            username                       synthetic
+                    """;
 
-            if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
+            if (!javapOut.contains(output))
                 throw new AssertionError("Wrongly MethodParameters attribute:\n" + javapOut);
         }
     }

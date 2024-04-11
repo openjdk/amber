@@ -2779,6 +2779,32 @@ public class Lower extends TreeTranslator {
                 syms.methodClass);
         }
 
+        if (tree.sym.isPattern()) {
+            tree.sym.flags_field  |= STATIC;
+            tree.sym.flags_field  |= SYNTHETIC;
+            tree.mods.flags |= STATIC;
+            tree.mods.flags |= SYNTHETIC;
+
+            JCVariableDecl implicitThisParam = make_at(tree.pos()).
+                    Param(names._this, tree.sym.owner.type, tree.sym);
+            implicitThisParam.mods.flags |= SYNTHETIC;
+            implicitThisParam.sym.flags_field |= SYNTHETIC;
+
+            MethodSymbol m = tree.sym;
+            tree.params = tree.params.prepend(implicitThisParam);
+
+            m.params = m.params.prepend(implicitThisParam.sym);
+            Type olderasure = m.erasure(types);
+            var mt = new MethodType(
+                    olderasure.getParameterTypes().prepend(tree.sym.owner.type),
+                    olderasure.getReturnType(),
+                    olderasure.getThrownTypes(),
+                    syms.methodClass);
+            mt.bindingtypes = olderasure.getBindingTypes();
+
+            m.erasure_field = mt;
+        }
+
         JCMethodDecl prevMethodDef = currentMethodDef;
         MethodSymbol prevMethodSym = currentMethodSym;
         try {

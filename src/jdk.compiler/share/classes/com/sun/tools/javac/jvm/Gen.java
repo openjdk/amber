@@ -1025,31 +1025,27 @@ public class Gen extends JCTree.Visitor {
                 System.err.println(meth + " for body " + tree);
             }
 
-            // distinguising from the case of the synthetic parameter list of a pattern declaration
-            if (!tree.sym.isPattern()) {
-                // If method is not static, create a new local variable address
-                // for `this'.
-                if ((tree.mods.flags & STATIC) == 0) {
-                    Type selfType = meth.owner.type;
-                    if (meth.isConstructor() && selfType != syms.objectType)
-                        selfType = UninitializedType.uninitializedThis(selfType);
-                    code.setDefined(
-                            code.newLocal(
-                                new VarSymbol(FINAL, names._this, selfType, meth.owner)));
-                }
-
-                // Mark all parameters as defined from the beginning of
-                // the method.
-                for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
-                    checkDimension(l.head.pos(), l.head.sym.type);
-                    code.setDefined(code.newLocal(l.head.sym));
-                }
-            } else {
+            // If method is not static, create a new local variable address
+            // for `this'.
+            if ((tree.mods.flags & STATIC) == 0) {
                 Type selfType = meth.owner.type;
+                if (meth.isConstructor() && selfType != syms.objectType)
+                    selfType = UninitializedType.uninitializedThis(selfType);
                 code.setDefined(
                         code.newLocal(
-                                new VarSymbol(FINAL, names._this, selfType, meth.owner)));
+                            new VarSymbol(FINAL, names._this, selfType, meth.owner)));
+            }
 
+            // Mark all parameters as defined from the beginning of
+            // the method.
+            for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
+                checkDimension(l.head.pos(), l.head.sym.type);
+                code.setDefined(code.newLocal(l.head.sym));
+            }
+
+            // Mark all bindings as defined from the beginning of
+            // the pattern declaration.
+            if (tree.sym.isPattern()) {
                 for (List<JCVariableDecl> l = tree.bindings; l.nonEmpty(); l = l.tail) {
                     checkDimension(l.head.pos(), l.head.sym.type);
                     code.newLocal(l.head.sym);

@@ -1024,7 +1024,7 @@ public class ClassWriter extends ClassFile {
      */
     void writeMethod(MethodSymbol m) {
         int flags = adjustFlags(m.flags());
-        databuf.appendChar(flags | (m.isPattern() ? Flags.STATIC | Flags.SYNTHETIC : 0));
+        databuf.appendChar(flags);
         if (dumpMethodModifiers) {
             PrintWriter pw = log.getWriter(Log.WriterKind.ERROR);
             pw.println("METHOD  " + m.name);
