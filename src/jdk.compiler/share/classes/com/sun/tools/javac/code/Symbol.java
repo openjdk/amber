@@ -2358,9 +2358,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             if (bindings == null) {
                 ListBuffer<VarSymbol> newBindings = new ListBuffer<>();
                 int i = 0;
-                for (Type t : type.getParameterTypes()) {
+                for (Type t : type.getBindingTypes()) {
                     Name bindingName = name.table.fromString("bind" + i);
-                    VarSymbol binding = new VarSymbol(MATCH_BINDING, bindingName, t, this);
+                    VarSymbol binding = new VarSymbol(PARAMETER, bindingName, t, this);
                     newBindings.append(binding);
                     i++;
                 }
