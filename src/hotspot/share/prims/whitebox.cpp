@@ -41,6 +41,7 @@
 #include "classfile/vmSymbols.hpp"
 #include "code/codeCache.hpp"
 #include "compiler/compilationPolicy.hpp"
+#include "compiler/compilerOracle.hpp"
 #include "compiler/directivesParser.hpp"
 #include "compiler/methodMatcher.hpp"
 #include "gc/shared/concurrentGCBreakpoints.hpp"
@@ -769,6 +770,7 @@ class VM_WhiteBoxDeoptimizeFrames : public VM_WhiteBoxOperation {
             Deoptimization::deoptimize(t, *f);
             if (_make_not_entrant) {
                 nmethod* nm = CodeCache::find_nmethod(f->pc());
+                assert(nm != nullptr, "did not find nmethod");
                 nm->make_not_entrant();
             }
             ++_result;
@@ -819,7 +821,7 @@ WB_ENTRY(jint, WB_DeoptimizeMethod(JNIEnv* env, jobject o, jobject method, jbool
     if (is_osr) {
       result += mh->method_holder()->mark_osr_nmethods(&deopt_scope, mh());
     } else {
-      MutexLocker ml(CompiledMethod_lock, Mutex::_no_safepoint_check_flag);
+      MutexLocker ml(NMethodState_lock, Mutex::_no_safepoint_check_flag);
       if (mh->code() != nullptr) {
         deopt_scope.mark(mh->code());
         ++result;
@@ -1987,9 +1989,9 @@ static bool GetMethodOption(JavaThread* thread, JNIEnv* env, jobject method, jst
   ThreadToNativeFromVM ttnfv(thread);
   const char* flag_name = env->GetStringUTFChars(name, nullptr);
   CHECK_JNI_EXCEPTION_(env, false);
-  enum CompileCommand option = CompilerOracle::string_to_option(flag_name);
+  CompileCommandEnum option = CompilerOracle::string_to_option(flag_name);
   env->ReleaseStringUTFChars(name, flag_name);
-  if (option == CompileCommand::Unknown) {
+  if (option == CompileCommandEnum::Unknown) {
     return false;
   }
   if (!CompilerOracle::option_matches_type(option, *value)) {

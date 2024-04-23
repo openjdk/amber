@@ -85,7 +85,8 @@ public:
 private:
   DefNewGeneration* _young_gen;
   TenuredGeneration* _old_gen;
-
+  HeapWord* _young_gen_saved_top;
+  HeapWord* _old_gen_saved_top;
 private:
   // The singleton CardTable Remembered Set.
   CardTableRS* _rem_set;
@@ -272,16 +273,12 @@ public:
                      OopClosure* strong_roots,
                      CLDClosure* strong_cld_closure,
                      CLDClosure* weak_cld_closure,
-                     CodeBlobToOopClosure* code_roots);
+                     NMethodToOopClosure* code_roots);
 
   // Set the saved marks of generations, if that makes sense.
   // In particular, if any generation might iterate over the oops
   // in other generations, it should call this method.
   void save_marks();
-
-  // Returns "true" iff no allocations have occurred since the last
-  // call to "save_marks".
-  bool no_allocs_since_save_marks();
 
   // Returns true if an incremental collection is likely to fail.
   // We optionally consult the young gen, if asked to do so;
@@ -355,13 +352,8 @@ public:
     return _old_gen;
   }
 
-  // Apply "cur->do_oop" or "older->do_oop" to all the oops in objects
-  // allocated since the last call to save_marks in the young generation.
-  // The "cur" closure is applied to references in the younger generation
-  // at "level", and the "older" closure to older generations.
-  template <typename OopClosureType1, typename OopClosureType2>
-  void oop_since_save_marks_iterate(OopClosureType1* cur,
-                                    OopClosureType2* older);
+  void scan_evacuated_objs(YoungGenScanClosure* young_cl,
+                           OldGenScanClosure* old_cl);
 
   void safepoint_synchronize_begin() override;
   void safepoint_synchronize_end() override;
