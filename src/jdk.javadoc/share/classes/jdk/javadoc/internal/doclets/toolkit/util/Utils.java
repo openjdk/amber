@@ -259,6 +259,10 @@ public class Utils {
         return e.getKind() == METHOD;
     }
 
+    public boolean isPatternDeclaration(Element e) {
+        return e.getKind() == PATTERN_DECLARATION;
+    }
+
     public boolean isModule(Element e) {
         return e.getKind() == ElementKind.MODULE;
     }

@@ -890,7 +890,7 @@ public class ClassWriter extends ClassFile {
         int acount = 0;
 
         if (target.hasMethodParameters()) {
-            acount += writeMethodParametersAttr(m, m.getBindings(), m.type.getBindingTypes(), requiresParamNames(m));
+            acount += writeMethodParametersAttr(m, m.bindings(), m.type.getBindingTypes(), requiresParamNames(m));
         }
 
         acount += writeMemberAttrs(m, false, true);

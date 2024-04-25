@@ -1257,7 +1257,7 @@ public class ElementsTable {
                 case CLASS, METHOD, MODULE, PACKAGE -> kind;
                 case RECORD, ANNOTATION_TYPE, ENUM, INTERFACE -> ElementKind.CLASS;
                 case CONSTRUCTOR, ENUM_CONSTANT, EXCEPTION_PARAMETER, FIELD, INSTANCE_INIT, LOCAL_VARIABLE,
-                        PARAMETER, RESOURCE_VARIABLE, STATIC_INIT, TYPE_PARAMETER, RECORD_COMPONENT -> ElementKind.METHOD;
+                     PARAMETER, PATTERN_BINDING, RESOURCE_VARIABLE, STATIC_INIT, TYPE_PARAMETER, RECORD_COMPONENT -> ElementKind.METHOD;
                 default -> throw new AssertionError("unsupported kind: " + kind);
             };
         }

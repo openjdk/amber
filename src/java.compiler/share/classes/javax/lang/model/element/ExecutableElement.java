@@ -76,15 +76,6 @@ public interface ExecutableElement extends Element, Parameterizable {
     List<? extends VariableElement> getParameters();
 
     /**
-     * Returns the binding parameters of this executable.
-     * They are returned in declaration order.
-     *
-     * @return the binding parameters,
-     * or an empty list if there are none or is not a pattern declaration.
-     */
-    List<? extends VariableElement> getBindings();
-
-    /**
      * Returns the receiver type of this executable,
      * or {@link javax.lang.model.type.NoType NoType} with
      * kind {@link javax.lang.model.type.TypeKind#NONE NONE}

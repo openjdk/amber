@@ -30,10 +30,7 @@ import java.lang.annotation.Target;
 import java.util.Set;
 import javax.annotation.processing.RoundEnvironment;
 import javax.annotation.processing.SupportedAnnotationTypes;
-import javax.lang.model.element.Element;
-import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.VariableElement;
-import javax.lang.model.element.TypeElement;
+import javax.lang.model.element.*;
 import javax.tools.Diagnostic;
 
 @SupportedAnnotationTypes("BindingProcessor.Bindings")
@@ -48,12 +45,13 @@ public class BindingProcessor extends JavacTestingAbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getElementsAnnotatedWith(Bindings.class)) {
-            ExecutableElement exec = (ExecutableElement)element;
-            String message = String.format("%s.%s(%s)",
-                    exec.getEnclosingElement(),
-                    exec.getSimpleName(),
-                    exec.getBindings().stream().map(this::printBinding).collect(joining(", ")));
-            messager.printMessage(Diagnostic.Kind.OTHER, message);
+            if (element instanceof PatternDeclarationElement exec) {
+                String message = String.format("%s.%s(%s)",
+                        exec.getEnclosingElement(),
+                        exec.getSimpleName(),
+                        exec.getBindings().stream().map(this::printBinding).collect(joining(", ")));
+                messager.printMessage(Diagnostic.Kind.OTHER, message);
+            }
         }
         return false;
     }

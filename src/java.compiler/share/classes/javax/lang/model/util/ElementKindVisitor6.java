@@ -264,6 +264,9 @@ public class ElementKindVisitor6<R, P>
         case BINDING_VARIABLE:
             return visitVariableAsBindingVariable(e, p);
 
+        case PATTERN_BINDING:
+            return visitVariableAsParameter(e, p);
+
         default:
             throw new AssertionError("Bad kind " + k + " for VariableElement" + e);
         }
@@ -391,6 +394,9 @@ public class ElementKindVisitor6<R, P>
 
         case STATIC_INIT:
             return visitExecutableAsStaticInit(e, p);
+
+        case PATTERN_DECLARATION:
+            return visitPatternDeclaration((PatternDeclarationElement) e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for ExecutableElement" + e);

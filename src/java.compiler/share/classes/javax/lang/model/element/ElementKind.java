@@ -71,19 +71,20 @@ public enum ElementKind {
     LOCAL_VARIABLE,
     /** A parameter of an exception handler. */
     EXCEPTION_PARAMETER,
+    /** A binding of a pattern declaration. */
+    PATTERN_BINDING,
 
     // Executables
     /** A method. */
     METHOD,
     /** A constructor. */
     CONSTRUCTOR,
-
-    // todo: PATTERN_DECLARATION
-
     /** A static initializer. */
     STATIC_INIT,
     /** An instance initializer. */
     INSTANCE_INIT,
+    /** A pattern declaration. */
+    PATTERN_DECLARATION,
 
     /** A type parameter. */
     TYPE_PARAMETER,
@@ -183,7 +184,7 @@ public enum ElementKind {
      */
     public boolean isExecutable() {
         return switch(this) {
-        case METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT -> true;
+        case METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT, PATTERN_DECLARATION -> true;
         default -> false;
         };
     }

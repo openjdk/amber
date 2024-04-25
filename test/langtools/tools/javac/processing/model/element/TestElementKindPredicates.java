@@ -74,7 +74,8 @@ public class TestElementKindPredicates {
              (ElementKind k) -> Set.of(ElementKind.METHOD,
                                        ElementKind.CONSTRUCTOR,
                                        ElementKind.STATIC_INIT,
-                                       ElementKind.INSTANCE_INIT).contains(k),
+                                       ElementKind.INSTANCE_INIT,
+                                       ElementKind.PATTERN_DECLARATION).contains(k),
              (ElementKind k) -> k.isExecutable(), "isExecutable");
 
         // isInitializer: Returns true if this is a kind of initializer: one of

@@ -48,6 +48,7 @@ import javax.lang.model.element.RecordComponentElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.element.TypeParameterElement;
 import javax.lang.model.element.VariableElement;
+import javax.lang.model.element.PatternDeclarationElement;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
 
@@ -1794,6 +1795,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             } else if ((flags & MATCH_BINDING) != 0) {
                 ElementKind kind = ElementKind.BINDING_VARIABLE;
                 return kind;
+            } else if (owner.kind == MTH && owner.isPattern()) {
+                return ElementKind.PATTERN_BINDING;
             } else {
                 return ElementKind.LOCAL_VARIABLE;
             }
@@ -1978,7 +1981,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
     /** A class for method symbols.
      */
-    public static class MethodSymbol extends Symbol implements ExecutableElement {
+    public static class MethodSymbol extends Symbol implements PatternDeclarationElement, ExecutableElement {
 
         /** The code of the method. */
         public Code code = null;
@@ -2382,6 +2385,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return ElementKind.STATIC_INIT;
             else if ((flags() & BLOCK) != 0)
                 return isStatic() ? ElementKind.STATIC_INIT : ElementKind.INSTANCE_INIT;
+            else if (isPattern())
+                return ElementKind.PATTERN_DECLARATION;
             else
                 return ElementKind.METHOD;
         }

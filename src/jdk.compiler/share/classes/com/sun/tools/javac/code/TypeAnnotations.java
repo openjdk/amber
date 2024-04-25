@@ -399,7 +399,8 @@ public class TypeAnnotations {
                 sym.getKind() == ElementKind.LOCAL_VARIABLE ||
                 sym.getKind() == ElementKind.RESOURCE_VARIABLE ||
                 sym.getKind() == ElementKind.EXCEPTION_PARAMETER ||
-                sym.getKind() == ElementKind.BINDING_VARIABLE) {
+                sym.getKind() == ElementKind.BINDING_VARIABLE ||
+                sym.getKind() == ElementKind.PATTERN_BINDING) {
                 appendTypeAnnotationsToOwner(sym, typeAnnotations);
             }
         }

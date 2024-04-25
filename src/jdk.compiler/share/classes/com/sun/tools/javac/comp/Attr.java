@@ -4377,7 +4377,7 @@ public class Attr extends JCTree.Visitor {
         for (MethodSymbol matcher : patternDeclarations) {
             int scoreForMatcher = 0;
 
-            List<Type> matcherComponentTypes = matcher.getBindings()
+            List<Type> matcherComponentTypes = matcher.bindings()
                     .stream()
                     .map(rc -> types.memberType(site, rc))
                     .map(t -> types.upward(t, types.captures(t)).baseType())
