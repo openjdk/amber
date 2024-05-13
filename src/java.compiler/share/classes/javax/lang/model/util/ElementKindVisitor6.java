@@ -28,7 +28,7 @@ package javax.lang.model.util;
 import javax.lang.model.element.*;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.ElementVisitor;
+
 import static javax.lang.model.element.ElementKind.*;
 import static javax.lang.model.SourceVersion.*;
 
@@ -396,7 +396,7 @@ public class ElementKindVisitor6<R, P>
             return visitExecutableAsStaticInit(e, p);
 
         case PATTERN_DECLARATION:
-            return visitPatternDeclaration(e, p);
+            return visitExecutableAsPatternDeclaration(e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for ExecutableElement" + e);

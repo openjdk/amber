@@ -226,15 +226,15 @@ public interface ElementVisitor<R, P> {
     /**
      * Visits a pattern declaration executable element.
      *
-     * @implSpec The default implementation visits a {@code
-     * PatternDeclarationElement} by calling {@code visitUnknown(e, p)}.
+     * @implSpec The default implementation visits an {@code
+     * ExecutableElement} by calling {@code visitUnknown(e, p)}.
      *
      * @param e  the element to visit
      * @param p  a visitor-specified parameter
      * @return a visitor-specified result
      * @since 23
      */
-    default R visitPatternDeclaration(ExecutableElement e, P p) {
+    default R visitExecutableAsPatternDeclaration(ExecutableElement e, P p) {
         return visitUnknown(e, p);
     }
 }

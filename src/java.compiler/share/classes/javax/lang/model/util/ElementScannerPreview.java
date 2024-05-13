@@ -117,7 +117,7 @@ public class ElementScannerPreview<R, P> extends ElementScanner14<R, P> {
      * @since N
      */
     @Override
-    public R visitPatternDeclaration(ExecutableElement e, P p) {
+    public R visitExecutableAsPatternDeclaration(ExecutableElement e, P p) {
         return scan(createScanningList(e, e.getBindings()), p);
     }
 
