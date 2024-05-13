@@ -32,7 +32,6 @@ import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.ElementVisitor;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.PatternDeclarationElement;
 import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
 
