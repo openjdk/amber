@@ -31,6 +31,7 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.PatternDeclarationElement;
 import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
@@ -78,5 +79,5 @@ public abstract class AbstractElementVisitorPreview<R, P> extends AbstractElemen
      * @return   {@inheritDoc ElementVisitor}
      */
     @Override
-    public abstract R visitPatternDeclaration(PatternDeclarationElement e, P p);
+    public abstract R visitPatternDeclaration(ExecutableElement e, P p);
 }

@@ -1981,7 +1981,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
     /** A class for method symbols.
      */
-    public static class MethodSymbol extends Symbol implements PatternDeclarationElement, ExecutableElement {
+    public static class MethodSymbol extends Symbol implements ExecutableElement {
 
         /** The code of the method. */
         public Code code = null;

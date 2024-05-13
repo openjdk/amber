@@ -396,7 +396,7 @@ public class ElementKindVisitor6<R, P>
             return visitExecutableAsStaticInit(e, p);
 
         case PATTERN_DECLARATION:
-            return visitPatternDeclaration((PatternDeclarationElement) e, p);
+            return visitPatternDeclaration(e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for ExecutableElement" + e);

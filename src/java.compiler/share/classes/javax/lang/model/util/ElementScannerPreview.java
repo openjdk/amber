@@ -117,11 +117,11 @@ public class ElementScannerPreview<R, P> extends ElementScanner14<R, P> {
      * @since N
      */
     @Override
-    public R visitPatternDeclaration(PatternDeclarationElement e, P p) {
+    public R visitPatternDeclaration(ExecutableElement e, P p) {
         return scan(createScanningList(e, e.getBindings()), p);
     }
 
-    private List<? extends Element> createScanningList(PatternDeclarationElement element,
+    private List<? extends Element> createScanningList(ExecutableElement element,
                                                        List<? extends Element> toBeScanned) {
         var typeParameters = element.getTypeParameters();
         if (typeParameters.isEmpty()) {

@@ -83,8 +83,6 @@ public enum ElementKind {
     STATIC_INIT,
     /** An instance initializer. */
     INSTANCE_INIT,
-    /** A pattern declaration. */
-    PATTERN_DECLARATION,
 
     /** A type parameter. */
     TYPE_PARAMETER,
@@ -125,9 +123,15 @@ public enum ElementKind {
      * A binding variable in a pattern.
      * @since 16
      *
-     * todo: think about reusing it for bindings of pattern declarations
      */
-    BINDING_VARIABLE;
+    BINDING_VARIABLE,
+
+    /**
+     * A pattern declaration.
+     * @since 23
+     *
+     */
+    PATTERN_DECLARATION;
 
     // Maintenance note: check if the default implementation of
     // Elements.getOutermostTypeElement needs updating when new kind

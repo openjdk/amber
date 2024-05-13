@@ -232,9 +232,9 @@ public interface ElementVisitor<R, P> {
      * @param e  the element to visit
      * @param p  a visitor-specified parameter
      * @return a visitor-specified result
-     * @since 16
+     * @since 23
      */
-    default R visitPatternDeclaration(PatternDeclarationElement e, P p) {
+    default R visitPatternDeclaration(ExecutableElement e, P p) {
         return visitUnknown(e, p);
     }
 }

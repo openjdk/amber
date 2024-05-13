@@ -45,7 +45,7 @@ public class BindingProcessor extends JavacTestingAbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         for (Element element : roundEnv.getElementsAnnotatedWith(Bindings.class)) {
-            if (element instanceof PatternDeclarationElement exec) {
+            if (element instanceof ExecutableElement exec) {
                 String message = String.format("%s.%s(%s)",
                         exec.getEnclosingElement(),
                         exec.getSimpleName(),
