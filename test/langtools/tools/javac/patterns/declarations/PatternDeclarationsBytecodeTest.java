@@ -114,11 +114,11 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                 import java.util.Collection;
                 import java.util.List;
                 import java.util.Objects;
-                                
+
                 public class Test {
                   private Collection<Integer> xs = null;
                   private Collection<Integer> ys = null;
-                  
+
                   public pattern Test(Collection<Integer> xs, Collection<Integer> ys) {
                       match Test(this.xs, this.ys);
                   }
@@ -166,11 +166,11 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                 import java.util.Collection;
                 import java.util.List;
                 import java.util.Objects;
-                                
+
                 public class Test {
                   private Integer xs = null;
                   private Integer ys = null;
-                  
+
                   public pattern Test(@BindingAnnotation Integer xs, @BindingAnnotation Integer ys) {
                       match Test(this.xs, this.ys);
                   }
