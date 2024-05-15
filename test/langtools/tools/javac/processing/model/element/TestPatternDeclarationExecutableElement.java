@@ -29,8 +29,9 @@
  * @modules java.compiler
  *          jdk.compiler
  * @enablePreview
- * @build   JavacTestingAbstractProcessor TestPatternDeclarationExecutableElement
- * @compile --enable-preview --source ${jdk.version} -processor TestPatternDeclarationExecutableElement -proc:only TestPatternDeclarationExecutableElement.java
+ * @build   JavacTestingAbstractProcessor
+ * @compile TestPatternDeclarationExecutableElement.java
+ * @compile --enable-preview --source ${jdk.version} -processor TestPatternDeclarationExecutableElement -proc:only TestPatternDeclarationExecutableElementData.java
  */
 
 import javax.annotation.processing.RoundEnvironment;
@@ -66,7 +67,7 @@ public class TestPatternDeclarationExecutableElement extends JavacTestingAbstrac
                     var bindings   = pattern.getBindings();
                     var type       = pattern.asType();
 
-                    if (!simpleName.contentEquals("TestPatternDeclarationExecutableElement"))
+                    if (!simpleName.contentEquals("TestPatternDeclarationExecutableElementData"))
                         throw new RuntimeException("Unexpected name for deconstructor " + simpleName);
 
                     if (!(returnType instanceof NoType))
@@ -86,21 +87,5 @@ public class TestPatternDeclarationExecutableElement extends JavacTestingAbstrac
                 throw new RuntimeException("No valid number of deconstructors!");
         }
         return true;
-    }
-
-    public pattern TestPatternDeclarationExecutableElement(String name) {
-        if (capitalize) {
-            match TestPatternDeclarationExecutableElement(this.name.toUpperCase());
-        } else {
-            match TestPatternDeclarationExecutableElement(this.name);
-        }
-    }
-
-    public pattern TestPatternDeclarationExecutableElement(String originalName, String editedName) {
-        if (capitalize) {
-            match TestPatternDeclarationExecutableElement(this.name, this.name.toUpperCase());
-        } else {
-            match TestPatternDeclarationExecutableElement(this.name, this.name);
-        }
     }
 }
