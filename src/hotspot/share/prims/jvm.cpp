@@ -1974,7 +1974,7 @@ static jobjectArray get_class_declared_pattern_declarations_helper(
     for (int i = 0; i < methods_length; i++) {
         methodHandle method(THREAD, methods->at(i));
         if (select_method(method, want_constructor)) {
-            if (!publicOnly || method->is_public()) {
+            if ((!publicOnly || method->is_public()) && method->is_pattern()) {
                 idnums->push(method->method_idnum());
                 ++num_methods;
             }

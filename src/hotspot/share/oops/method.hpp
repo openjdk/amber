@@ -148,6 +148,10 @@ class Method : public Metadata {
   u2 signature_index() const                     { return constMethod()->signature_index();         }
   void set_signature_index(int index)            { constMethod()->set_signature_index(index);       }
 
+  // pattern
+  u2 is_pattern() const                          { return constMethod()->is_pattern();         }
+  void set_is_pattern(bool b)                 { constMethod()->set_is_pattern(b);       }
+
   // generics support
   Symbol* generic_signature() const              { int idx = generic_signature_index(); return ((idx != 0) ? constants()->symbol_at(idx) : nullptr); }
   u2 generic_signature_index() const             { return constMethod()->generic_signature_index(); }

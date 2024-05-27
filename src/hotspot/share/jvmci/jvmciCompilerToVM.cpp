@@ -2175,7 +2175,7 @@ C2V_VMENTRY_NULL(jobjectArray, getDeclaredPatternDeclarations, (JNIEnv* env, job
     GrowableArray<Method*> methods_array;
     for (int i = 0; i < iklass->methods()->length(); i++) {
         Method* m = iklass->methods()->at(i);
-        if (!m->is_initializer() && !m->is_overpass()) {
+        if (!m->is_initializer() && !m->is_overpass() && m->is_pattern()) {
             methods_array.append(m);
         }
     }

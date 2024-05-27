@@ -54,6 +54,7 @@ class Person1 {
     private final String username;
     private boolean capitalize;
 
+    // 2 declared contructors
     public Person1(String name) {
         this(name, "default", false);
     }
@@ -64,6 +65,7 @@ class Person1 {
         this.capitalize = capitalize;
     }
 
+    // 2 declared pattern declarations
     public pattern Person1(String name, String username) {
         match Person1(this.name, this.username);
     }
@@ -74,5 +76,14 @@ class Person1 {
         } else {
             match Person1(this.name);
         }
+    }
+
+    // 2 methods
+    public void test1() {
+
+    }
+
+    public int test2(int i) {
+        return i++;
     }
 }
