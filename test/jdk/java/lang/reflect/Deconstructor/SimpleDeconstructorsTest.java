@@ -23,13 +23,11 @@
 
 /*
  * @test
- * @summary SimplePatternDeclarationsTest
+ * @summary SimpleDeconstructorsTest
  * @enablePreview
- * @run testng/othervm SimplePatternDeclarationsTest
+ * @run testng/othervm SimpleDeconstructorsTest
  */
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 
 import org.testng.annotations.Test;
@@ -37,13 +35,13 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
-public class SimplePatternDeclarationsTest {
+public class SimpleDeconstructorsTest {
     @Test
     public void test1() {
 
         Class<?> class1 = Person1.class;
 
-        Method[] methods = class1.getDeclaredPatternDeclarations();
+        Method[] methods = class1.getDeclaredDeconstructors();
 
         assertEquals(methods.length, 2);
     }
@@ -54,11 +52,7 @@ class Person1 {
     private final String username;
     private boolean capitalize;
 
-    // 2 declared contructors
-    public Person1(String name) {
-        this(name, "default", false);
-    }
-
+    // 1 declared contructors
     public Person1(String name, String username, boolean capitalize) {
         this.name = name;
         this.username = username;
@@ -67,7 +61,11 @@ class Person1 {
 
     // 2 declared pattern declarations
     public pattern Person1(String name, String username) {
-        match Person1(this.name, this.username);
+        if (capitalize) {
+            match Person1(this.name.toUpperCase(), this.username);
+        } else {
+            match Person1(this.name, this.username);
+        }
     }
 
     public pattern Person1(String name) {
@@ -78,12 +76,14 @@ class Person1 {
         }
     }
 
-    // 2 methods
-    public void test1() {
-
-    }
+    // 3 methods
+    public void test1() {  }
 
     public int test2(int i) {
+        return i++;
+    }
+
+    public int test3(int i) {
         return i++;
     }
 }

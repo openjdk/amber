@@ -2762,13 +2762,13 @@ public final class Class<T> implements java.io.Serializable,
      * @since 23
      */
     @CallerSensitive
-    public Method[] getDeclaredPatternDeclarations() throws SecurityException {
+    public Method[] getDeclaredDeconstructors() throws SecurityException {
         @SuppressWarnings("removal")
         SecurityManager sm = System.getSecurityManager();
         if (sm != null) {
             checkMemberAccess(sm, Member.DECLARED, Reflection.getCallerClass(), true);
         }
-        return copyMethods(privateGetDeclaredPatternDeclarations(false));
+        return copyMethods(privateGetDeclaredDeconstructors(false));
     }
 
     /**
@@ -3463,14 +3463,14 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] publicFields;
         volatile Method[] declaredMethods;
         volatile Method[] publicMethods;
-        volatile Method[] declaredPatternDeclarations;
-        volatile Method[] publicPatternDeclarations;
+        volatile Method[] declaredDeconstructors;
+        volatile Method[] publicDeconstructors;
         volatile Constructor<T>[] declaredConstructors;
         volatile Constructor<T>[] publicConstructors;
         // Intermediate results for getFields and getMethods
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
-        volatile Method[] declaredPublicPatternDeclarations;
+        volatile Method[] declaredPublicDeconstructors;
         volatile Class<?>[] interfaces;
 
         // Cached names
@@ -3700,20 +3700,20 @@ public final class Class<T> implements java.io.Serializable,
     // Returns an array of "root" methods. These Method objects must NOT
     // be propagated to the outside world, but must instead be copied
     // via ReflectionFactory.copyMethod.
-    private Method[] privateGetDeclaredPatternDeclarations(boolean publicOnly) {
+    private Method[] privateGetDeclaredDeconstructors(boolean publicOnly) {
         Method[] res;
         ReflectionData<T> rd = reflectionData();
         if (rd != null) {
-            res = publicOnly ? rd.declaredPublicPatternDeclarations : rd.declaredPatternDeclarations;
+            res = publicOnly ? rd.declaredPublicDeconstructors : rd.declaredDeconstructors;
             if (res != null) return res;
         }
         // No cached value available; request value from VM
-        res = Reflection.filterMethods(this, getDeclaredPatternDeclarations0(publicOnly));
+        res = Reflection.filterMethods(this, getDeclaredDeconstructors0(publicOnly));
         if (rd != null) {
             if (publicOnly) {
-                rd.declaredPublicPatternDeclarations = res;
+                rd.declaredPublicDeconstructors = res;
             } else {
-                rd.declaredPatternDeclarations = res;
+                rd.declaredDeconstructors = res;
             }
         }
         return res;
@@ -3950,7 +3950,7 @@ public final class Class<T> implements java.io.Serializable,
 
     private native Field[]       getDeclaredFields0(boolean publicOnly);
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
-    private native Method[]      getDeclaredPatternDeclarations0(boolean publicOnly);
+    private native Method[]      getDeclaredDeconstructors0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]    getDeclaredClasses0();
 

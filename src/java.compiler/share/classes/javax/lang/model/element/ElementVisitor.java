@@ -234,7 +234,7 @@ public interface ElementVisitor<R, P> {
      * @return a visitor-specified result
      * @since 23
      */
-    default R visitExecutableAsPatternDeclaration(ExecutableElement e, P p) {
+    default R visitExecutableAsDeconstructor(ExecutableElement e, P p) {
         return visitUnknown(e, p);
     }
 }

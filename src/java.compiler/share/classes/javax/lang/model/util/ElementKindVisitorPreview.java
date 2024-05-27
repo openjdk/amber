@@ -98,7 +98,7 @@ public class ElementKindVisitorPreview<R, P> extends ElementKindVisitor14<R, P> 
      * @param p a visitor-specified parameter
      * @return  the result of {@code defaultAction}
      */
-    public R visitExecutableAsPatternDeclaration(ExecutableElement e, P p) {
+    public R visitExecutableAsDeconstructor(ExecutableElement e, P p) {
         return defaultAction(e, p);
     }
 }

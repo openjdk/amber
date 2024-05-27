@@ -37,15 +37,14 @@
 import javax.annotation.processing.RoundEnvironment;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
-import javax.lang.model.element.Name;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.ExecutableType;
 import javax.lang.model.type.NoType;
-import javax.lang.model.type.TypeMirror;
+import javax.lang.model.util.ElementFilter;
 import java.util.Set;
 
 import static javax.lang.model.util.ElementFilter.constructorsIn;
-import static javax.lang.model.util.ElementFilter.patternDeclarationsIn;
+import static javax.lang.model.util.ElementFilter.deconstructorsIn;
 
 /**
  * Test basic workings of javax.lang.element.ExecutableElement for pattern declarations
@@ -59,7 +58,7 @@ public class TestPatternDeclarationExecutableElement extends JavacTestingAbstrac
         if (!roundEnv.processingOver()) {
             int count = 0;
             for (Element element : roundEnv.getRootElements()) {
-                for (ExecutableElement pattern : patternDeclarationsIn(element.getEnclosedElements())) {
+                for (ExecutableElement pattern : ElementFilter.deconstructorsIn(element.getEnclosedElements())) {
                     count++;
                     var simpleName = pattern.getSimpleName();
                     var returnType = pattern.getReturnType();

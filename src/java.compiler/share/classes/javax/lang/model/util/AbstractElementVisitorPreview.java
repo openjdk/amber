@@ -78,5 +78,5 @@ public abstract class AbstractElementVisitorPreview<R, P> extends AbstractElemen
      * @return   {@inheritDoc ElementVisitor}
      */
     @Override
-    public abstract R visitExecutableAsPatternDeclaration(ExecutableElement e, P p);
+    public abstract R visitExecutableAsDeconstructor(ExecutableElement e, P p);
 }

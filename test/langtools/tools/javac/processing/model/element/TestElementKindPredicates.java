@@ -69,13 +69,13 @@ public class TestElementKindPredicates {
              (ElementKind k) -> k.isDeclaredType(), "isDeclaredType");
 
         // isExecutable: Returns true if this is a kind of executable: one of
-        // METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT, PATTERN_DECLARATION
+        // METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT, DECONSTRUCTOR
         test(ALL_KINDS,
              (ElementKind k) -> Set.of(ElementKind.METHOD,
                                        ElementKind.CONSTRUCTOR,
                                        ElementKind.STATIC_INIT,
                                        ElementKind.INSTANCE_INIT,
-                                       ElementKind.PATTERN_DECLARATION).contains(k),
+                                       ElementKind.DECONSTRUCTOR).contains(k),
              (ElementKind k) -> k.isExecutable(), "isExecutable");
 
         // isInitializer: Returns true if this is a kind of initializer: one of

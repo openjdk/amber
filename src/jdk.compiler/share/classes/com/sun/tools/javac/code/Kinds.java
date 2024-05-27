@@ -313,7 +313,7 @@ public class Kinds {
             return KindName.STATIC_INIT;
         case INSTANCE_INIT:
             return KindName.INSTANCE_INIT;
-        case PATTERN_DECLARATION:
+        case DECONSTRUCTOR:
             return KindName.PATTERN_DECLARATION;
 
         default:

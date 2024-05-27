@@ -127,11 +127,11 @@ public enum ElementKind {
     BINDING_VARIABLE,
 
     /**
-     * A pattern declaration.
+     * A deconstructor.
      * @since 23
      *
      */
-    PATTERN_DECLARATION;
+    DECONSTRUCTOR;
 
     // Maintenance note: check if the default implementation of
     // Elements.getOutermostTypeElement needs updating when new kind
@@ -188,7 +188,7 @@ public enum ElementKind {
      */
     public boolean isExecutable() {
         return switch(this) {
-        case METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT, PATTERN_DECLARATION -> true;
+        case METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT, DECONSTRUCTOR -> true;
         default -> false;
         };
     }

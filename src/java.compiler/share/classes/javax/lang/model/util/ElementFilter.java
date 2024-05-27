@@ -68,8 +68,8 @@ public class ElementFilter {
                                                ElementKind.ENUM_CONSTANT));
     private static final Set<ElementKind> METHOD_KIND =
         Collections.unmodifiableSet(EnumSet.of(ElementKind.METHOD));
-    private static final Set<ElementKind> PATTERN_DECLARATION_KIND =
-            Collections.unmodifiableSet(EnumSet.of(ElementKind.PATTERN_DECLARATION));
+    private static final Set<ElementKind> DECONSTRUCTOR_KIND =
+            Collections.unmodifiableSet(EnumSet.of(ElementKind.DECONSTRUCTOR));
 
     private static final Set<ElementKind> PACKAGE_KIND =
         Collections.unmodifiableSet(EnumSet.of(ElementKind.PACKAGE));
@@ -166,8 +166,8 @@ public class ElementFilter {
      * @param elements the elements to filter
      */
     public static List<ExecutableElement>
-            patternDeclarationsIn(Iterable<? extends Element> elements) {
-        return listFilter(elements, PATTERN_DECLARATION_KIND, ExecutableElement.class);
+    deconstructorsIn(Iterable<? extends Element> elements) {
+        return listFilter(elements, DECONSTRUCTOR_KIND, ExecutableElement.class);
     }
 
     /**
@@ -175,8 +175,8 @@ public class ElementFilter {
      * @param elements the elements to filter
      */
     public static Set<ExecutableElement>
-            patternDeclarationsIn(Set<? extends Element> elements) {
-        return setFilter(elements, PATTERN_DECLARATION_KIND, ExecutableElement.class);
+    deconstructorsIn(Set<? extends Element> elements) {
+        return setFilter(elements, DECONSTRUCTOR_KIND, ExecutableElement.class);
     }
 
     /**

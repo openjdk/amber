@@ -996,17 +996,17 @@ public class TestResolvedJavaType extends TypeUniverse {
     }
 
     @Test
-    public void getDeclaredPatternDeclarationsTest() {
+    public void getDeclaredDeconstructorsTest() {
         for (Class<?> c : classes) {
             ResolvedJavaType type = metaAccess.lookupJavaType(c);
-            Method[] raw = c.getDeclaredPatternDeclarations();
+            Method[] raw = c.getDeclaredDeconstructors();
             Set<ResolvedJavaMethod> expected = new HashSet<>();
             for (Method m : raw) {
                 ResolvedJavaMethod resolvedMethod = metaAccess.lookupJavaMethod(m);
                 assertNotNull(resolvedMethod);
                 expected.add(resolvedMethod);
             }
-            Set<ResolvedJavaMethod> actual = new HashSet<>(Arrays.asList(type.getDeclaredPatternDeclarations()));
+            Set<ResolvedJavaMethod> actual = new HashSet<>(Arrays.asList(type.getDeclaredDeconstructors()));
             assertEquals(expected, actual);
         }
     }

@@ -298,7 +298,7 @@ public final class HotSpotResolvedPrimitiveType extends HotSpotResolvedJavaType 
     }
 
     @Override
-    public ResolvedJavaMethod[] getDeclaredPatternDeclarations() {
+    public ResolvedJavaMethod[] getDeclaredDeconstructors() {
         return new ResolvedJavaMethod[0];
     }
 

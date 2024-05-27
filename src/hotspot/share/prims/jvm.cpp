@@ -1939,7 +1939,7 @@ JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredMethods(JNIEnv *env, jclass ofClass,
 }
 JVM_END
 
-static jobjectArray get_class_declared_pattern_declarations_helper(
+static jobjectArray get_class_declared_deconstructors_helper(
         JNIEnv *env,
         jclass ofClass, jboolean publicOnly,
         bool want_constructor,
@@ -2009,9 +2009,9 @@ static jobjectArray get_class_declared_pattern_declarations_helper(
     return (jobjectArray) JNIHandles::make_local(THREAD, result());
 }
 
-JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredPatternDeclarations(JNIEnv *env, jclass ofClass, jboolean publicOnly))
+JVM_ENTRY(jobjectArray, JVM_GetClassDeclaredDeconstructors(JNIEnv *env, jclass ofClass, jboolean publicOnly))
 {
-  return get_class_declared_pattern_declarations_helper(env, ofClass, publicOnly,
+  return get_class_declared_deconstructors_helper(env, ofClass, publicOnly,
                                            /*want_constructor*/ false,
                                            vmClasses::reflect_Method_klass(), THREAD);
 }

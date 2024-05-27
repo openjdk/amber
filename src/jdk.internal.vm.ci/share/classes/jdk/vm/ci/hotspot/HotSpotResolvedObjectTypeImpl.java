@@ -1072,16 +1072,16 @@ final class HotSpotResolvedObjectTypeImpl extends HotSpotResolvedJavaType implem
     }
 
     @Override
-    public ResolvedJavaMethod[] getDeclaredPatternDeclarations() {
-        return getDeclaredPatternDeclarations(true);
+    public ResolvedJavaMethod[] getDeclaredDeconstructors() {
+        return getDeclaredDeconstructors(true);
     }
 
     @Override
-    public ResolvedJavaMethod[] getDeclaredPatternDeclarations(boolean forceLink) {
+    public ResolvedJavaMethod[] getDeclaredDeconstructors(boolean forceLink) {
         if (forceLink) {
             link();
         }
-        return runtime().compilerToVm.getDeclaredPatternDeclarations(this);
+        return runtime().compilerToVm.getDeclaredDeconstructors(this);
     }
 
     @Override

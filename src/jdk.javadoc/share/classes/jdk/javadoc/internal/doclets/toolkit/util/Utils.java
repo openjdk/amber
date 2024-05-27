@@ -260,7 +260,7 @@ public class Utils {
     }
 
     public boolean isPatternDeclaration(Element e) {
-        return e.getKind() == PATTERN_DECLARATION;
+        return e.getKind() == DECONSTRUCTOR;
     }
 
     public boolean isModule(Element e) {

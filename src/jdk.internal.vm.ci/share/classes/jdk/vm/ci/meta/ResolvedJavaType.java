@@ -370,18 +370,18 @@ public interface ResolvedJavaType extends JavaType, ModifiersProvider, Annotated
 
     /**
      * Returns an array reflecting all the pattern declarations declared by this type. This method is similar to
-     * {@link Class#getDeclaredPatternDeclarations()} in terms of returned methods. Calling this method forces
+     * {@link Class#getDeclaredDeconstructors()} in terms of returned methods. Calling this method forces
      * this type to be {@link #link linked}.
      */
-    ResolvedJavaMethod[] getDeclaredPatternDeclarations();
+    ResolvedJavaMethod[] getDeclaredDeconstructors();
 
     /**
      * Returns an array reflecting all the methods declared by this type. This method is similar to
-     * {@link Class#getDeclaredPatternDeclarations()} ()} in terms of returned methods.
+     * {@link Class#getDeclaredDeconstructors()} ()} in terms of returned methods.
      *
      * @param forceLink if {@code true}, forces this type to be {@link #link linked}
      */
-    default ResolvedJavaMethod[] getDeclaredPatternDeclarations(boolean forceLink) {
+    default ResolvedJavaMethod[] getDeclaredDeconstructors(boolean forceLink) {
         throw new UnsupportedOperationException();
     }
 
