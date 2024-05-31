@@ -61,7 +61,7 @@ public enum Modifier {
      */
      DEFAULT,
     /**
-     * The modifier {@code default}
+     * The modifier {@code pattern}
      * @since 23
      */
     PATTERN,
