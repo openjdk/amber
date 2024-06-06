@@ -61,6 +61,8 @@ import java.lang.classfile.attribute.SourceIDAttribute;
 import java.lang.classfile.attribute.StackMapTableAttribute;
 import java.lang.classfile.attribute.SyntheticAttribute;
 import java.lang.classfile.attribute.UnknownAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
+
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.classfile.impl.UnboundAttribute;
 import jdk.internal.javac.PreviewFeature;
@@ -86,7 +88,7 @@ public sealed interface Attribute<A extends Attribute<A>>
                 ConstantValueAttribute, DeprecatedAttribute, EnclosingMethodAttribute,
                 ExceptionsAttribute, InnerClassesAttribute, LineNumberTableAttribute,
                 LocalVariableTableAttribute, LocalVariableTypeTableAttribute,
-                MethodParametersAttribute, ModuleAttribute, ModuleHashesAttribute,
+                PatternAttribute, MethodParametersAttribute, ModuleAttribute, ModuleHashesAttribute,
                 ModuleMainClassAttribute, ModulePackagesAttribute, ModuleResolutionAttribute,
                 ModuleTargetAttribute, NestHostAttribute, NestMembersAttribute,
                 PermittedSubclassesAttribute,

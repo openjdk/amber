@@ -1,0 +1,14 @@
+PatternDeclarationErrors.java:12:13: compiler.err.match.not.matching.pattern.declaration.signature
+PatternDeclarationErrors.java:16:13: compiler.err.match.pattern.name.wrong
+PatternDeclarationErrors.java:20:28: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Double)
+PatternDeclarationErrors.java:24:13: compiler.err.match.outside.pattern.declaration
+PatternDeclarationErrors.java:35:12: compiler.err.break.outside.switch.loop
+PatternDeclarationErrors.java:39:13: compiler.err.ret.outside.meth
+PatternDeclarationErrors.java:43:13: compiler.err.no.switch.expression
+PatternDeclarationErrors.java:49:13: compiler.err.pattern.declaration.no.throws
+PatternDeclarationErrors.java:52:24: compiler.err.pattern.declaration.cant.throw.exception
+PatternDeclarationErrors.java:53:13: compiler.err.pattern.declaration.no.throws
+PatternDeclarationErrors.java:29:13: compiler.err.unreachable.stmt
+- compiler.note.preview.filename: PatternDeclarationErrors.java, DEFAULT
+- compiler.note.preview.recompile
+11 errors

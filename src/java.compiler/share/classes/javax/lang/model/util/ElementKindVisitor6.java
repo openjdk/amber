@@ -28,7 +28,7 @@ package javax.lang.model.util;
 import javax.lang.model.element.*;
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
-import javax.lang.model.element.ElementVisitor;
+
 import static javax.lang.model.element.ElementKind.*;
 import static javax.lang.model.SourceVersion.*;
 
@@ -264,6 +264,9 @@ public class ElementKindVisitor6<R, P>
         case BINDING_VARIABLE:
             return visitVariableAsBindingVariable(e, p);
 
+        case PATTERN_BINDING:
+            return visitVariableAsParameter(e, p);
+
         default:
             throw new AssertionError("Bad kind " + k + " for VariableElement" + e);
         }
@@ -391,6 +394,9 @@ public class ElementKindVisitor6<R, P>
 
         case STATIC_INIT:
             return visitExecutableAsStaticInit(e, p);
+
+        case DECONSTRUCTOR:
+            return visitExecutableAsDeconstructor(e, p);
 
         default:
             throw new AssertionError("Bad kind " + k + " for ExecutableElement" + e);

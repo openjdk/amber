@@ -158,4 +158,13 @@ public interface ExecutableElement extends Element, Parameterizable {
      */
     @Override
     Name getSimpleName();
+
+    /**
+     * Returns the binding parameters of this executable.
+     * They are returned in declaration order.
+     *
+     * @return the binding parameters,
+     * or an empty list if there are none or is not a pattern declaration.
+     */
+    List<? extends VariableElement> getBindings();
 }

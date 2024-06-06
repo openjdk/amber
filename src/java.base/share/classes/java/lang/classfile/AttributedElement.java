@@ -24,6 +24,7 @@
  */
 package java.lang.classfile;
 
+import java.lang.classfile.attribute.PatternAttribute;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -41,7 +42,7 @@ import jdk.internal.javac.PreviewFeature;
  */
 @PreviewFeature(feature = PreviewFeature.Feature.CLASSFILE_API)
 public sealed interface AttributedElement extends ClassFileElement
-        permits ClassModel, CodeModel, FieldModel, MethodModel,
+        permits ClassModel, CodeModel, FieldModel, MethodModel, PatternAttribute,
                 RecordComponentInfo, AbstractUnboundModel {
 
     /**

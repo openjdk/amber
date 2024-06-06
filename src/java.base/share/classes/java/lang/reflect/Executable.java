@@ -50,7 +50,7 @@ import sun.reflect.generics.repository.ConstructorRepository;
  * @since 1.8
  */
 public abstract sealed class Executable extends AccessibleObject
-    implements Member, GenericDeclaration permits Constructor, Method {
+    implements Member, GenericDeclaration permits Constructor, Deconstructor, Method {
     /*
      * Only grant package-visibility to the constructor.
      */

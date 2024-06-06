@@ -590,8 +590,6 @@ public class TransTypes extends TreeTranslator {
     }
 
     public void visitRecordPattern(JCRecordPattern tree) {
-        tree.fullComponentTypes = tree.record.getRecordComponents()
-                                             .map(rc -> types.memberType(tree.type, rc));
         tree.deconstructor = translate(tree.deconstructor, null);
         tree.nested = translate(tree.nested, null);
         result = tree;
@@ -647,6 +645,15 @@ public class TransTypes extends TreeTranslator {
         tree.value = translate(tree.value, erasure(tree.value.type));
         tree.value.type = erasure(tree.value.type);
         tree.value = retype(tree.value, tree.value.type, pt);
+        result = tree;
+    }
+
+    @Override
+    public void visitMatch(JCMatch tree) {
+        List<Type> argtypes = tree.meth.type.getParameterTypes();
+
+        tree.args = translateArgs(tree.args, argtypes, null);
+
         result = tree;
     }
 

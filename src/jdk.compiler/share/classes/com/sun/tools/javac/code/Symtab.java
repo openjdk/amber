@@ -178,6 +178,7 @@ public class Symtab {
     public final Type methodHandlesType;
     public final Type methodHandleLookupType;
     public final Type methodTypeType;
+    public final Type carriersType;
     public final Type nativeHeaderType;
     public final Type throwableType;
     public final Type errorType;
@@ -557,6 +558,8 @@ public class Symtab {
         methodHandlesType = enterClass("java.lang.invoke.MethodHandles");
         methodHandleLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
+        carriersType = enterClass("java.lang.runtime.Carriers");
+
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");

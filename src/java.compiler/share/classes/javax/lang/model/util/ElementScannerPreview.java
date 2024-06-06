@@ -105,4 +105,31 @@ public class ElementScannerPreview<R, P> extends ElementScanner14<R, P> {
     protected ElementScannerPreview(R defaultValue){
         super(defaultValue);
     }
+
+    /**
+     * {@inheritDoc ElementVisitor}
+     *
+     * @implSpec This implementation scans the enclosed elements.
+     *
+     * @param e {@inheritDoc ElementVisitor}
+     * @param p {@inheritDoc ElementVisitor}
+     * @return  {@inheritDoc ElementScanner6}
+     * @since N
+     */
+    @Override
+    public R visitExecutableAsDeconstructor(ExecutableElement e, P p) {
+        return scan(createScanningList(e, e.getBindings()), p);
+    }
+
+    private List<? extends Element> createScanningList(ExecutableElement element,
+                                                       List<? extends Element> toBeScanned) {
+        var typeParameters = element.getTypeParameters();
+        if (typeParameters.isEmpty()) {
+            return toBeScanned;
+        } else {
+            List<Element> scanningList = new ArrayList<>(typeParameters);
+            scanningList.addAll(toBeScanned);
+            return scanningList;
+        }
+    }
 }

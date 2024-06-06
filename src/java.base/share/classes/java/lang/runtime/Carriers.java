@@ -25,6 +25,8 @@
 
 package java.lang.runtime;
 
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
@@ -34,7 +36,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import jdk.internal.misc.Unsafe;
 import jdk.internal.util.ReferencedKeyMap;
 
 import static java.lang.invoke.MethodType.methodType;
@@ -85,7 +86,7 @@ import static java.lang.invoke.MethodType.methodType;
  * Warning: This class is part of PreviewFeature.Feature.STRING_TEMPLATES.
  *          Do not rely on its availability.
  */
-final class Carriers {
+public final class Carriers {
     /**
      * Maximum number of components in a carrier (based on the maximum
      * number of args to a constructor.)
@@ -238,10 +239,6 @@ final class Carriers {
      * Factory for carriers that are backed by long[] and Object[].
      */
     static final class CarrierObjectFactory {
-        /**
-         * Unsafe access.
-         */
-        private static final Unsafe UNSAFE;
 
         /*
          * Constructor accessor MethodHandles.
@@ -256,7 +253,6 @@ final class Carriers {
 
         static {
             try {
-                UNSAFE = Unsafe.getUnsafe();
                 Lookup lookup = MethodHandles.lookup();
                 CONSTRUCTOR = lookup.findConstructor(CarrierObject.class,
                         methodType(void.class, int.class, int.class));
@@ -404,7 +400,7 @@ final class Carriers {
         /**
          * Carrier for primitive values.
          */
-        private final long[] primitives;
+        private final MemorySegment primitives;
 
         /**
          * Carrier for objects;
@@ -429,8 +425,8 @@ final class Carriers {
          *
          * @return primitives array of an appropriate length.
          */
-        private long[] createPrimitivesArray(int primitiveCount) {
-            return primitiveCount != 0 ? new long[(primitiveCount + 1) / LONG_SLOTS] : null;
+        private MemorySegment createPrimitivesArray(int primitiveCount) {
+            return primitiveCount != 0 ? MemorySegment.ofArray(new long[(primitiveCount + 1) / LONG_SLOTS]) : null;
         }
 
         /**
@@ -445,48 +441,12 @@ final class Carriers {
         }
 
         /**
-         * Compute offset for unsafe access to long.
-         *
-         * @param i  index in primitive[]
-         *
-         * @return offset for unsafe access
-         */
-        private static long offsetToLong(int i) {
-            return Unsafe.ARRAY_LONG_BASE_OFFSET +
-                    (long)i * Unsafe.ARRAY_LONG_INDEX_SCALE;
-        }
-
-        /**
-         * Compute offset for unsafe access to int.
-         *
-         * @param i  index in primitive[]
-         *
-         * @return offset for unsafe access
-         */
-        private static long offsetToInt(int i) {
-            return Unsafe.ARRAY_LONG_BASE_OFFSET +
-                    (long)i * Unsafe.ARRAY_INT_INDEX_SCALE;
-        }
-
-        /**
-         * Compute offset for unsafe access to object.
-         *
-         * @param i  index in objects[]
-         *
-         * @return offset for unsafe access
-         */
-        private static long offsetToObject(int i) {
-            return Unsafe.ARRAY_OBJECT_BASE_OFFSET +
-                    (long)i * Unsafe.ARRAY_OBJECT_INDEX_SCALE;
-        }
-
-        /**
          * {@return long value at index}
          *
          * @param i  array index
          */
         private long getLong(int i) {
-            return CarrierObjectFactory.UNSAFE.getLong(primitives, offsetToLong(i));
+            return primitives.getAtIndex(ValueLayout.JAVA_LONG, i);
         }
 
         /**
@@ -498,7 +458,7 @@ final class Carriers {
          * @return this object
          */
         private CarrierObject putLong(int i, long value) {
-            CarrierObjectFactory.UNSAFE.putLong(primitives, offsetToLong(i), value);
+            primitives.setAtIndex(ValueLayout.JAVA_LONG, i, value);
 
             return this;
         }
@@ -509,7 +469,7 @@ final class Carriers {
          * @param i  array index
          */
         private int getInteger(int i) {
-            return CarrierObjectFactory.UNSAFE.getInt(primitives, offsetToInt(i));
+            return primitives.getAtIndex(ValueLayout.JAVA_INT, i);
         }
 
         /**
@@ -521,7 +481,7 @@ final class Carriers {
          * @return this object
          */
         private CarrierObject putInteger(int i, int value) {
-            CarrierObjectFactory.UNSAFE.putInt(primitives, offsetToInt(i), value);
+            primitives.setAtIndex(ValueLayout.JAVA_INT, i, value);
 
             return this;
         }
@@ -532,7 +492,7 @@ final class Carriers {
          * @param i  array index
          */
         private Object getObject(int i) {
-            return CarrierObjectFactory.UNSAFE.getReference(objects, offsetToObject(i));
+            return objects[i];
         }
 
         /**
@@ -544,7 +504,7 @@ final class Carriers {
          * @return this object
          */
         private CarrierObject putObject(int i, Object value) {
-            CarrierObjectFactory.UNSAFE.putReference(objects, offsetToObject(i), value);
+            objects[i] = value;
 
             return this;
         }
@@ -933,7 +893,7 @@ final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    static MethodHandle constructor(MethodType methodType) {
+    public static MethodHandle constructor(MethodType methodType) {
         MethodHandle constructor = CarrierFactory.of(methodType).constructor();
         constructor = constructor.asType(constructor.type().changeReturnType(Object.class));
         return constructor;
@@ -962,7 +922,7 @@ final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    static MethodHandle initializingConstructor(MethodType methodType) {
+    static public MethodHandle initializingConstructor(MethodType methodType) {
         MethodHandle constructor = CarrierFactory.of(methodType).initializingConstructor();
         constructor = constructor.asType(constructor.type().changeReturnType(Object.class));
         return constructor;
@@ -976,7 +936,7 @@ final class Carriers {
      * @param methodType  {@link MethodType} whose parameter types supply the shape of the
      *                    carrier's components
      */
-    static List<MethodHandle> components(MethodType methodType) {
+    public static List<MethodHandle> components(MethodType methodType) {
         return CarrierFactory
                 .of(methodType)
                 .components()
@@ -996,7 +956,7 @@ final class Carriers {
      *
      * @throws IllegalArgumentException if {@code i} is out of bounds
      */
-    static MethodHandle component(MethodType methodType, int i) {
+    public static MethodHandle component(MethodType methodType, int i) {
         MethodHandle component = CarrierFactory.of(methodType).component(i);
         component = component.asType(component.type().changeParameterType(0, Object.class));
         return component;

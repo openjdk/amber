@@ -354,16 +354,20 @@ public class ClassWriter extends ClassFile {
     /** Write member (field or method) attributes;
      *  return number of attributes written.
      */
-    int writeMemberAttrs(Symbol sym, boolean isRecordComponent) {
+    int writeMemberAttrs(Symbol sym, boolean isRecordComponent, boolean fromPattern) {
         int acount = 0;
         if (!isRecordComponent) {
             acount = writeFlagAttrs(sym.flags());
         }
         long flags = sym.flags();
-        if ((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
+        boolean needsSignature = !types.isSameType(sym.type, sym.erasure(types)) ||
+                poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes());
+        if (((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
             (flags & ANONCONSTR) == 0 &&
-            (!types.isSameType(sym.type, sym.erasure(types)) ||
-             poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes()))) {
+            needsSignature) ||
+                (needsSignature &&
+                    fromPattern &&
+                    sym.isPattern())) {
             // note that a local class with captured variables
             // will get a signature attribute
             int alenIdx = writeAttr(names.Signature);
@@ -371,18 +375,19 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        acount += writeJavaAnnotations(sym.getRawAttributes());
-        acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
+        if (!fromPattern) {
+            acount += writeJavaAnnotations(sym.getRawAttributes());
+            acount += writeTypeAnnotations(sym.getRawTypeAttributes(), false);
+        }
         return acount;
     }
 
     /**
      * Write method parameter names attribute.
      */
-    int writeMethodParametersAttr(MethodSymbol m, boolean writeParamNames) {
-        MethodType ty = m.externalType(types).asMethodType();
-        final int allparams = ty.argtypes.size();
-        if (m.params != null && allparams != 0) {
+    int writeMethodParametersAttr(MethodSymbol m, List<VarSymbol> params, List<Type> arg_types, boolean writeParamNames) {
+        final int allparams = arg_types.size();
+        if (params != null && allparams != 0) {
             final int attrIndex = writeAttr(names.MethodParameters);
             databuf.appendByte(allparams);
             // Write extra parameters first
@@ -397,7 +402,7 @@ public class ClassWriter extends ClassFile {
                 databuf.appendChar(flags);
             }
             // Now write the real parameters
-            for (VarSymbol s : m.params) {
+            for (VarSymbol s : params) {
                 final int flags =
                     ((int) s.flags() & (FINAL | SYNTHETIC | MANDATED)) |
                     ((int) m.flags() & SYNTHETIC);
@@ -862,10 +867,38 @@ public class ClassWriter extends ClassFile {
             databuf.appendChar(poolWriter.putDescriptor(v));
             int acountIdx = beginAttrs();
             int acount = 0;
-            acount += writeMemberAttrs(v, true);
+            acount += writeMemberAttrs(v, true, false);
             endAttrs(acountIdx, acount);
         }
         endAttr(alenIdx);
+        return 1;
+    }
+
+    int writePatternAttribute(MethodSymbol m) {
+        final int attrIndex = writeAttr(names.Pattern);
+
+        databuf.appendChar(poolWriter.putName(m.name));
+        databuf.appendChar(PatternFlags.value(m.patternFlags));
+        MethodType mt = new MethodType(
+                m.type.getBindingTypes(),
+                m.type.asMethodType().restype,
+                m.type.getThrownTypes(),
+                m.type.tsym);
+        databuf.appendChar(poolWriter.putDescriptor(mt));
+
+        int acountIdx = beginAttrs();
+        int acount = 0;
+
+        if (target.hasMethodParameters()) {
+            acount += writeMethodParametersAttr(m, m.bindings(), m.type.getBindingTypes(), requiresParamNames(m));
+        }
+
+        acount += writeMemberAttrs(m, false, true);
+        acount += writeParameterAttrs(m.bindings);
+
+        endAttrs(acountIdx, acount);
+        endAttr(attrIndex);
+
         return 1;
     }
 
@@ -982,7 +1015,7 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        acount += writeMemberAttrs(v, false);
+        acount += writeMemberAttrs(v, false, false);
         acount += writeExtraAttributes(v);
         endAttrs(acountIdx, acount);
     }
@@ -997,7 +1030,8 @@ public class ClassWriter extends ClassFile {
             pw.println("METHOD  " + m.name);
             pw.println("---" + flagNames(m.flags()));
         }
-        databuf.appendChar(poolWriter.putName(m.name));
+        Name name = m.externalName(types);
+        databuf.appendChar(poolWriter.putName(name));
         databuf.appendChar(poolWriter.putDescriptor(m));
         int acountIdx = beginAttrs();
         int acount = 0;
@@ -1023,16 +1057,21 @@ public class ClassWriter extends ClassFile {
             endAttr(alenIdx);
             acount++;
         }
-        if (target.hasMethodParameters()) {
+        if (!m.isPattern() && target.hasMethodParameters()) {
             if (!m.isLambdaMethod()) { // Per JDK-8138729, do not emit parameters table for lambda bodies.
                 boolean requiresParamNames = requiresParamNames(m);
                 if (requiresParamNames || requiresParamFlags(m))
-                    acount += writeMethodParametersAttr(m, requiresParamNames);
+                    acount += writeMethodParametersAttr(m, m.params, ((MethodType)m.externalType(types)).argtypes, requiresParamNames);
             }
         }
-        acount += writeMemberAttrs(m, false);
-        if (!m.isLambdaMethod())
+        acount += writeMemberAttrs(m, false, false);
+        if (!m.isLambdaMethod() && !m.isPattern())
             acount += writeParameterAttrs(m.params);
+
+        if (m.isPattern()) {
+            acount += writePatternAttribute(m);
+        }
+
         acount += writeExtraAttributes(m);
         endAttrs(acountIdx, acount);
     }

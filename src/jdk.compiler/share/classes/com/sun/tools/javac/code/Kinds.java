@@ -64,6 +64,7 @@ public class Kinds {
         TYP(Category.BASIC, KindName.CLASS, KindSelector.TYP),
         VAR(Category.BASIC, KindName.VAR, KindSelector.VAR),
         MTH(Category.BASIC, KindName.METHOD, KindSelector.MTH),
+        PD(Category.BASIC, KindName.PATTERN_DECLARATION, KindSelector.MTH),
         POLY(Category.BASIC, KindSelector.POLY),
         MDL(Category.BASIC, KindSelector.MDL),
         ERR(Category.ERROR, KindSelector.ERR),
@@ -234,6 +235,7 @@ public class Kinds {
         CLASS("kindname.class"),
         STATIC_INIT("kindname.static.init"),
         INSTANCE_INIT("kindname.instance.init"),
+        PATTERN_DECLARATION("kindname.pattern.declaration"),
         PACKAGE("kindname.package"),
         MODULE("kindname.module"),
         RECORD_COMPONENT("kindname.record.component"),
@@ -296,6 +298,7 @@ public class Kinds {
         case LOCAL_VARIABLE:
         case EXCEPTION_PARAMETER:
         case RESOURCE_VARIABLE:
+        case PATTERN_BINDING:
             return KindName.VAR;
 
         case FIELD:
@@ -310,6 +313,8 @@ public class Kinds {
             return KindName.STATIC_INIT;
         case INSTANCE_INIT:
             return KindName.INSTANCE_INIT;
+        case DECONSTRUCTOR:
+            return KindName.PATTERN_DECLARATION;
 
         default:
                 throw new AssertionError("Unexpected kind: "+sym.getKind());

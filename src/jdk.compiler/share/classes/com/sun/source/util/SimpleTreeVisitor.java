@@ -1056,4 +1056,18 @@ public class SimpleTreeVisitor <R,P> implements TreeVisitor<R,P> {
     public R visitYield(YieldTree node, P p) {
         return defaultAction(node, p);
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation calls {@code defaultAction}.
+     *
+     * @param node {@inheritDoc}
+     * @param p {@inheritDoc}
+     * @return  the result of {@code defaultAction}
+     */
+    @Override
+    public R visitMatchStatement(MatchTree node, P p) {
+        return defaultAction(node, p);
+    }
 }

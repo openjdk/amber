@@ -89,7 +89,7 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 public class Types {
     protected static final Context.Key<Types> typesKey = new Context.Key<>();
 
-    final Symtab syms;
+    public final Symtab syms;
     final JavacMessages messages;
     final Names names;
     final Check chk;
@@ -3286,8 +3286,11 @@ public class Types {
 
             @Override
             public Boolean visitMethodType(MethodType t, Type s) {
-                return s.hasTag(METHOD)
-                    && containsTypeEquivalent(t.argtypes, s.getParameterTypes());
+                if (s.hasTag(METHOD)) {
+                    if (t.bindingtypes != null && t.bindingtypes.size() > 0) return containsTypeEquivalent(t.bindingtypes, s.getBindingTypes());
+                    else return containsTypeEquivalent(t.argtypes, s.getParameterTypes());
+                }
+                return false;
             }
 
             @Override
@@ -5192,7 +5195,11 @@ public class Types {
                 case METHOD:
                     MethodType mt = (MethodType) type;
                     append('(');
-                    assembleSig(mt.argtypes);
+                    if (mt.bindingtypes != null && mt.bindingtypes.size() > 0) {
+                        assembleSig(mt.bindingtypes);
+                    } else {
+                        assembleSig(mt.argtypes);
+                    }
                     append(')');
                     assembleSig(mt.restype);
                     if (hasTypeVar(mt.thrown)) {

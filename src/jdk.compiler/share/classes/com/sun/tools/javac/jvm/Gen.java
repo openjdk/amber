@@ -1043,6 +1043,15 @@ public class Gen extends JCTree.Visitor {
                 code.setDefined(code.newLocal(l.head.sym));
             }
 
+            // Mark all bindings as defined from the beginning of
+            // the pattern declaration.
+            if (tree.sym.isPattern()) {
+                for (List<JCVariableDecl> l = tree.bindings; l.nonEmpty(); l = l.tail) {
+                    checkDimension(l.head.pos(), l.head.sym.type);
+                    code.newLocal(l.head.sym);
+                }
+            }
+
             // Get ready to generate code for method body.
             int startpcCrt = genCrt ? code.curCP() : 0;
             code.entryPoint();
@@ -1894,6 +1903,10 @@ public class Gen extends JCTree.Visitor {
         int tmpPos = code.pendingStatPos;
         if (tree.expr != null) {
             Assert.check(code.isStatementStart());
+            Type pt = this.pt;
+            if (env.enclMethod != null && env.enclMethod.sym.isPattern()) {
+                pt = syms.objectType;
+            }
             Item r = genExpr(tree.expr, pt).load();
             if (hasFinally(env.enclMethod, env)) {
                 r = makeTemp(pt);
@@ -2409,7 +2422,7 @@ public class Gen extends JCTree.Visitor {
             } else {
                 sym = binaryQualifier(sym, tree.selected.type);
             }
-            if ((sym.flags() & STATIC) != 0) {
+            if ((sym.flags() & STATIC) != 0 || sym.isPattern()) {
                 if (!selectSuper && (ssym == null || ssym.kind != TYP))
                     base = base.load();
                 base.drop();

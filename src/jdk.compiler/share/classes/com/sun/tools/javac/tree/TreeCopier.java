@@ -150,6 +150,14 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitMatchStatement(MatchTree node, P p) {
+        JCMatch t = (JCMatch) node;
+        List<JCExpression> args = copy(t.args, p);
+
+        return M.at(t.pos).Match(t.clazz, args);
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitCase(CaseTree node, P p) {
         JCCase t = (JCCase) node;
         List<JCCaseLabel> labels = copy(t.labels, p);
@@ -295,11 +303,14 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         JCExpression restype = copy(t.restype, p);
         List<JCTypeParameter> typarams = copy(t.typarams, p);
         List<JCVariableDecl> params = copy(t.params, p);
+        List<JCVariableDecl> bindings = copy(t.bindings, p);
         JCVariableDecl recvparam = copy(t.recvparam, p);
         List<JCExpression> thrown = copy(t.thrown, p);
         JCBlock body = copy(t.body, p);
         JCExpression defaultValue = copy(t.defaultValue, p);
-        return M.at(t.pos).MethodDef(mods, t.name, restype, typarams, recvparam, params, thrown, body, defaultValue);
+        JCMethodDecl decl = M.at(t.pos).MethodDef(mods, t.name, restype, typarams, recvparam, params, thrown, body, defaultValue);
+        decl.bindings = bindings;
+        return decl;
     }
 
     @DefinedBy(Api.COMPILER_TREE)

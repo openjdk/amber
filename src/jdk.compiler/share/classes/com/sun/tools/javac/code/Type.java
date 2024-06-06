@@ -285,20 +285,27 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         @Override
         public Type visitMethodType(MethodType t, S s) {
             List<Type> argtypes = t.argtypes;
+            List<Type> bindingtypes = t.bindingtypes;
             Type restype = t.restype;
             List<Type> thrown = t.thrown;
+            List<Type> bindingtypes1 = bindingtypes != null ? visit(bindingtypes, s) : null;
             List<Type> argtypes1 = visit(argtypes, s);
             Type restype1 = visit(restype, s);
             List<Type> thrown1 = visit(thrown, s);
             if (argtypes1 == argtypes &&
+                bindingtypes1 == bindingtypes &&
                 restype1 == restype &&
                 thrown1 == thrown) return t;
-            else return new MethodType(argtypes1, restype1, thrown1, t.tsym) {
-                @Override
-                protected boolean needsStripping() {
-                    return true;
-                }
-            };
+            else {
+                MethodType methodType = new MethodType(argtypes1, restype1, thrown1, t.tsym) {
+                    @Override
+                    protected boolean needsStripping() {
+                        return true;
+                    }
+                };
+                methodType.bindingtypes = bindingtypes1;
+                return methodType;
+            }
         }
 
         @Override
@@ -594,6 +601,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     public List<Type>        getTypeArguments()  { return List.nil(); }
     public Type              getEnclosingType()  { return null; }
     public List<Type>        getParameterTypes() { return List.nil(); }
+    public List<Type>        getBindingTypes()   { return List.nil(); }
     public Type              getReturnType()     { return null; }
     public Type              getReceiverType()   { return null; }
     public List<Type>        getThrownTypes()    { return List.nil(); }
@@ -1471,6 +1479,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     public static class MethodType extends Type implements ExecutableType, LoadableConstant {
 
         public List<Type> argtypes;
+        public List<Type> bindingtypes;
         public Type restype;
         public List<Type> thrown;
 
@@ -1517,6 +1526,10 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<Type>        getParameterTypes() { return argtypes; }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type>        getBindingTypes() { return bindingtypes; }
+
         @DefinedBy(Api.LANGUAGE_MODEL)
         public Type              getReturnType()     { return restype; }
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1529,6 +1542,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public boolean isErroneous() {
             return
                 isErroneous(argtypes) ||
+                bindingtypes != null && isErroneous(bindingtypes) ||
                 restype != null && restype.isErroneous();
         }
 
@@ -1545,6 +1559,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
         public void complete() {
             for (List<Type> l = argtypes; l.nonEmpty(); l = l.tail)
+                l.head.complete();
+            for (List<Type> l = bindingtypes; l.nonEmpty(); l = l.tail)
                 l.head.complete();
             restype.complete();
             recvtype.complete();
@@ -1832,6 +1848,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public List<Type> getTypeArguments() { return qtype.getTypeArguments(); }
         public Type getEnclosingType() { return qtype.getEnclosingType(); }
         public List<Type> getParameterTypes() { return qtype.getParameterTypes(); }
+        public List<Type> getBindingTypes() { return qtype.getBindingTypes(); }
         public Type getReturnType() { return qtype.getReturnType(); }
         public Type getReceiverType() { return qtype.getReceiverType(); }
         public List<Type> getThrownTypes() { return qtype.getThrownTypes(); }

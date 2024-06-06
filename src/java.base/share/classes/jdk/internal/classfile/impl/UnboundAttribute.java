@@ -56,6 +56,7 @@ import java.lang.classfile.attribute.LocalVariableInfo;
 import java.lang.classfile.attribute.LocalVariableTableAttribute;
 import java.lang.classfile.attribute.LocalVariableTypeInfo;
 import java.lang.classfile.attribute.LocalVariableTypeTableAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.lang.classfile.attribute.MethodParameterInfo;
 import java.lang.classfile.attribute.MethodParametersAttribute;
 import java.lang.classfile.attribute.ModuleAttribute;
@@ -307,6 +308,43 @@ public abstract sealed class UnboundAttribute<T extends Attribute<T>>
         @Override
         public Optional<NameAndTypeEntry> enclosingMethod() {
             return Optional.ofNullable(method);
+        }
+    }
+
+    public static final class UnboundPatternAttribute
+            extends UnboundAttribute<PatternAttribute>
+            implements PatternAttribute {
+        private final int patternFlags;
+        private final Utf8Entry patternName;
+        private final Utf8Entry patternMethodType;
+        private final List<Attribute<?>> attributes;
+
+        public UnboundPatternAttribute(Utf8Entry matcherName, int matcherFlags, Utf8Entry matcherMethodType, List<Attribute<?>> attributes) {
+            super(Attributes.pattern());
+            this.patternName = matcherName;
+            this.patternFlags = matcherFlags;
+            this.patternMethodType = matcherMethodType;
+            this.attributes = List.copyOf(attributes);
+        }
+
+        @Override
+        public int patternFlagsMask() {
+            return patternFlags;
+        }
+
+        @Override
+        public Utf8Entry patternName() {
+            return patternName;
+        }
+
+        @Override
+        public Utf8Entry patternMethodType() {
+            return patternMethodType;
+        }
+
+        @Override
+        public List<Attribute<?>> attributes() {
+            return attributes;
         }
     }
 

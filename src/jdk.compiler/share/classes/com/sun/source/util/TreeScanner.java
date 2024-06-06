@@ -218,6 +218,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
         r = scanAndReduce(node.getReturnType(), p, r);
         r = scanAndReduce(node.getTypeParameters(), p, r);
         r = scanAndReduce(node.getParameters(), p, r);
+        r = scanAndReduce(node.getBindings(), p, r);
         r = scanAndReduce(node.getReceiverParameter(), p, r);
         r = scanAndReduce(node.getThrows(), p, r);
         r = scanAndReduce(node.getBody(), p, r);
@@ -1208,5 +1209,19 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
     @Override
     public R visitYield(YieldTree node, P p) {
         return scan(node.getValue(), p);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @implSpec This implementation scans the children in left to right order.
+     *
+     * @param node  {@inheritDoc}
+     * @param p  {@inheritDoc}
+     * @return the result of scanning
+     */
+    @Override
+    public R visitMatchStatement(MatchTree node, P p) {
+        return scan(node.getArguments(), p);
     }
 }

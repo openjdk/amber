@@ -611,6 +611,8 @@ JVM_GetClassDeclaredFields(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 JNIEXPORT jobjectArray JNICALL
 JVM_GetClassDeclaredConstructors(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 
+JNIEXPORT jobjectArray JNICALL
+JVM_GetClassDeclaredDeconstructors(JNIEnv *env, jclass ofClass, jboolean publicOnly);
 
 /* Differs from JVM_GetClassModifiers in treatment of inner classes.
    This returns the access flags for the class as specified in the
