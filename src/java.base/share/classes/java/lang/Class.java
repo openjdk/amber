@@ -85,6 +85,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jdk.internal.classfile.impl.BoundAttribute;
+import jdk.internal.constant.ConstantUtils;
+import jdk.internal.javac.PreviewFeature;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.misc.Unsafe;
@@ -5000,7 +5002,7 @@ public final class Class<T> implements java.io.Serializable,
     public Optional<ClassDesc> describeConstable() {
         Class<?> c = isArray() ? elementType() : this;
         return c.isHidden() ? Optional.empty()
-                            : Optional.of(ClassDesc.ofDescriptor(descriptorString()));
+                            : Optional.of(ConstantUtils.classDesc(this));
    }
 
     /**
