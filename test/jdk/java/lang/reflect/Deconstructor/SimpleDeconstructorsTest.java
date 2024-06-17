@@ -25,7 +25,6 @@
  * @test
  * @summary SimpleDeconstructorsTest
  * @enablePreview
- * @compile --enable-preview --source ${jdk.version} -parameters SimpleDeconstructorsTest.java
  * @run main/othervm --enable-preview SimpleDeconstructorsTest
  */
 
@@ -44,6 +43,7 @@ public class SimpleDeconstructorsTest {
 
     public static void main(String[] args) throws NoSuchPatternException, IllegalAccessException {
         testGetMethods();
+        testGetDeconstructors();
         testGetDeclaredDeconstructors();
         testGetDeclaredDeconstructor();
         testDeconstructorElements();
@@ -67,7 +67,7 @@ public class SimpleDeconstructorsTest {
 
         Deconstructor<?>[] methods = class1.getDeclaredDeconstructors();
 
-        assertEquals(methods.length, 3);
+        assertEquals(methods.length, 5);
     }
 
     public static void testGetDeconstructors() {
@@ -75,15 +75,15 @@ public class SimpleDeconstructorsTest {
 
         Deconstructor<?>[] methods = class1.getDeconstructors();
 
-        assertEquals(methods.length, 2);
+        assertEquals(methods.length, 4);
     }
 
     public static void testGetDeclaredDeconstructor() throws NoSuchPatternException {
         Class<?> class1 = Person1.class;
 
-        Deconstructor method = class1.getDeclaredDeconstructor(String.class, String.class);
+        Deconstructor method1 = class1.getDeclaredDeconstructor(String.class, String.class);
 
-        assertEquals(method.getName(), "SimpleDeconstructorsTest$Person1");
+        assertEquals(method1.getName(), "SimpleDeconstructorsTest$Person1");
     }
 
     public static void testDeconstructorElements() throws NoSuchPatternException {
@@ -121,14 +121,16 @@ public class SimpleDeconstructorsTest {
 
         Class<?> class1 = Person1.class;
 
-        Deconstructor method = class1.getDeclaredDeconstructor(List.class);
-
-        Object[] bindings = method.invoke(p);
-
+        Deconstructor method1 = class1.getDeclaredDeconstructor(List.class);
+        Object[] bindings1 = method1.invoke(p);
         List<Character> expected = List.of('N', 'a', 'm', 'e');
         for (int i = 0; i < 4; i++) {
-            assertEquals(((List<Character>)bindings[0]).get(i), expected.get(i));
+            assertEquals(((List<Character>)bindings1[0]).get(i), expected.get(i));
         }
+
+        Deconstructor method2 = class1.getDeclaredDeconstructor(int.class);
+        Object[] bindings2 = method2.invoke(p);
+        assertEquals(((int)bindings2[0]), 42);
     }
 
     public static void testDeconstructorElementsAnnotations() throws NoSuchPatternException {
@@ -182,7 +184,7 @@ public class SimpleDeconstructorsTest {
             this.capitalize = capitalize;
         }
 
-        // 3 declared pattern declarations but 2 public
+        // 5 declared pattern declarations but 3 public
         @DeconstructorAnnotation(value = 1)
         public pattern Person1(String name, @BindingAnnotation(value = 1) String username) {
             if (capitalize) {
@@ -194,6 +196,14 @@ public class SimpleDeconstructorsTest {
 
         public pattern Person1(List<Character> name) {
             match Person1(this.name.chars().mapToObj(e -> (char)e).collect(Collectors.toList()));
+        }
+
+        public pattern Person1(int t) {
+            match Person1(42);
+        }
+
+        public pattern Person1(int[] t) {
+            match Person1(new int[]{1, 2, 3});
         }
 
         private pattern Person1(List<Character> name, List<Character> username) {

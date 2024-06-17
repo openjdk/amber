@@ -2442,7 +2442,7 @@ public final class Class<T> implements java.io.Serializable,
 
                     // filtering of deconstructors
                     if (params.length != 0) {
-                        ClassDesc[] paramDescs = Arrays.stream(params).map(e -> ClassDesc.of(e.getName())).toArray(ClassDesc[]::new);
+                        ClassDesc[] paramDescs = Arrays.stream(params).map(e -> ClassDesc.ofDescriptor(e.descriptorString())).toArray(ClassDesc[]::new);
                         descriptorFilter = MethodTypeDesc.of(CD_void, paramDescs).descriptorString();
                     }
 
@@ -2506,7 +2506,7 @@ public final class Class<T> implements java.io.Serializable,
                         }
 
                         for (int i = 0; i < parameterList.size(); i++) {
-                            Class<?> bindingClass = Class.forName(parameterList.get(i).packageName() + "." + parameterList.get(i).displayName());
+                            Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.lookup());
                             deconstructorBindings.add(new PatternBinding(
                                     currentDeconstructor,
                                     parameterNameList.get(i),
@@ -2522,7 +2522,7 @@ public final class Class<T> implements java.io.Serializable,
                     }
                 }
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException | ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
 

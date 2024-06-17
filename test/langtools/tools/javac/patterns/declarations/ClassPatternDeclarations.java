@@ -86,6 +86,14 @@ public class ClassPatternDeclarations {
                 match Person1(this.name);
             }
         }
+
+        public pattern Person1(int name) {
+            match Person1(42);
+        }
+
+        public pattern Person1(int[] t) {
+            match Person1(new int[]{1, 2, 3});
+        }
     }
 
     private static <T> void assertEquals(T expected, T actual) {

@@ -2072,11 +2072,15 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             if ((flags() & PATTERN) != 0) {
                 /** TODO: improve perf
                  * e.g., Point\%Ljava\|lang\|Integer\?\%Ljava\|lang\|Integer\?(Point)
+                 * https://cr.openjdk.org/~jrose/oblog/symbolic-freedom-in-the-vm.html
                  */
                 Name postFix = name.table.names.fromString(bindings().map(param -> {
                     var g = new UnSharedSignatureGenerator(types, name.table.names);
                     g.assembleSig(param.erasure(types));
-                    return name.table.names.fromString(g.toName().toString().replace("/", "\\\u007C").replace(";", "\\\u003F"));
+                    return name.table.names.fromString(g.toName().toString()
+                            .replace("/", "\\\u007C")
+                            .replace(";", "\\\u003F")
+                            .replace("[", "\\\u007B"));
                 }).stream().collect(Collectors.joining("\\\u0025")));
 
                 return name.table.names.fromString(owner.name.toString() + "\\\u0025" + postFix);
