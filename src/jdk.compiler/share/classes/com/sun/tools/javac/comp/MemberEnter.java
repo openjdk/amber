@@ -265,9 +265,9 @@ public class MemberEnter extends JCTree.Visitor {
                 localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
                                                                  syms.objectType);
             } else {
-            //when this is called in the enter stage, there's no type to be set
-            localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
-                                                             tree.sym.type.getReturnType());
+                //when this is called in the enter stage, there's no type to be set
+                localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
+                                                                 tree.sym.type.getReturnType());
             }
         }
         if ((tree.mods.flags & STATIC) != 0) localEnv.info.staticLevel++;

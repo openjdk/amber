@@ -2390,7 +2390,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return ElementKind.STATIC_INIT;
             else if ((flags() & BLOCK) != 0)
                 return isStatic() ? ElementKind.STATIC_INIT : ElementKind.INSTANCE_INIT;
-            else if (isPattern())
+            else if (isDeconstructor())
                 return ElementKind.DECONSTRUCTOR;
             else
                 return ElementKind.METHOD;

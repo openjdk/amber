@@ -27,12 +27,12 @@ package java.lang.reflect;
 
 import jdk.internal.reflect.CallerSensitive;
 import jdk.internal.reflect.Reflection;
-import jdk.internal.vm.annotation.Stable;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
-import sun.reflect.generics.repository.ConstructorRepository;
+import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.scope.DeconstructorScope;
+import sun.reflect.generics.tree.MethodTypeSignature;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
@@ -60,14 +60,15 @@ import java.util.stream.Collectors;
 public final class Deconstructor<T> extends Executable {
     private final Class<T>            clazz;
     private final int                 slot;
+    private ArrayList<PatternBinding> patternBindings;
+
     private final int                 modifiers;
     private final int                 patternFlags;
     // Generics and annotations support
     private final transient String    signature;
     // generic info repository; lazily initialized
-    private transient volatile ConstructorRepository genericInfo;
+    private transient volatile ExecutableRepository genericInfo;
     private final byte[]              annotations;
-    private ArrayList<PatternBinding> patternBindings;
 
     // Generics infrastructure
     // Accessor for factory
@@ -121,7 +122,7 @@ public final class Deconstructor<T> extends Executable {
      */
     Deconstructor<T> copy() {
         // This routine enables sharing of ConstructorAccessor objects
-        // among Constructor objects which refer to the same underlying
+        // among Deconstructor objects which refer to the same underlying
         // method in the VM. (All of this contortion is only necessary
         // because of the "accessibility" bit in AccessibleObject,
         // which implicitly requires that new java.lang.reflect
@@ -145,7 +146,7 @@ public final class Deconstructor<T> extends Executable {
      * {@inheritDoc}
      *
      * <p> A {@code SecurityException} is also thrown if this object is a
-     * {@code Constructor} object for the class {@code Class} and {@code flag}
+     * {@code Deconstructor} object for the class {@code Class} and {@code flag}
      * is true. </p>
      *
      * @param flag {@inheritDoc}
@@ -214,6 +215,20 @@ public final class Deconstructor<T> extends Executable {
     @Override
     public Annotation[][] getParameterAnnotations() {
         return new Annotation[0][];
+    }
+
+    /**
+     * Returns an array of arrays of {@code Annotation}s that
+     * represent the annotations on the bindings, in
+     * declaration order, of the {@code Deconstructor} represented by
+     * this object.
+     *
+     * @return an array of arrays that represent the annotations on
+     *    the bindings, in declaration order, of
+     *    the deconstructor represented by this object
+     */
+    public Annotation[][] getBindingAnnotations() {
+        return patternBindings.stream().map(pb -> pb.getAnnotations()).toArray(Annotation[][]::new);
     }
 
     @Override
@@ -315,13 +330,13 @@ public final class Deconstructor<T> extends Executable {
         return false;
     }
 
-    ConstructorRepository getGenericInfo() {
+    ExecutableRepository getGenericInfo() {
         var genericInfo = this.genericInfo;
         // lazily initialize repository if necessary
         if (genericInfo == null) {
             // create and cache generic info repository
             genericInfo =
-                    ConstructorRepository.make(getSignature(),
+                    ExecutableRepository.make(getSignature(),
                             getFactory());
             this.genericInfo = genericInfo;
         }

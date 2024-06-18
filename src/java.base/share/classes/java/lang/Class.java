@@ -26,7 +26,7 @@
 package java.lang;
 
 import java.lang.annotation.Annotation;
-import java.lang.classfile.Attribute;
+import java.lang.classfile.Attributes;
 import java.lang.classfile.ClassFile;
 import java.lang.classfile.ClassModel;
 import java.lang.classfile.MethodModel;
@@ -105,7 +105,7 @@ import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ClassRepository;
 import sun.reflect.generics.repository.MethodRepository;
-import sun.reflect.generics.repository.ConstructorRepository;
+import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.scope.ClassScope;
 import sun.security.util.SecurityConstants;
 import sun.reflect.annotation.*;
@@ -1737,7 +1737,7 @@ public final class Class<T> implements java.io.Serializable,
             if (!enclosingInfo.isConstructor())
                 return null;
 
-            ConstructorRepository typeInfo = ConstructorRepository.make(enclosingInfo.getDescriptor(),
+            ExecutableRepository typeInfo = ExecutableRepository.make(enclosingInfo.getDescriptor(),
                                                                         getFactory());
             Type []    parameterTypes   = typeInfo.getParameterTypes();
             Class<?>[] parameterClasses = new Class<?>[parameterTypes.length];
@@ -2305,8 +2305,8 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     private Method[] filterOutDeconstructorsFromMethods(Method[] in) {
-        if (this.getClassLoader() != null ) {
-            Map<String, Boolean> isNotPattern = new HashMap<>();
+        if (this.getClassLoader() != null) {
+            Set<String> isPattern = new HashSet<>();
             ClassModel cm = null;
             try (InputStream resource = this.getClassLoader().getResourceAsStream(getName() + ".class")) {
                 if (resource == null) {
@@ -2318,13 +2318,10 @@ public final class Class<T> implements java.io.Serializable,
                 throw new RuntimeException(e);
             }
             for (MethodModel mm : cm.methods()) {
-                PatternAttribute pa = null;
-                for (Attribute<?> attribute : mm.attributes()) {
-                    if (attribute instanceof PatternAttribute pap) pa = pap;
-                }
-                isNotPattern.put(mm.methodName().stringValue(), pa == null);
+                PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
+                if (pa != null) isPattern.add(mm.methodName().stringValue());
             }
-            Method[] ret = Arrays.stream(in).filter(m -> isNotPattern.getOrDefault(m.getName(), true)).toArray(Method[]::new);
+            Method[] ret = Arrays.stream(in).filter(m -> !isPattern.contains(m.getName())).toArray(Method[]::new);
             return ret;
         } else {
             return in;
@@ -2353,12 +2350,12 @@ public final class Class<T> implements java.io.Serializable,
 
     /**
      * Returns a {@code Deconstructor} object that reflects the specified
-     * public constructor of the class represented by this {@code Class}
+     * public deconstructor of the class represented by this {@code Class}
      * object.
      *
      * @param  bindingTypes the array of the types of the bindings.
-     * @return the {@code Constructor} object of the public constructor that
-     *         matches the specified {@code parameterTypes}
+     * @return the {@code Deconstructor} object of the public deconstructor that
+     *         matches the specified {@code bindingTypes}
      * @throws NoSuchPatternException if a matching deconstructor is not found.
      *
      * @throws SecurityException
@@ -2423,19 +2420,13 @@ public final class Class<T> implements java.io.Serializable,
             byte[] bytes = is.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
             for (MethodModel mm : cm.methods()) {
-                PatternAttribute pa = null;
-                for (Attribute<?> attribute : mm.attributes()) {
-                    if (attribute instanceof PatternAttribute pa_) pa = pa_;
-                }
+                PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
                 if (pa != null) {
                     String descriptorFilter = null;
 
                     // generic signature detection
-                    SignatureAttribute sa = null;
-                    for (Attribute<?> attribute : pa.attributes()) {
-                        if (attribute instanceof SignatureAttribute sa_) sa = sa_;
-                    }
-                    List<String> signatures = List.of();
+                    SignatureAttribute sa = pa.findAttribute(Attributes.signature()).orElse(null);
+                    List<String> signatures = null;
                     if (sa != null) {
                         signatures = sa.asMethodSignature().arguments().stream().map(a -> a.signatureString()).toList();
                     } else {
@@ -2451,17 +2442,8 @@ public final class Class<T> implements java.io.Serializable,
                     if ((params.length == 0 || (params.length != 0 && pa.patternTypeSymbol().descriptorString().equals(descriptorFilter))) &&
                         (which == Member.DECLARED || mm.flags().has(AccessFlag.PUBLIC))) {
                         // binding annotations
-                        RuntimeVisibleAnnotationsAttribute rva = null;
-                        for (Attribute<?> attribute : mm.attributes()) {
-                            if (attribute instanceof RuntimeVisibleAnnotationsAttribute rva_) rva = rva_;
-                        }
-                        ByteBuffer assembled_rva = null;
-                        if (rva != null) {
-                            byte rvaBytes[] = ((BoundAttribute) rva).contents();  // returns the full attribute
-                            int rva_length = ((BoundAttribute) rva).payloadLen(); // already comes after the subtraction with 4
-                            assembled_rva = ByteBuffer.wrap(rvaBytes, 0, rva_length);
-                            // TODO: RuntimeInVisibleAnnotationsAttribute
-                        }
+                        RuntimeVisibleAnnotationsAttribute rva = mm.findAttribute(Attributes.runtimeVisibleAnnotations()).orElse(null);
+                        ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
 
                         ArrayList<PatternBinding> deconstructorBindings = new ArrayList<>();
                         Deconstructor<?> currentDeconstructor = new Deconstructor<T>(this,
@@ -2475,37 +2457,16 @@ public final class Class<T> implements java.io.Serializable,
 
                         // parameter names
                         var parameterList = pa.patternTypeSymbol().parameterList();
-                        MethodParametersAttribute mp = null;
-                        for (Attribute<?> attribute : pa.attributes()) {
-                            if (attribute instanceof MethodParametersAttribute mp_) mp = mp_;
-                        }
+                        MethodParametersAttribute mp = pa.findAttribute(Attributes.methodParameters()).orElse(null);
                         List<String> parameterNameList = mp.parameters().stream().map(p -> p.name().get().stringValue()).toList();
 
                         // binding annotations
-                        RuntimeVisibleParameterAnnotationsAttribute rvpa = null;
-                        for (Attribute<?> attribute : pa.attributes()) {
-                            if (attribute instanceof RuntimeVisibleParameterAnnotationsAttribute rvpa_) rvpa = rvpa_;
-                        }
-                        ByteBuffer assembled_rvpa = null;
-                        if (rvpa != null) {
-                            byte rvpaBytes[] = ((BoundAttribute) rvpa).contents();
-                            int rvpa_length = ((BoundAttribute) rvpa).payloadLen();
-                            assembled_rvpa = ByteBuffer.wrap(rvpaBytes, 0, rvpa_length);
-                            // TODO: RuntimeInVisibleParameterAnnotationsAttribute
-                        }
+                        RuntimeVisibleParameterAnnotationsAttribute rvpa = pa.findAttribute(Attributes.runtimeVisibleParameterAnnotations()).orElse(null);
+                        ByteBuffer assembled_rvpa = getAnnotationContents(rvpa != null, (BoundAttribute) rvpa);
 
                         // binding type annotations
-                        RuntimeVisibleTypeAnnotationsAttribute rvta = null;
-                        for (Attribute<?> attribute : pa.attributes()) {
-                            if (attribute instanceof RuntimeVisibleTypeAnnotationsAttribute rvta_) rvta = rvta_;
-                        }
-                        ByteBuffer assembled_rvta = null;
-                        if (rvpa != null) {
-                            byte rvtaBytes[] = ((BoundAttribute) rvpa).contents();
-                            int rvta_length = ((BoundAttribute) rvpa).payloadLen();
-                            assembled_rvta = ByteBuffer.wrap(rvtaBytes, 0, rvta_length);
-                            // TODO: RuntimeInVisibleTypeAnnotationsAttribute
-                        }
+                        RuntimeVisibleTypeAnnotationsAttribute rvta = pa.findAttribute(Attributes.runtimeVisibleTypeAnnotations()).orElse(null);
+                        ByteBuffer assembled_rvta = getAnnotationContents(rvta != null, (BoundAttribute) rvta);
 
                         for (int i = 0; i < parameterList.size(); i++) {
                             Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.lookup());
@@ -2529,6 +2490,15 @@ public final class Class<T> implements java.io.Serializable,
         }
 
         return decs.toArray(new Deconstructor<?>[decs.size()]);
+    }
+
+    private static ByteBuffer getAnnotationContents(boolean exists, BoundAttribute<?> boundAttribute) {
+        if (exists) {
+            byte rvpaBytes[] = boundAttribute.contents();
+            int rvpa_length = boundAttribute.payloadLen();
+            return ByteBuffer.wrap(rvpaBytes, 0, rvpa_length);
+        }
+        return null;
     }
 
     /**

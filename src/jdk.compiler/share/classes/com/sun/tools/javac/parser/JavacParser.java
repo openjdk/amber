@@ -199,7 +199,7 @@ public class JavacParser implements Parser {
         this.allowYieldStatement = Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = Feature.RECORDS.allowedInSource(source);
         this.allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
-        this.allowPatternDeclarations = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
+        this.allowPatternDeclarations = preview.isEnabled() && Feature.PATTERN_DECLARATIONS.allowedInSource(source);
     }
 
     /** Construct a parser from an existing parser, with minimal overhead.
@@ -224,7 +224,7 @@ public class JavacParser implements Parser {
         this.allowYieldStatement = Feature.SWITCH_EXPRESSION.allowedInSource(source);
         this.allowRecords = Feature.RECORDS.allowedInSource(source);
         this.allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
-        this.allowPatternDeclarations = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
+        this.allowPatternDeclarations = preview.isEnabled() && Feature.PATTERN_DECLARATIONS.allowedInSource(source);
     }
 
     protected AbstractEndPosTable newEndPosTable(boolean keepEndPositions) {

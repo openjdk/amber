@@ -34,7 +34,7 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 import sun.reflect.annotation.TypeAnnotation;
 import sun.reflect.annotation.TypeAnnotationParser;
-import sun.reflect.generics.repository.ConstructorRepository;
+import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
@@ -73,7 +73,7 @@ public final class Constructor<T> extends Executable {
     // Generics and annotations support
     private final transient String    signature;
     // generic info repository; lazily initialized
-    private transient volatile ConstructorRepository genericInfo;
+    private transient volatile ExecutableRepository genericInfo;
     private final byte[]              annotations;
     private final byte[]              parameterAnnotations;
 
@@ -86,13 +86,13 @@ public final class Constructor<T> extends Executable {
 
     // Accessor for generic info repository
     @Override
-    ConstructorRepository getGenericInfo() {
+    ExecutableRepository getGenericInfo() {
         var genericInfo = this.genericInfo;
         // lazily initialize repository if necessary
         if (genericInfo == null) {
             // create and cache generic info repository
             genericInfo =
-                ConstructorRepository.make(getSignature(),
+                ExecutableRepository.make(getSignature(),
                                            getFactory());
             this.genericInfo = genericInfo;
         }

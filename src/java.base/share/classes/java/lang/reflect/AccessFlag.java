@@ -381,7 +381,7 @@ public enum AccessFlag {
             new Function<ClassFileFormatVersion, Set<Location>>() {
                 @Override
                 public Set<Location> apply(ClassFileFormatVersion cffv) {
-                    return (cffv.compareTo(ClassFileFormatVersion.RELEASE_22) >= 0 ) ?
+                    return (cffv.compareTo(ClassFileFormatVersion.RELEASE_24) >= 0 ) ?
                             Location.SET_PATTERN :
                             Location.EMPTY_SET;}
             }),
@@ -394,7 +394,7 @@ public enum AccessFlag {
             new Function<ClassFileFormatVersion, Set<Location>>() {
                 @Override
                 public Set<Location> apply(ClassFileFormatVersion cffv) {
-                    return (cffv.compareTo(ClassFileFormatVersion.RELEASE_22) >= 0 ) ?
+                    return (cffv.compareTo(ClassFileFormatVersion.RELEASE_24) >= 0 ) ?
                             Location.SET_PATTERN :
                             Location.EMPTY_SET;}
             }),

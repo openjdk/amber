@@ -289,7 +289,7 @@ public class ClassReader {
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = Feature.RECORDS.allowedInSource(source);
-        allowPatterns = Feature.PATTERN_DECLARATIONS.allowedInSource(source);
+        allowPatterns = preview.isEnabled() && Feature.PATTERN_DECLARATIONS.allowedInSource(source);
         allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
         warnOnIllegalUtf8 = Feature.WARN_ON_ILLEGAL_UTF8.allowedInSource(source);
 
