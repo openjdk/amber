@@ -84,6 +84,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jdk.internal.access.SharedSecrets;
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.constant.ConstantUtils;
 import jdk.internal.javac.PreviewFeature;
@@ -2469,7 +2470,7 @@ public final class Class<T> implements java.io.Serializable,
                         ByteBuffer assembled_rvta = getAnnotationContents(rvta != null, (BoundAttribute) rvta);
 
                         for (int i = 0; i < parameterList.size(); i++) {
-                            Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.lookup());
+                            Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.privateLookupIn(this, SharedSecrets.getJavaLangInvokeAccess().implLookup()));
                             deconstructorBindings.add(new PatternBinding(
                                     currentDeconstructor,
                                     parameterNameList.get(i),

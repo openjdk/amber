@@ -53,6 +53,7 @@ public class SimpleDeconstructorsTest {
         testDeconstructorElementsAnnotations();
         testDeconstructorAnnotations();
         testGenericString();
+        testGetDeclaredDeconstructors_bug1();
     }
 
     public static void testGetMethods() {
@@ -167,10 +168,28 @@ public class SimpleDeconstructorsTest {
         assertEquals(method.toGenericString(), "public pattern SimpleDeconstructorsTest$Person1(java.util.List<java.lang.Character>)");
     }
 
+    public static void testGetDeclaredDeconstructors_bug1() {
+        Deconstructor<?>[] methods = B.class.getDeclaredDeconstructors();
+
+        assertEquals(methods.length, 1);
+    }
+
     static void assertEquals(Object actual, Object expected) {
         if (!Objects.equals(expected, actual)) {
             throw new AssertionError("Expected: " + expected + ", but got: " + actual);
         }
+    }
+
+    class A {
+        String s;
+        public A(String s) { this.s = s; }
+        public pattern A(String s) { match A(this.s); }
+    }
+
+    class B {
+        A a;
+        public B(A a) { this.a = a; }
+        public pattern B(A a) { match B(this.a); }
     }
 
     public static class Person1 {
