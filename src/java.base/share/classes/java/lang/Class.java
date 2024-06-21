@@ -2306,27 +2306,23 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     private Method[] filterOutDeconstructorsFromMethods(Method[] in) {
-        if (this.getClassLoader() != null) {
-            Set<String> isPattern = new HashSet<>();
-            ClassModel cm = null;
-            try (InputStream resource = this.getClassLoader().getResourceAsStream(getName() + ".class")) {
-                if (resource == null) {
-                    return in;
-                }
-                byte[] bytes = resource.readAllBytes();
-                cm = ClassFile.of().parse(bytes);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        Set<String> isPattern = new HashSet<>();
+        ClassModel cm = null;
+        try (InputStream resource = ClassLoader.getSystemResourceAsStream(getName() + ".class")) {
+            if (resource == null) {
+                return in;
             }
-            for (MethodModel mm : cm.methods()) {
-                PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
-                if (pa != null) isPattern.add(mm.methodName().stringValue());
-            }
-            Method[] ret = Arrays.stream(in).filter(m -> !isPattern.contains(m.getName())).toArray(Method[]::new);
-            return ret;
-        } else {
-            return in;
+            byte[] bytes = resource.readAllBytes();
+            cm = ClassFile.of().parse(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
+        for (MethodModel mm : cm.methods()) {
+            PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
+            if (pa != null) isPattern.add(mm.methodName().stringValue());
+        }
+        Method[] ret = Arrays.stream(in).filter(m -> !isPattern.contains(m.getName())).toArray(Method[]::new);
+        return ret;
     }
 
     /**
@@ -2417,7 +2413,7 @@ public final class Class<T> implements java.io.Serializable,
 
     private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
         ArrayList<Deconstructor<?>> decs = new ArrayList<>();
-        try(InputStream is = this.getClassLoader().getResourceAsStream(getName() + ".class")) {
+        try(InputStream is = ClassLoader.getSystemResourceAsStream(getName() + ".class")) {
             byte[] bytes = is.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
             for (MethodModel mm : cm.methods()) {
