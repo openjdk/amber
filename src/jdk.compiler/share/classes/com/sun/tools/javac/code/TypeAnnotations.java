@@ -1266,6 +1266,8 @@ public class TypeAnnotations {
                 separateAnnotationsKinds(tree, tree.vartype, tree.sym.type, tree.sym, pos);
             } else if (tree.sym.getKind() == ElementKind.ENUM_CONSTANT) {
                 // No type annotations can occur here.
+            } else if (tree.sym.getKind() == ElementKind.PATTERN_BINDING) {
+                // XXX!
             } else {
                 // There is nothing else in a variable declaration that needs separation.
                 Assert.error("Unhandled variable kind: " + tree.sym.getKind());

@@ -1782,11 +1782,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         @DefinedBy(Api.LANGUAGE_MODEL)
         public ElementKind getKind() {
             long flags = flags();
-            if (owner.kind == MTH && owner.isPattern()) {
-                return ElementKind.PATTERN_BINDING;
-            } else if ((flags & PARAMETER) != 0) {
+            if ((flags & PARAMETER) != 0) {
                 if (isExceptionParameter())
                     return ElementKind.EXCEPTION_PARAMETER;
+                else if (owner.isPattern())
+                    return ElementKind.PATTERN_BINDING;
                 else
                     return ElementKind.PARAMETER;
             } else if ((flags & ENUM) != 0) {
