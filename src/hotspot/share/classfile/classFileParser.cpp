@@ -2343,6 +2343,11 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
   const u1* annotation_default = nullptr;
   int annotation_default_length = 0;
 
+  int pattern_length = 0;
+  const u1* pattern_runtime_visible_parameter_annotations = nullptr;
+  int pattern_runtime_visible_parameter_annotations_length = 0;
+  bool is_pattern = false;
+
   // Parse code and exceptions attribute
   u2 method_attributes_count = cfs->get_u2_fast();
   while (method_attributes_count--) {
@@ -2677,7 +2682,64 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
           assert(runtime_invisible_type_annotations != nullptr, "null invisible type annotations");
         }
         cfs->skip_u1(method_attribute_length, CHECK_NULL);
-      } else {
+      }
+      else if (method_attribute_name == vmSymbols::tag_pattern()) {
+          cfs->guarantee_more(6, CHECK_NULL);  // pattern_name_index, pattern_flags, pattern_methodtype_index
+
+          const u2 pattern_name_index = cfs->get_u2_fast();
+          check_property(
+                  valid_symbol_at(pattern_name_index),
+                  "Invalid pattern attribute name index %u in class file %s",
+                  pattern_name_index, CHECK_NULL);
+          const Symbol *const pattern_name = cp->symbol_at(pattern_name_index);
+
+          const u2 pattern_flags = cfs->get_u2_fast();
+
+          const u2 pattern_methodtype_index = cfs->get_u2_fast();
+          guarantee_property(
+                  valid_symbol_at(pattern_methodtype_index),
+                  "Illegal constant pool index %u for pattern method type in class file %s",
+                  pattern_methodtype_index, CHECK_NULL);
+          const Symbol* const signature = cp->symbol_at(pattern_methodtype_index);
+
+          is_pattern = true;
+
+          cfs->guarantee_more(2, CHECK_NULL); // pattern_method_attributes_count
+
+          u2 pattern_method_attributes_count = cfs->get_u2_fast();
+          while (pattern_method_attributes_count--) {
+              cfs->guarantee_more(6, CHECK_NULL);  // method_attribute_name_index, method_attribute_length
+              const u2 pattern_method_attribute_name_index = cfs->get_u2_fast();
+              const u4 pattern_method_attribute_length = cfs->get_u4_fast();
+              check_property(
+                      valid_symbol_at(pattern_method_attribute_name_index),
+                      "Invalid pattern method attribute name index %u in class file %s",
+                      pattern_method_attribute_name_index, CHECK_NULL);
+
+              const Symbol *const pattern_method_attribute_name = cp->symbol_at(pattern_method_attribute_name_index);
+
+              if (pattern_method_attribute_name == vmSymbols::tag_method_parameters()) {
+                  const int pattern_method_parameters_length = cfs->get_u1_fast();
+
+                  cfs->skip_u2_fast(pattern_method_parameters_length);
+                  cfs->skip_u2_fast(pattern_method_parameters_length);
+              }
+              else if (pattern_method_attribute_name == vmSymbols::tag_signature()) {
+                  const int pattern_signature_data = parse_generic_signature_attribute(cfs, CHECK_NULL);
+              } else if (pattern_method_attribute_name == vmSymbols::tag_runtime_visible_parameter_annotations()) {
+                  if (runtime_visible_type_annotations != nullptr) {
+                      classfile_parse_error(
+                              "Multiple RuntimeVisibleTypeAnnotations attributes for pattern method in class file %s",
+                              THREAD);
+                      return nullptr;
+                  }
+                  pattern_runtime_visible_parameter_annotations_length = pattern_method_attribute_length;
+                  pattern_runtime_visible_parameter_annotations = cfs->current();
+                  cfs->skip_u1(pattern_runtime_visible_parameter_annotations_length, CHECK_NULL);
+              }
+          }
+      }
+      else {
         // Skip unknown attributes
         cfs->skip_u1(method_attribute_length, CHECK_NULL);
       }
@@ -2732,6 +2794,8 @@ Method* ClassFileParser::parse_method(const ClassFileStream* const cfs,
   m->set_constants(_cp);
   m->set_name_index(name_index);
   m->set_signature_index(signature_index);
+  m->set_is_pattern(is_pattern);
+
   m->constMethod()->compute_from_signature(cp->symbol_at(signature_index), access_flags.is_static());
   assert(args_size < 0 || args_size == m->size_of_parameters(), "");
 

@@ -394,9 +394,10 @@ public class Flow {
          */
         JCClassDecl initScanClass;
 
-        /** A pending exit.  These are the statements return, break, and
+        /** A pending exit.  These are the statements return, break,
          *  continue.  In addition, exception-throwing expressions or
-         *  statements are put here when not known to be caught.  This
+         *  statements are put here when not known to be caught.
+         *  In the case of pattern declarations match is also put here. This
          *  will typically result in an error unless it is within a
          *  try-finally whose finally block cannot complete normally.
          */
@@ -631,7 +632,7 @@ public class Flow {
             while (exits.nonEmpty()) {
                 PendingExit exit = exits.head;
                 exits = exits.tail;
-                Assert.check((inMethod && exit.tree.hasTag(RETURN)) ||
+                Assert.check((inMethod && (exit.tree.hasTag(RETURN) || exit.tree.hasTag(MATCH))) ||
                                 log.hasErrorOn(exit.tree.pos()));
             }
         }
@@ -688,6 +689,11 @@ public class Flow {
             scan(tree.step);
             alive = resolveBreaks(tree, prevPendingExits).or(
                 tree.cond != null && !tree.cond.type.isTrue());
+        }
+
+        public void visitMatch(JCMatch tree) {
+            scan(tree.args);
+            recordExit(new PendingExit(tree));
         }
 
         public void visitForeachLoop(JCEnhancedForLoop tree) {
@@ -1567,6 +1573,7 @@ public class Flow {
                     exits = exits.tail;
                     if (!(exit instanceof ThrownPendingExit)) {
                         Assert.check(exit.tree.hasTag(RETURN) ||
+                                         exit.tree.hasTag(MATCH) ||
                                          log.hasErrorOn(exit.tree.pos()));
                     } else {
                         // uncaught throws will be reported later
@@ -1820,6 +1827,11 @@ public class Flow {
 
         public void visitReturn(JCReturn tree) {
             scan(tree.expr);
+            recordExit(new PendingExit(tree));
+        }
+
+        public void visitMatch(JCMatch tree) {
+            scan(tree.args);
             recordExit(new PendingExit(tree));
         }
 

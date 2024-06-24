@@ -25,6 +25,7 @@
  * @test
  * @summary Testing Classfile stack maps generator.
  * @bug 8305990 8320222 8320618
+ * @enablePreview
  * @build testdata.*
  * @run junit StackMapsTest
  */

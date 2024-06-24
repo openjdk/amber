@@ -82,6 +82,8 @@ public @interface PreviewFeature {
         @JEP(number=476, title="Module Import Declarations", status="Preview")
         MODULE_IMPORTS,
         LANGUAGE_MODEL,
+        @JEP(number=999, title="Pattern Declarations", status="Preview")
+        PATTERN_DECLARATIONS,
         /**
          * A key for testing.
          */

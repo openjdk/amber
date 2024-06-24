@@ -40,7 +40,7 @@ import sun.reflect.annotation.AnnotationSupport;
 import sun.reflect.annotation.TypeAnnotationParser;
 import sun.reflect.annotation.TypeAnnotation;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
-import sun.reflect.generics.repository.ConstructorRepository;
+import sun.reflect.generics.repository.ExecutableRepository;
 
 /**
  * A shared superclass for the common functionality of {@link Method}
@@ -50,7 +50,7 @@ import sun.reflect.generics.repository.ConstructorRepository;
  * @since 1.8
  */
 public abstract sealed class Executable extends AccessibleObject
-    implements Member, GenericDeclaration permits Constructor, Method {
+    implements Member, GenericDeclaration permits Constructor, Deconstructor, Method {
     /*
      * Only grant package-visibility to the constructor.
      */
@@ -67,7 +67,7 @@ public abstract sealed class Executable extends AccessibleObject
      */
     abstract boolean hasGenericInformation();
 
-    abstract ConstructorRepository getGenericInfo();
+    abstract ExecutableRepository getGenericInfo();
 
     boolean equalParamTypes(Class<?>[] params1, Class<?>[] params2) {
         /* Avoid unnecessary cloning */

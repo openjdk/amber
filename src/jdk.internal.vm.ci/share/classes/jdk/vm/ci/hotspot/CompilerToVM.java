@@ -1150,6 +1150,16 @@ final class CompilerToVM {
 
     native ResolvedJavaMethod[] getDeclaredMethods(HotSpotResolvedObjectTypeImpl klass, long klassPointer);
 
+    /**
+     * Gets the {@link ResolvedJavaMethod}s for all the pattern declarations of {@code klass}.
+     */
+    ResolvedJavaMethod[] getDeclaredDeconstructors(HotSpotResolvedObjectTypeImpl klass) {
+        return getDeclaredDeconstructors(klass, klass.getKlassPointer());
+    }
+
+    native ResolvedJavaMethod[] getDeclaredDeconstructors(HotSpotResolvedObjectTypeImpl klass, long klassPointer);
+
+
     HotSpotResolvedObjectTypeImpl.FieldInfo[] getDeclaredFieldsInfo(HotSpotResolvedObjectTypeImpl klass) {
         return getDeclaredFieldsInfo(klass, klass.getKlassPointer());
     }

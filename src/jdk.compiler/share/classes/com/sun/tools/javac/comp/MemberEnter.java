@@ -197,10 +197,15 @@ public class MemberEnter extends JCTree.Visitor {
         DiagnosticPosition prevLintPos = deferredLintHandler.setPos(tree.pos());
         try {
             // Compute the method type
-            m.type = signature(m, tree.typarams, tree.params,
+            Type t = signature(m, tree.typarams, tree.params,
                                tree.restype, tree.recvparam,
                                tree.thrown,
                                localEnv);
+            if (t instanceof MethodType mt && m.isPattern()) {
+                mt.bindingtypes = mt.argtypes;
+                mt.argtypes = List.nil();
+            }
+            m.type = t;
         } finally {
             deferredLintHandler.setPos(prevLintPos);
         }
@@ -216,7 +221,16 @@ public class MemberEnter extends JCTree.Visitor {
             JCVariableDecl param = lastParam = l.head;
             params.append(Assert.checkNonNull(param.sym));
         }
-        m.params = params.toList();
+
+        if (m.isPattern()) {
+            m.bindings = params.toList();
+            m.params = List.nil();
+            tree.bindings = tree.params;
+            tree.params = List.nil();
+        } else {
+            m.params = params.toList();
+            m.bindings = List.nil();
+        }
 
         // mark the method varargs, if necessary
         if (lastParam != null && (lastParam.mods.flags & Flags.VARARGS) != 0)
@@ -247,9 +261,14 @@ public class MemberEnter extends JCTree.Visitor {
             env.dup(tree, env.info.dup(env.info.scope.dupUnshared(tree.sym)));
         localEnv.enclMethod = tree;
         if (tree.sym.type != null) {
-            //when this is called in the enter stage, there's no type to be set
-            localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
-                                                             tree.sym.type.getReturnType());
+            if (tree.sym.isPattern()) {
+                localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
+                                                                 syms.objectType);
+            } else {
+                //when this is called in the enter stage, there's no type to be set
+                localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
+                                                                 tree.sym.type.getReturnType());
+            }
         }
         if ((tree.mods.flags & STATIC) != 0) localEnv.info.staticLevel++;
         localEnv.info.yieldResult = null;

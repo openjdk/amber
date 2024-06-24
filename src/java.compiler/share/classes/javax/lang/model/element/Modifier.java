@@ -60,6 +60,11 @@ public enum Modifier {
      * @since 1.8
      */
      DEFAULT,
+    /**
+     * The modifier {@code pattern}
+     * @since 23
+     */
+    PATTERN,
     /** The modifier {@code static} */          STATIC,
 
     /**

@@ -222,4 +222,19 @@ public interface ElementVisitor<R, P> {
     default R visitRecordComponent(RecordComponentElement e, P p) {
         return visitUnknown(e, p);
     }
+
+    /**
+     * Visits a pattern declaration executable element.
+     *
+     * @implSpec The default implementation visits an {@code
+     * ExecutableElement} by calling {@code visitUnknown(e, p)}.
+     *
+     * @param e  the element to visit
+     * @param p  a visitor-specified parameter
+     * @return a visitor-specified result
+     * @since 23
+     */
+    default R visitExecutableAsDeconstructor(ExecutableElement e, P p) {
+        return visitUnknown(e, p);
+    }
 }

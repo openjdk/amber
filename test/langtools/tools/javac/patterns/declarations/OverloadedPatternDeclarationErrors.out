@@ -1,0 +1,5 @@
+OverloadedPatternDeclarationErrors.java:9:26: compiler.err.no.compatible.matcher.found
+OverloadedPatternDeclarationErrors.java:16:26: compiler.err.matcher.overloading.ambiguity
+- compiler.note.preview.filename: OverloadedPatternDeclarationErrors.java, DEFAULT
+- compiler.note.preview.recompile
+2 errors

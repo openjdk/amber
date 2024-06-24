@@ -26,8 +26,19 @@
 package java.lang;
 
 import java.lang.annotation.Annotation;
+import java.lang.classfile.Attributes;
+import java.lang.classfile.ClassFile;
+import java.lang.classfile.ClassModel;
+import java.lang.classfile.MethodModel;
+import java.lang.classfile.attribute.MethodParametersAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
+import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
+import java.lang.classfile.attribute.RuntimeVisibleParameterAnnotationsAttribute;
+import java.lang.classfile.attribute.RuntimeVisibleTypeAnnotationsAttribute;
+import java.lang.classfile.attribute.SignatureAttribute;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
+import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.TypeDescriptor;
 import java.lang.invoke.MethodHandles;
 import java.lang.module.ModuleReader;
@@ -40,6 +51,8 @@ import java.lang.reflect.AnnotatedType;
 import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Deconstructor;
+import java.lang.reflect.PatternBinding;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
@@ -54,6 +67,7 @@ import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.constant.Constable;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
@@ -70,11 +84,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import jdk.internal.access.SharedSecrets;
+import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.constant.ConstantUtils;
 import jdk.internal.javac.PreviewFeature;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
-import jdk.internal.misc.PreviewFeatures;
 import jdk.internal.misc.Unsafe;
 import jdk.internal.module.Resources;
 import jdk.internal.reflect.CallerSensitive;
@@ -91,11 +106,14 @@ import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ClassRepository;
 import sun.reflect.generics.repository.MethodRepository;
-import sun.reflect.generics.repository.ConstructorRepository;
+import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.scope.ClassScope;
 import sun.security.util.SecurityConstants;
 import sun.reflect.annotation.*;
 import sun.reflect.misc.ReflectUtil;
+
+import static java.lang.ClassLoader.getPlatformClassLoader;
+import static java.lang.constant.ConstantDescs.CD_void;
 
 /**
  * Instances of the class {@code Class} represent classes and
@@ -1721,7 +1739,7 @@ public final class Class<T> implements java.io.Serializable,
             if (!enclosingInfo.isConstructor())
                 return null;
 
-            ConstructorRepository typeInfo = ConstructorRepository.make(enclosingInfo.getDescriptor(),
+            ExecutableRepository typeInfo = ExecutableRepository.make(enclosingInfo.getDescriptor(),
                                                                         getFactory());
             Type []    parameterTypes   = typeInfo.getParameterTypes();
             Class<?>[] parameterClasses = new Class<?>[parameterTypes.length];
@@ -2242,7 +2260,8 @@ public final class Class<T> implements java.io.Serializable,
         if (sm != null) {
             checkMemberAccess(sm, Member.PUBLIC, Reflection.getCallerClass(), true);
         }
-        return copyMethods(privateGetPublicMethods());
+        var ret = copyMethods(privateGetPublicMethods());
+        return filterOutDeconstructorsFromMethods(ret);
     }
 
 
@@ -2287,6 +2306,248 @@ public final class Class<T> implements java.io.Serializable,
         return copyConstructors(privateGetDeclaredConstructors(true));
     }
 
+    private Method[] filterOutDeconstructorsFromMethods(Method[] in) {
+        Set<String> isPattern = new HashSet<>();
+        ClassModel cm = null;
+        try (InputStream resource = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
+            if (resource == null) {
+                return in;
+            }
+            byte[] bytes = resource.readAllBytes();
+            cm = ClassFile.of().parse(bytes);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        for (MethodModel mm : cm.methods()) {
+            PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
+            if (pa != null) isPattern.add(mm.methodName().stringValue());
+        }
+        Method[] ret = Arrays.stream(in).filter(m -> !isPattern.contains(m.getName())).toArray(Method[]::new);
+        return ret;
+    }
+
+    /**
+     * Returns an array containing {@code Deconstructor} objects.
+     *
+     * @return the array of {@code Deconstructor} objects representing the
+     *         public deconstructors of this class
+     * @throws SecurityException
+     *         If a security manager, <i>s</i>, is present and
+     *         the caller's class loader is not the same as or an
+     *         ancestor of the class loader for the current class and
+     *         invocation of {@link SecurityManager#checkPackageAccess
+     *         s.checkPackageAccess()} denies access to the package
+     *         of this class.
+     *
+     * @see #getDeclaredDeconstructors()
+     * @since 23
+     */
+    public Deconstructor<?> [] getDeconstructors() throws SecurityException {
+        return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.PUBLIC);
+    }
+
+    /**
+     * Returns a {@code Deconstructor} object that reflects the specified
+     * public deconstructor of the class represented by this {@code Class}
+     * object.
+     *
+     * @param  bindingTypes the array of the types of the bindings.
+     * @return the {@code Deconstructor} object of the public deconstructor that
+     *         matches the specified {@code bindingTypes}
+     * @throws NoSuchPatternException if a matching deconstructor is not found.
+     *
+     * @throws SecurityException
+     *         If a security manager, <i>s</i>, is present and
+     *         the caller's class loader is not the same as or an
+     *         ancestor of the class loader for the current class and
+     *         invocation of {@link SecurityManager#checkPackageAccess
+     *         s.checkPackageAccess()} denies access to the package
+     *         of this class.
+     *
+     * @see #getDeclaredDeconstructor(Class<?>[])
+     * @since 23
+     */
+    public Deconstructor<?> getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+        var ret = getDeclaredDeconstructors0(bindingTypes, Member.PUBLIC);
+
+        if (ret.length == 0) {
+            throw new NoSuchPatternException(methodToString("deconstructor", bindingTypes));
+        }
+
+        return ret[0];
+    }
+
+    /**
+     * Returns an array of {@code Deconstructor} objects reflecting all the
+     * deconstructors implicitly or explicitly declared by the class represented by this
+     * {@code Class} object.
+     *
+     * @return  the array of {@code Deconstructor} objects representing all the
+     *          declared deconstructors of this class
+     * @throws  SecurityException
+     *          If a security manager, <i>s</i>, is present and any of the
+     *          following conditions is met:
+     *
+     *          <ul>
+     *
+     *          <li> the caller's class loader is not the same as the
+     *          class loader of this class and invocation of
+     *          {@link SecurityManager#checkPermission
+     *          s.checkPermission} method with
+     *          {@code RuntimePermission("accessDeclaredMembers")}
+     *          denies access to the declared constructors within this class
+     *
+     *          <li> the caller's class loader is not the same as or an
+     *          ancestor of the class loader for the current class and
+     *          invocation of {@link SecurityManager#checkPackageAccess
+     *          s.checkPackageAccess()} denies access to the package
+     *          of this class
+     *
+     *          </ul>
+     *
+     * @since 23
+     * @see #getDeconstructors()
+     */
+    public Deconstructor<?>[] getDeclaredDeconstructors() throws SecurityException {
+        return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.DECLARED);
+    }
+
+    private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
+        ArrayList<Deconstructor<?>> decs = new ArrayList<>();
+        if (this.isPrimitive()) return new Deconstructor<?>[0];
+        try(InputStream is = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
+            byte[] bytes = is.readAllBytes();
+            ClassModel cm = ClassFile.of().parse(bytes);
+            for (MethodModel mm : cm.methods()) {
+                PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
+                if (pa != null) {
+                    String descriptorFilter = null;
+
+                    // generic signature detection
+                    SignatureAttribute sa = pa.findAttribute(Attributes.signature()).orElse(null);
+                    List<String> signatures = null;
+                    if (sa != null) {
+                        signatures = sa.asMethodSignature().arguments().stream().map(a -> a.signatureString()).toList();
+                    } else {
+                        signatures = Arrays.stream(pa.patternTypeSymbol().parameterArray()).map(p -> p.descriptorString()).toList();
+                    }
+
+                    // filtering of deconstructors
+                    if (params.length != 0) {
+                        ClassDesc[] paramDescs = Arrays.stream(params).map(e -> ClassDesc.ofDescriptor(e.descriptorString())).toArray(ClassDesc[]::new);
+                        descriptorFilter = MethodTypeDesc.of(CD_void, paramDescs).descriptorString();
+                    }
+
+                    if ((params.length == 0 || (params.length != 0 && pa.patternTypeSymbol().descriptorString().equals(descriptorFilter))) &&
+                        (which == Member.DECLARED || mm.flags().has(AccessFlag.PUBLIC))) {
+                        // binding annotations
+                        RuntimeVisibleAnnotationsAttribute rva = mm.findAttribute(Attributes.runtimeVisibleAnnotations()).orElse(null);
+                        ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
+
+                        ArrayList<PatternBinding> deconstructorBindings = new ArrayList<>();
+                        Deconstructor<?> currentDeconstructor = new Deconstructor<T>(this,
+                                mm.flags().flagsMask(),
+                                pa.patternFlagsMask(),
+                                0,
+                                deconstructorBindings,
+                                pa.patternTypeSymbol().descriptorString(),
+                                rva == null ? null : assembled_rva.array()
+                        );
+
+                        // parameter names
+                        var parameterList = pa.patternTypeSymbol().parameterList();
+                        MethodParametersAttribute mp = pa.findAttribute(Attributes.methodParameters()).orElse(null);
+                        List<String> parameterNameList = mp.parameters().stream().map(p -> p.name().get().stringValue()).toList();
+
+                        // binding annotations
+                        RuntimeVisibleParameterAnnotationsAttribute rvpa = pa.findAttribute(Attributes.runtimeVisibleParameterAnnotations()).orElse(null);
+                        ByteBuffer assembled_rvpa = getAnnotationContents(rvpa != null, (BoundAttribute) rvpa);
+
+                        // binding type annotations
+                        RuntimeVisibleTypeAnnotationsAttribute rvta = pa.findAttribute(Attributes.runtimeVisibleTypeAnnotations()).orElse(null);
+                        ByteBuffer assembled_rvta = getAnnotationContents(rvta != null, (BoundAttribute) rvta);
+
+                        for (int i = 0; i < parameterList.size(); i++) {
+                            Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.privateLookupIn(this, SharedSecrets.getJavaLangInvokeAccess().implLookup()));
+                            deconstructorBindings.add(new PatternBinding(
+                                    currentDeconstructor,
+                                    parameterNameList.get(i),
+                                    bindingClass,
+                                    signatures.get(i),
+                                    i,
+                                    rvpa == null ? null : assembled_rvpa.array(),
+                                    rvta == null ? null : assembled_rvta.array()
+                            ));
+                        }
+
+                        decs.add(currentDeconstructor);
+                    }
+                }
+            }
+        } catch (IOException | ReflectiveOperationException e) {
+            throw new RuntimeException(e);
+        }
+
+        return decs.toArray(new Deconstructor<?>[decs.size()]);
+    }
+
+    private String getResourcePath() {
+        return this.getName().replace('.', '/') + ".class";
+    }
+
+    private static ByteBuffer getAnnotationContents(boolean exists, BoundAttribute<?> boundAttribute) {
+        if (exists) {
+            byte rvpaBytes[] = boundAttribute.contents();
+            int rvpa_length = boundAttribute.payloadLen();
+            return ByteBuffer.wrap(rvpaBytes, 0, rvpa_length);
+        }
+        return null;
+    }
+
+    /**
+     * Returns a {@code Deconstructor} object that reflects the specified
+     * deconstructor of the class represented by this
+     * {@code Class} object.
+     *
+     * @param   bindingTypes the array of elements
+     * @return  The {@code Deconstructor} object for the deconstructor with the
+     *          specified parameter list
+     * @throws  NoSuchPatternException if a matching deconstructor is not found,
+     *          including when this {@code Class} object represents
+     *          an interface, a primitive type, an array class, or void.
+     * @throws  SecurityException
+     *          If a security manager, <i>s</i>, is present and any of the
+     *          following conditions is met:
+     *
+     *          <ul>
+     *
+     *          <li> the caller's class loader is not the same as the
+     *          class loader of this class and invocation of
+     *          {@link SecurityManager#checkPermission
+     *          s.checkPermission} method with
+     *          {@code RuntimePermission("accessDeclaredMembers")}
+     *          denies access to the declared constructor
+     *
+     *          <li> the caller's class loader is not the same as or an
+     *          ancestor of the class loader for the current class and
+     *          invocation of {@link SecurityManager#checkPackageAccess
+     *          s.checkPackageAccess()} denies access to the package
+     *          of this class
+     *
+     *          </ul>
+     *
+     * @see #getDeconstructor(Class<?>[])
+     * @since 1.1
+     */
+    public Deconstructor<?> getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+        var ret = getDeclaredDeconstructors0(bindingTypes, Member.DECLARED);
+
+        if (ret.length == 0) {
+            throw new NoSuchPatternException(methodToString("deconstructor", bindingTypes));
+        }
+
+        return ret[0];
+    }
 
     /**
      * Returns a {@code Field} object that reflects the specified public member
@@ -3428,11 +3689,14 @@ public final class Class<T> implements java.io.Serializable,
         volatile Field[] publicFields;
         volatile Method[] declaredMethods;
         volatile Method[] publicMethods;
+        volatile Method[] declaredDeconstructors;
+        volatile Method[] publicDeconstructors;
         volatile Constructor<T>[] declaredConstructors;
         volatile Constructor<T>[] publicConstructors;
         // Intermediate results for getFields and getMethods
         volatile Field[] declaredPublicFields;
         volatile Method[] declaredPublicMethods;
+        volatile Method[] declaredPublicDeconstructors;
         volatile Class<?>[] interfaces;
 
         // Cached names
@@ -3889,6 +4153,7 @@ public final class Class<T> implements java.io.Serializable,
 
     private native Field[]       getDeclaredFields0(boolean publicOnly);
     private native Method[]      getDeclaredMethods0(boolean publicOnly);
+    private native Method[]      getDeclaredDeconstructors0(boolean publicOnly);
     private native Constructor<T>[] getDeclaredConstructors0(boolean publicOnly);
     private native Class<?>[]    getDeclaredClasses0();
 

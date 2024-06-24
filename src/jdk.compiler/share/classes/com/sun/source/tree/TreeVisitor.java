@@ -613,4 +613,12 @@ public interface TreeVisitor<R,P> {
      * @since 14
      */
     R visitYield(YieldTree node, P p);
+
+    /**
+     * Visits an {@code MatchTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitMatchStatement(MatchTree node, P p);
 }

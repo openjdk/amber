@@ -88,4 +88,17 @@ public class ElementKindVisitorPreview<R, P> extends ElementKindVisitor14<R, P> 
     protected ElementKindVisitorPreview(R defaultValue) {
         super(defaultValue);
     }
+
+    /**
+     * Visits a {@code PATTERN_DECLARATION} executable element.
+     *
+     * @implSpec This implementation calls {@code defaultAction}.
+     *
+     * @param e the element to visit
+     * @param p a visitor-specified parameter
+     * @return  the result of {@code defaultAction}
+     */
+    public R visitExecutableAsDeconstructor(ExecutableElement e, P p) {
+        return defaultAction(e, p);
+    }
 }

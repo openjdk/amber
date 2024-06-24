@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * Common interface for all nodes in an abstract syntax tree.
  *
@@ -704,8 +706,15 @@ public interface Tree {
          *
          * @since 14
          */
-        YIELD(YieldTree.class);
+        YIELD(YieldTree.class),
 
+        /**
+         * Used for instances of {@link MatchTree}.
+         *
+         * @since 23
+         */
+        @PreviewFeature(feature=PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
+        MATCH(MatchTree.class);
 
         Kind(Class<? extends Tree> intf) {
             associatedInterface = intf;

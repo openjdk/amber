@@ -41,6 +41,7 @@ import jdk.internal.javac.PreviewFeature;
  * <li>{@link #moduleResolution()}
  * <li>{@link #sourceDebugExtension()}
  * <li>{@link #synthetic()}
+ * <li>{@link #pattern()}
  * </ul>
  *
  * The mappers with {@link AttributeStability#CP_REFS CP_REFS} stability are:
@@ -131,6 +132,9 @@ public final class Attributes {
 
     /** LocalVariableTypeTable */
     public static final String NAME_LOCAL_VARIABLE_TYPE_TABLE = "LocalVariableTypeTable";
+
+    /** Pattern */
+    public static final String NAME_PATTERN = "Pattern";
 
     /** MethodParameters */
     public static final String NAME_METHOD_PARAMETERS = "MethodParameters";
@@ -497,4 +501,11 @@ public final class Attributes {
     public static AttributeMapper<SyntheticAttribute> synthetic() {
         return SyntheticMapper.INSTANCE;
     }
+
+    /**
+     * {@return Attribute mapper for the {@code Pattern} attribute}
+     * The mapper permits multiple instances in a given location.
+     * @since 23
+     */
+    public static AttributeMapper<PatternAttribute> pattern() { return PatternMapper.INSTANCE; }
 }

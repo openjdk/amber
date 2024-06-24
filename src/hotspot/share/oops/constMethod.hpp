@@ -200,6 +200,8 @@ private:
   u2                _code_size;
   u2                _name_index;                 // Method name (index in constant pool)
   u2                _signature_index;            // Method signature (index in constant pool)
+  bool              _is_pattern_flag;              // Pattern method (index in constant pool)
+
   u2                _method_idnum;               // unique identification number for the method within the class
                                                  // initially corresponds to the index into the methods array.
                                                  // but this may change with redefinition
@@ -295,6 +297,10 @@ public:
   // signature
   u2 signature_index() const                     { return _signature_index; }
   void set_signature_index(int index)            { _signature_index = checked_cast<u2>(index); }
+
+  // pattern
+  bool is_pattern() const                        { return _is_pattern_flag; }
+  void set_is_pattern(bool b)                    { _is_pattern_flag = b; }
 
   // generics support
   u2 generic_signature_index() const             {

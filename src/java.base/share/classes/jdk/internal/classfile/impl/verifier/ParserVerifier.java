@@ -334,6 +334,9 @@ public record ParserVerifier(ClassModel classModel) {
                 2 + subSize(smta.entries(), frame -> stackMapFrameSize(frame));
             case SyntheticAttribute _ ->
                 0;
+            // TODO: implement verification checks
+            case PatternAttribute _ ->
+                -1;
             case UnknownAttribute _ ->
                 -1;
             case CustomAttribute<?> _ ->

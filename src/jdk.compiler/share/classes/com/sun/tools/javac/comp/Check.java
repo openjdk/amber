@@ -3622,6 +3622,14 @@ public class Check {
                 if (s.getKind() == ElementKind.RECORD_COMPONENT) {
                     applicableTargets.add(names.RECORD_COMPONENT);
                 }
+            } else if (target == names.DECONSTRUCTOR) {
+                if (s.kind == MTH && s.isDeconstructor()) {
+                    applicableTargets.add(names.DECONSTRUCTOR);
+                }
+            } else if (target == names.PATTERN_BINDING) {
+                if (s.getKind() == ElementKind.PATTERN_BINDING) {
+                    applicableTargets.add(names.PATTERN_BINDING);
+                }
             } else if (target == names.METHOD) {
                 if (s.kind == MTH && !s.isConstructor())
                     applicableTargets.add(names.METHOD);
@@ -4156,6 +4164,8 @@ public class Check {
                 } else if (sym.kind == MTH && !types.hasSameArgs(sym.type, byName.type, false)) {
                     duplicateErasureError(pos, sym, byName);
                     sym.flags_field |= CLASH;
+                    return true;
+                } else if (sym.isPattern() && byName.isPattern() && types.hasSameArgs(sym.type, byName.type, false)) {
                     return true;
                 } else if ((sym.flags() & MATCH_BINDING) != 0 &&
                            (byName.flags() & MATCH_BINDING) != 0 &&

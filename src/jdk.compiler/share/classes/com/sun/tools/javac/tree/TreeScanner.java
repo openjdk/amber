@@ -233,6 +233,10 @@ public class TreeScanner extends Visitor {
         scan(tree.value);
     }
 
+    public void visitMatch(JCMatch tree) {
+        scan(tree.args);
+    }
+
     public void visitContinue(JCContinue tree) {
     }
 

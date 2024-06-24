@@ -24,6 +24,7 @@
  */
 package jdk.internal.classfile.impl;
 
+import java.lang.classfile.Attribute;
 import java.lang.classfile.Annotation;
 import java.lang.classfile.AnnotationElement;
 import java.lang.classfile.AnnotationValue;
@@ -48,10 +49,14 @@ import java.lang.classfile.Signature;
 import java.lang.classfile.Superclass;
 import java.lang.classfile.TypeAnnotation;
 import java.lang.classfile.attribute.AnnotationDefaultAttribute;
+import java.lang.classfile.attribute.DeprecatedAttribute;
 import java.lang.classfile.attribute.EnclosingMethodAttribute;
 import java.lang.classfile.attribute.ExceptionsAttribute;
 import java.lang.classfile.attribute.InnerClassInfo;
 import java.lang.classfile.attribute.InnerClassesAttribute;
+import java.lang.classfile.attribute.PatternAttribute;
+import java.lang.classfile.attribute.MethodParametersAttribute;
+import java.lang.classfile.attribute.MethodParameterInfo;
 import java.lang.classfile.attribute.ModuleAttribute;
 import java.lang.classfile.attribute.ModuleProvideInfo;
 import java.lang.classfile.attribute.NestHostAttribute;
@@ -220,6 +225,14 @@ public record ClassRemapperImpl(Function<ClassDesc, ClassDesc> mapFunction) impl
                 case RuntimeInvisibleTypeAnnotationsAttribute aa ->
                     mb.with(RuntimeInvisibleTypeAnnotationsAttribute.of(
                             mapTypeAnnotations(aa.annotations())));
+                case PatternAttribute ma -> {
+                    List<Attribute<?>> matcherAttrs = ma.attributes().stream().<Attribute<?>>map(this::mapMatcherAttributes).toList();
+                    mb.with(PatternAttribute.of(
+                                    ma.patternName().stringValue(),
+                                    ma.patternFlagsMask(),
+                                    ma.patternTypeSymbol(),
+                                    matcherAttrs));
+                }
                 default ->
                     mb.with(me);
             }
@@ -324,6 +337,26 @@ public record ClassRemapperImpl(Function<ClassDesc, ClassDesc> mapFunction) impl
                                     mapTypeAnnotations(aa.annotations()));
                         default -> atr;
                     }).toList());
+    }
+
+    Attribute<?> mapMatcherAttributes(Attribute<?> matcherAnnotation) {
+        return switch (matcherAnnotation) {
+            case SignatureAttribute sa ->
+                    SignatureAttribute.of(
+                            mapSignature(sa.asMethodSignature().result()));
+            case RuntimeVisibleParameterAnnotationsAttribute aa ->
+                    RuntimeVisibleParameterAnnotationsAttribute.of(
+                            aa.parameterAnnotations().stream().map(this::mapAnnotations).toList());
+            case RuntimeInvisibleParameterAnnotationsAttribute aa ->
+                    RuntimeInvisibleParameterAnnotationsAttribute.of(
+                            aa.parameterAnnotations().stream().map(this::mapAnnotations).toList());
+            case DeprecatedAttribute a ->
+                    DeprecatedAttribute.of();
+            case MethodParametersAttribute a ->
+                    MethodParametersAttribute.of(a.parameters().stream().map(mp ->
+                            MethodParameterInfo.ofParameter(mp.name().map(Utf8Entry::stringValue), mp.flagsMask())).toArray(MethodParameterInfo[]::new));
+            default -> matcherAnnotation;
+        };
     }
 
     DirectMethodHandleDesc mapDirectMethodHandle(DirectMethodHandleDesc dmhd) {

@@ -821,4 +821,25 @@ public sealed abstract class AbstractAttributeMapper<T extends Attribute<T>>
             // empty
         }
     }
+
+    public static final class PatternMapper extends AbstractAttributeMapper<PatternAttribute> {
+        public static final PatternMapper INSTANCE = new PatternMapper();
+
+        private PatternMapper() {
+            super(NAME_PATTERN, AttributeStability.STATELESS, true);
+        }
+
+        @Override
+        public PatternAttribute readAttribute(AttributedElement e, ClassReader cf, int p) {
+            return new BoundAttribute.BoundPatternAttribute(cf, this, p);
+        }
+
+        @Override
+        protected void writeBody(BufWriter buf, PatternAttribute attr) {
+            buf.writeIndex(attr.patternName());
+            buf.writeU2(attr.patternFlagsMask());
+            buf.writeIndex(attr.patternMethodType());
+            buf.writeList(attr.attributes());
+        }
+    }
 }

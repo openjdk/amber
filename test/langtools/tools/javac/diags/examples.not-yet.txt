@@ -164,6 +164,7 @@ compiler.err.locn.cant.read.directory                         # file system issu
 compiler.err.locn.invalid.arg.for.xpatch                      # command line option error
 compiler.misc.unnamed.module                                  # fragment uninteresting in and of itself
 compiler.misc.kindname.module                                 # fragment uninteresting in and of itself
+compiler.misc.kindname.pattern.declaration                    # fragment uninteresting in and of itself
 compiler.misc.locn.module_path                                # fragment uninteresting in and of itself
 compiler.misc.locn.module_source_path                         # fragment uninteresting in and of itself
 compiler.misc.locn.system_modules                             # fragment uninteresting in and of itself
