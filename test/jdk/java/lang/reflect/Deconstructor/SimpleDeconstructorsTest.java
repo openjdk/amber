@@ -54,6 +54,7 @@ public class SimpleDeconstructorsTest {
         testDeconstructorAnnotations();
         testGenericString();
         testGetDeclaredDeconstructors_bug1();
+        testGetDeclaredDeconstructors_bug2();
     }
 
     public static void testGetMethods() {
@@ -172,6 +173,16 @@ public class SimpleDeconstructorsTest {
         Deconstructor<?>[] methods = B.class.getDeclaredDeconstructors();
 
         assertEquals(methods.length, 1);
+    }
+
+    public static void testGetDeclaredDeconstructors_bug2() {
+        Deconstructor<?>[] methods = null;
+
+        methods = String.class.getDeclaredDeconstructors();
+        assertEquals(methods.length, 0);
+
+        methods = int.class.getDeclaredDeconstructors();
+        assertEquals(methods.length, 0);
     }
 
     static void assertEquals(Object actual, Object expected) {

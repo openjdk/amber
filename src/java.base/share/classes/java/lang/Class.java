@@ -112,6 +112,7 @@ import sun.security.util.SecurityConstants;
 import sun.reflect.annotation.*;
 import sun.reflect.misc.ReflectUtil;
 
+import static java.lang.ClassLoader.getPlatformClassLoader;
 import static java.lang.constant.ConstantDescs.CD_void;
 
 /**
@@ -2308,7 +2309,7 @@ public final class Class<T> implements java.io.Serializable,
     private Method[] filterOutDeconstructorsFromMethods(Method[] in) {
         Set<String> isPattern = new HashSet<>();
         ClassModel cm = null;
-        try (InputStream resource = ClassLoader.getSystemResourceAsStream(getName() + ".class")) {
+        try (InputStream resource = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
             if (resource == null) {
                 return in;
             }
@@ -2413,7 +2414,8 @@ public final class Class<T> implements java.io.Serializable,
 
     private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
         ArrayList<Deconstructor<?>> decs = new ArrayList<>();
-        try(InputStream is = ClassLoader.getSystemResourceAsStream(getName() + ".class")) {
+        if (this.isPrimitive()) return new Deconstructor<?>[0];
+        try(InputStream is = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
             byte[] bytes = is.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
             for (MethodModel mm : cm.methods()) {
@@ -2487,6 +2489,10 @@ public final class Class<T> implements java.io.Serializable,
         }
 
         return decs.toArray(new Deconstructor<?>[decs.size()]);
+    }
+
+    private String getResourcePath() {
+        return this.getName().replace('.', '/') + ".class";
     }
 
     private static ByteBuffer getAnnotationContents(boolean exists, BoundAttribute<?> boundAttribute) {
