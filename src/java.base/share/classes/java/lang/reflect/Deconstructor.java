@@ -426,8 +426,8 @@ public final class Deconstructor<T> extends Executable {
         String underlyingName = mangle(this.getDeclaringClass(), Arrays.stream(getPatternBindings()).map(pb -> pb.getType()).toArray(Class[]::new));
 
         try {
-            Method method = this.getDeclaringClass().getMethod(underlyingName, matchCandidate.getClass());
-
+            Method method = this.getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
+            method.setAccessible(override);
             Object carrier = method.invoke(matchCandidate, matchCandidate);
 
             Class<?>[] bindingClasses = Arrays.stream(this.getPatternBindings()).map(d -> d.getType()).toArray(Class[]::new);

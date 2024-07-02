@@ -25,7 +25,6 @@
  * @test
  * @summary SimpleDeconstructorsTest
  * @enablePreview
- * @compile --enable-preview --source ${jdk.version} -parameters SimpleDeconstructorsTest.java
  * @run main/othervm --enable-preview SimpleDeconstructorsTest
  */
 
@@ -191,14 +190,16 @@ public class SimpleDeconstructorsTest {
         public Bug(int i) {
             this.i = i;
         }
-        public pattern Bug(int i) {
+        private pattern Bug(int i) {
             match Bug(this.i);
         }
     }
 
     public static void testGetDeclaredDeconstructors_bug3() throws IllegalAccessException {
         var b = new Bug(2);
-        var x = Bug.class.getDeclaredDeconstructors()[0].invoke(b);
+        Deconstructor<?> declaredDeconstructor = Bug.class.getDeclaredDeconstructors()[0];
+        declaredDeconstructor.setAccessible(true);
+        var x = declaredDeconstructor.invoke(b);
         assertEquals(x[0], 2);
     }
 
