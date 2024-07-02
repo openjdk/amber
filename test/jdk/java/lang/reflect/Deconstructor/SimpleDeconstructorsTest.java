@@ -55,6 +55,7 @@ public class SimpleDeconstructorsTest {
         testGenericString();
         testGetDeclaredDeconstructors_bug1();
         testGetDeclaredDeconstructors_bug2();
+        testGetDeclaredDeconstructors_bug3();
     }
 
     public static void testGetMethods() {
@@ -183,6 +184,22 @@ public class SimpleDeconstructorsTest {
 
         methods = int.class.getDeclaredDeconstructors();
         assertEquals(methods.length, 0);
+    }
+
+    public static class Bug {
+        int i;
+        public Bug(int i) {
+            this.i = i;
+        }
+        public pattern Bug(int i) {
+            match Bug(this.i);
+        }
+    }
+
+    public static void testGetDeclaredDeconstructors_bug3() throws IllegalAccessException {
+        var b = new Bug(2);
+        var x = Bug.class.getDeclaredDeconstructors()[0].invoke(b);
+        assertEquals(x[0], 2);
     }
 
     static void assertEquals(Object actual, Object expected) {

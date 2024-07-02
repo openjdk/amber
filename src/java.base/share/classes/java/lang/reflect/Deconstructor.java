@@ -32,7 +32,6 @@ import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.scope.DeconstructorScope;
-import sun.reflect.generics.tree.MethodTypeSignature;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
@@ -41,6 +40,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+
+import static java.lang.runtime.PatternBytecodeName.mangle;
 
 /**
  * {@code Deconstructor} provides information about, and access to, a single
@@ -422,19 +423,10 @@ public final class Deconstructor<T> extends Executable {
     public Object[] invoke(Object matchCandidate)
         throws IllegalAccessException, MatchException
     {
-        Class<?> klass = this.getDeclaringClass();
-
-        String postFix = Arrays.stream(getPatternBindings())
-                .map(param -> param.getType()
-                        .descriptorString()
-                        .replace("/", "\\\u007C")
-                        .replace(";", "\\\u003F"))
-                .collect(Collectors.joining("\\\u0025"));
-
-        String underlyingName = klass.getSimpleName() + "\\%" + postFix;
+        String underlyingName = mangle(this.getDeclaringClass(), Arrays.stream(getPatternBindings()).map(pb -> pb.getType()).toArray(Class[]::new));
 
         try {
-            Method method = klass.getMethod(underlyingName, matchCandidate.getClass());
+            Method method = this.getDeclaringClass().getMethod(underlyingName, matchCandidate.getClass());
 
             Object carrier = method.invoke(matchCandidate, matchCandidate);
 
