@@ -25,6 +25,7 @@
  * @test
  * @summary SimpleDeconstructorsTest
  * @enablePreview
+ * @compile --enable-preview --source ${jdk.version} -parameters SimpleDeconstructorsTest.java
  * @run main/othervm --enable-preview SimpleDeconstructorsTest
  */
 
