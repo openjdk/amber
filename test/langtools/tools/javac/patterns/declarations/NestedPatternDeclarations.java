@@ -24,8 +24,8 @@
 /*
  * @test
  * @enablePreview
- * @compile -parameters RecordPatternDeclarations.java
- * @run main RecordPatternDeclarations
+ * @compile -parameters NestedPatternDeclarations.java
+ * @run main NestedPatternDeclarations
  */
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -35,13 +35,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public class RecordPatternDeclarations {
+public class NestedPatternDeclarations {
     public static void main(String... args) {
         assertEquals(1, testPointX(new Point(1, 2)));
         assertEquals(2, testPointY(new Point(1, 2)));
         assertEquals(2, testMultipleCasesPoint(new Point(42, 4)));
         assertEquals(3, testMultipleCasesPoint(new Point(4, 42)));
         assertEquals(List.of(1), testPoints(new Points(List.of(1), List.of(2))));
+        assertEquals(1, testNestedPattern(new ColouredPoint(new Point(42, 2))));
     }
 
     public static Integer testPointX(Object o) {
@@ -73,17 +74,46 @@ public class RecordPatternDeclarations {
         return List.of(-1);
     }
 
-    public record Points(Collection<Integer> xs, Collection<Integer> ys) {
+    public static int testNestedPattern(ColouredPoint o) {
+        return switch (o) {
+            case ColouredPoint(Point(Integer x, Integer y)) when x == 42 -> 1;
+            case ColouredPoint(Point(Integer x, Integer y)) when y == 42 -> 2;
+            case ColouredPoint cp -> -1;
+        };
+    }
+
+    public static class Points {
+        Collection<Integer> xs, ys;
+        public Points(Collection<Integer> xs, Collection<Integer> ys) {
+            this.xs = xs;
+            this.ys = ys;
+        }
         @MatcherAnnotation(annotField = 42)
         public pattern Points(@BindingAnnotation Collection<Integer> xs, @BindingAnnotation Collection<Integer> ys) {
             match Points(this.xs, this.ys);
         }
     }
 
-    public record Point(Integer x, Integer y) {
+    public static class Point {
+        Integer x, y;
+        public Point(Integer x, Integer y) {
+            this.x = x;
+            this.y = y;
+        }
+
         @MatcherAnnotation(annotField = 42)
         public pattern Point(Integer x, Integer y) {
             match Point(this.x, this.y);
+        }
+    }
+
+    public static class ColouredPoint {
+        Point p;
+        public ColouredPoint(Point p) {
+            this.p = p;
+        }
+        public pattern ColouredPoint(Point p) {
+            match ColouredPoint(this.p);
         }
     }
 
