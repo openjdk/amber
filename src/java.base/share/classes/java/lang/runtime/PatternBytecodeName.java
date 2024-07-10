@@ -44,16 +44,19 @@ public class PatternBytecodeName {
     /**
      * Mangles the binary name of a deconstructor.
      *
-     * @param pattern the pattern itself
+     * @param enclosingClass the enclosing class that contains the deconstructor
      * @param bindingTypes the types of bindings
      *
      * @return the symbolic name
      */
-    public static String mangle(Class<?> pattern, Class<?>  ...bindingTypes) {
+    public static String mangle(Class<?> enclosingClass, Class<?>...bindingTypes) {
         String postFix = Arrays.stream(bindingTypes)
-                .map(param -> BytecodeName.toBytecodeName(param.descriptorString()))
-                .collect(Collectors.joining("\u005C\\u0025"));
+            .map(param ->{
+                String mangled = BytecodeName.toBytecodeName(param.descriptorString());
+                mangled = mangled.toString().replaceFirst("\\\\=", "");
+                return mangled;
+            }).collect(Collectors.joining(":"));
 
-        return pattern.getSimpleName() + "\\\u0025" + postFix;
+        return enclosingClass.getSimpleName() + ":" + postFix;
     }
 }
