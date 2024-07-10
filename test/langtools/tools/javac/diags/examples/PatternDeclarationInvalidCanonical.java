@@ -23,16 +23,12 @@
 
  // key: compiler.misc.feature.pattern.declarations
  // key: compiler.warn.preview.feature.use.plural
+ // key: compiler.err.invalid.canonical.deconstructor.in.record
  // options: --enable-preview -source ${jdk.version} -Xlint:preview
 
-public class PatternDeclaration {
+public class PatternDeclarationInvalidCanonical {
 
-    class Test {
-        Integer x, y;
-        public Test(Integer x, Integer y) {
-            this.x = x;
-            this.y = y;
-        }
+    record Test(Integer x, Integer y) {
         public pattern Test(Integer x, Integer y) {
             match Test(this.x, this.y);
         }

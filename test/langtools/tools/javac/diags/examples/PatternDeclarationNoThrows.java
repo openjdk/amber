@@ -29,7 +29,7 @@
 import java.io.IOException;
 
 public class PatternDeclarationNoThrows {
-    public record ExceptionErrors() {
+    public class ExceptionErrors {
         public pattern ExceptionErrors(int out) {
             throw new Error(); // no throws in patter declaration body
         }

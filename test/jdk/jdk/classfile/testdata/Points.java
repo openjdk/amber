@@ -30,7 +30,13 @@ import java.lang.annotation.Target;
 import java.util.Collection;
 import java.util.List;
 
-record Points(Collection<Integer> xs, Collection<Integer> ys) {
+class Points {
+    Collection<Integer> xs, ys;
+    public Points(Collection<Integer> xs, Collection<Integer> ys) {
+        this.xs = xs;
+        this.ys = ys;
+    }
+
     public static List<Integer> test(Object o) {
         if (o instanceof Points(List<Integer> xs, List<Integer> ys)) {
             return xs;

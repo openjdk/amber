@@ -7,7 +7,7 @@ import java.io.IOException;
  * @compile/fail/ref=PatternDeclarationErrors.out -XDrawDiagnostics -XDdev --should-stop=at=FLOW PatternDeclarationErrors.java
  */
 public class PatternDeclarationErrors {
-    public record D() {
+    public class D {
         public pattern D(Object v1, Float out) {
             match D(10.0f); // not matching signature
         }
@@ -30,7 +30,7 @@ public class PatternDeclarationErrors {
         }
     }
 
-    public record ExitErrors() {
+    public class ExitErrors {
         public pattern ExitErrors(int out) {
            break; // no break
         }
@@ -44,7 +44,7 @@ public class PatternDeclarationErrors {
         }
     }
 
-    public record ExceptionErrors() {
+    public class ExceptionErrors {
         public pattern ExceptionErrors(int out) {
             throw new Error(); // no throws in patter declaration body
         }
@@ -52,5 +52,9 @@ public class PatternDeclarationErrors {
         public pattern ExceptionErrors(float out) throws IOException { // no throws in pattern signature
             throw new IOException(); // no throws in patter declaration body
         }
+    }
+
+    public record R(int i) {
+        public pattern R(int i) { match R(42); }
     }
 }

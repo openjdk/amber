@@ -1155,6 +1155,25 @@ public class Attr extends JCTree.Visitor {
                         }
                     }
                 }
+
+                if (tree.sym.isDeconstructor()) {
+                    boolean isImplicitCanonicalDeconstructor = true;
+                    List<? extends RecordComponent> recordComponents = env.enclClass.sym.getRecordComponents();
+                    List<Type> recordFieldTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
+                    for (JCVariableDecl param: tree.params) {
+                        boolean paramIsVarArgs = (param.sym.flags_field & VARARGS) != 0;
+                        if (!types.isSameType(param.type, recordFieldTypes.head) ||
+                                (recordComponents.head.isVarargs() != paramIsVarArgs)) {
+                            isImplicitCanonicalDeconstructor = false; break;
+                        }
+                        recordComponents = recordComponents.tail;
+                        recordFieldTypes = recordFieldTypes.tail;
+                    }
+                    if (isImplicitCanonicalDeconstructor) {
+                        log.error(tree, Errors.InvalidCanonicalDeconstructorInRecord(
+                                env.enclClass.sym.name));
+                    }
+                }
             }
 
             if (m.isPattern() && tree.thrown.nonEmpty()) {

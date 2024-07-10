@@ -31,7 +31,7 @@ import java.io.IOException;
 
 public class PatternDeclarationCantThrowException {
 
-    public record ExceptionErrors() {
+    public class ExceptionErrors {
         public pattern ExceptionErrors(float out) throws IOException { // no throws in pattern signature
             throw new IOException(); // no throws in patter declaration body
         }

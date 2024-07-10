@@ -28,7 +28,12 @@
 
 public class PatternDeclarationNotMatchingSignature {
 
-    record Test(Integer x, Integer y) {
+    class Test {
+        Integer x, y;
+        public Test(Integer x, Integer y) {
+            this.x = x;
+            this.y = y;
+        }
         public pattern Test(Integer x, Integer y) {
             match Test(this.y);
         }

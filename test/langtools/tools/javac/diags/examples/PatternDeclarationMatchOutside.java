@@ -28,7 +28,12 @@
 
 public class PatternDeclarationMatchOutside {
 
-    record Test(Integer x, Integer y) {
+    class Test {
+        Integer x, y;
+        public Test(Integer x, Integer y) {
+            this.x = x;
+            this.y = y;
+        }
         public void meth(Integer x, Integer y) {
             match Test(1, 2);
         }
