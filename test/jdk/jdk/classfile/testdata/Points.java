@@ -53,7 +53,7 @@ class Points {
     @Retention(RetentionPolicy.RUNTIME)
     public @interface MatcherAnnot { }
 
-    @Target(ElementType.PARAMETER)
+    @Target(ElementType.PATTERN_BINDING)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface BindingAnnot { }
 }

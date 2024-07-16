@@ -21,82 +21,183 @@
  * questions.
  */
 
+import toolbox.*;
+
+import javax.tools.JavaCompiler;
+import javax.tools.ToolProvider;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 /**
  * @test
+ * @library /tools/lib
+ * @modules jdk.compiler/com.sun.tools.javac.api
+ *          jdk.compiler/com.sun.tools.javac.main
+ *          jdk.jdeps/com.sun.tools.javap
  * @enablePreview
- * @compile OverloadedPatternDeclarations.java
+ * @build toolbox.ToolBox toolbox.JavapTask
  * @run main OverloadedPatternDeclarations
  */
-public class OverloadedPatternDeclarations {
-    public static void main(String... args) {
-        assertEquals( 2, test1(new D()));
-        assertEquals( 1, test2(new D()));
-        assertEquals( 1, test3(new D()));
-        assertEquals( 3, test4(new D()));
-        assertEquals( 4, test5(new D()));
+public class OverloadedPatternDeclarations extends TestRunner {
+    private ToolBox tb;
+    private static final String SOURCE_VERSION = System.getProperty("java.specification.version");
+
+    OverloadedPatternDeclarations() {
+        super(System.err);
+        tb = new ToolBox();
     }
 
-    private static int test1(D o) {
-        if (o instanceof D(String data, Integer outI)) {
-            return outI;
-        }
-        return -1;
+    public static void main(String... args) throws Exception {
+        new OverloadedPatternDeclarations().runTests();
     }
 
-    private static int test2(D o) {
-        if (o instanceof D(Object data, Integer outI)) {
-            return outI;
-        }
-        return -1;
+    public void runTests() throws Exception {
+        runTests(m -> new Object[] { Paths.get(m.getName()) });
     }
 
-    private static int test3(D o) {
-        if (o instanceof D(Integer data, Integer outI)) {
-            return outI;
-        }
-        return -1;
+    @Test
+    public void testOne(Path base) throws Exception {
+        runSingle(base, "A", "B", "B", 2);
+        runSingle(base, "B", "C", "B", 1);
+        runSingle(base, "B", "C", "A", 0);
+        runSingle(base, "A", "B", "C", 0);
+        runSingle(base, "A", "C", "B", 0);
+        runSingle(base, "A", "D", "B", 0);
+        runSingle(base, "E", "F", "I", 0);
     }
 
-    private static int test4(D o) {
-        if (o instanceof D(A data, Integer outI)) {
-            return outI;
-        }
-        return -1;
+    void runSingle(Path base, String bt_1, String bt_2, String t1, Integer selected) throws IOException {
+        String source =
+                """
+                package test;
+    
+                class Test {
+                    static class A {}
+                    static class B extends A {}
+                    static class C extends B {}
+                    static class D extends C {}
+                    sealed interface I {}
+                    final static class E implements I {}
+                    final static class F implements I {}
+                    
+                    static class Single {
+                        public pattern Single($BINDING_1 b1) {
+                            System.out.println(1);
+                            match Single(new $BINDING_1());
+                        }
+                        
+                        public pattern Single($BINDING_2 b1) {
+                            System.out.println(2);
+                            match Single(new $BINDING_2());
+                        }
+                    }
+                
+                    public static void main(String[] args) {
+                        Single t = new Single();
+                        switch(t) {
+                            case Single($TYPE1 t1) -> {}
+                            default -> {}
+                        };
+                    }
+                }
+                """;
+
+        source = source.replaceAll("\\$BINDING_1", bt_1)
+                .replaceAll("\\$BINDING_2", bt_2)
+                .replaceAll("\\$TYPE1", t1);
+
+        compileAndRun(base, selected, source);
     }
 
-    private static Integer test5(D o) {
-        if (o instanceof D(B data, Integer outI)) {
-            return outI;
-        }
-        return null;
+    @Test
+    public void testTwo(Path base) throws Exception {
+        runTwo(base, "A", "B", "B", "B", "A", "A", 1);
+        runTwo(base, "A", "B", "B", "A", "B", "B", 0);
     }
 
-    static class A {}
-    static class B extends A {}
+    void runTwo(Path base, String bt1_1, String bt2_1, String bt1_2, String bt2_2, String t1, String t2, Integer selected) throws IOException {
+        String source =
+            """
+            package test;
 
-    public static class D {
-        public pattern D(Object out, Integer outI) {
-            match D(42, 1);
-        }
+            class Test {
+                static class A {}
+                static class B extends A {}
+                static class C extends B {}
+                static class D extends C {}
+                sealed interface I {}
+                final static class E implements I {}
+                final static class F implements I {}
+                
+                static class Two {
+                    public pattern Two($BINDING_TYPE1_1 b1, $BINDING_TYPE2_1 be) {
+                        System.out.println(1);
+                        match Two(new $BINDING_TYPE1_1(), new $BINDING_TYPE2_1());
+                    }
+                    
+                    public pattern Two($BINDING_TYPE1_2 b1, $BINDING_TYPE2_2 be) {
+                        System.out.println(2);
+                        match Two(new $BINDING_TYPE1_2(), new $BINDING_TYPE2_2());
+                    }
+                }
+            
+                public static void main(String[] args) {
+                    Two t = new Two();
+                    switch(t) {
+                        case Two($TYPE1 t1, $TYPE2 t2) -> {}
+                        default -> {}
+                    };
+                }
+            }
+            """;
 
-        public pattern D(String out, Integer outI) {
-            match D("2", 2);
-        }
+        source = source.replaceAll("\\$BINDING_TYPE1_1", bt1_1)
+                .replaceAll("\\$BINDING_TYPE2_1", bt2_1)
+                .replaceAll("\\$BINDING_TYPE1_2", bt1_2)
+                .replaceAll("\\$BINDING_TYPE2_2", bt2_2)
+                .replaceAll("\\$TYPE1", t1)
+                .replaceAll("\\$TYPE2", t2);
 
-        public pattern D(A out, Integer outI) {
-            match D(new A(), 3);
-        }
-
-        public pattern D(B out, Integer outI) {
-            match D(new B(), 4);
-        }
+        compileAndRun(base, selected, source);
     }
 
-    private static void assertEquals(int expected, int actual) {
-        if (!Objects.equals(expected, actual)) {
-            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
+    private void compileAndRun(Path base, Integer selected, String source) throws IOException {
+        Path current = base.resolve(".");
+        Path src = current.resolve("src");
+        Path classes = current.resolve("classes");
+
+        tb.writeJavaFiles(src, source);
+
+        Files.createDirectories(classes);
+
+        {
+            String javacOut = new JavacTask(tb)
+                    .options("-XDrawDiagnostics", "--enable-preview", "--release", SOURCE_VERSION)
+                    .outdir(classes)
+                    .files(tb.findJavaFiles(src))
+                    .run(selected == 0 ? Task.Expect.FAIL : Task.Expect.SUCCESS)
+                    .writeAll()
+                    .getOutput(Task.OutputKind.DIRECT);
+
+            if (selected > 0) {
+                String javaOut = new JavaTask(tb)
+                        .vmOptions("--enable-preview")
+                        .classpath(classes.toString())
+                        .className("test.Test")
+                        .run()
+                        .writeAll()
+                        .getOutput(Task.OutputKind.STDOUT);
+
+                if (!javaOut.contains(selected.toString()))
+                    throw new AssertionError("Wrong overload resolution:\n" + javaOut);
+            }
+            else {
+                if (!javacOut.contains("compiler.err.matcher.overloading.ambiguity"))
+                    throw new AssertionError("Wrong overload resolution:\n" + javacOut);
+            }
         }
     }
 }

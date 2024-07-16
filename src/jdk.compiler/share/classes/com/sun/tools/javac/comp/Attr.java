@@ -4410,7 +4410,6 @@ public class Attr extends JCTree.Visitor {
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
     }
 
-    // todo: follow the protocol in Resolve::selectBest
     private MethodSymbol selectBestPatternDeclarationInScope(JCRecordPattern tree,
                                                            Type site,
                                                            List<MethodSymbol> patternDeclarations,
@@ -4418,8 +4417,9 @@ public class Attr extends JCTree.Visitor {
         List<Type> expectedRecordTypes = null;
         ListBuffer<Integer> score = new ListBuffer<Integer>();
 
-        for (MethodSymbol matcher : patternDeclarations) {
-            int scoreForMatcher = 0;
+        ArrayList<List<Type>> typesMatrix = new ArrayList<>();
+        for (int j = 0; j < patternDeclarations.size(); j++) {
+            MethodSymbol matcher = patternDeclarations.get(j);
 
             List<Type> matcherComponentTypes = matcher.bindings()
                     .stream()
@@ -4427,40 +4427,58 @@ public class Attr extends JCTree.Visitor {
                     .map(t -> types.upward(t, types.captures(t)).baseType())
                     .collect(List.collector());
 
+            typesMatrix.add(matcherComponentTypes);
+        }
+
+        int selected = -1;
+        boolean atLeastOne = false;
+        for (int n = 0; n < patternDeclarations.size(); n++) {
+            List<Type> matcherComponentTypes = typesMatrix.get(n);
             boolean applicable = true;
+
             for (int i = 0; applicable && i < patternTypes.size(); i++) {
                 applicable &= types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i));
             }
 
             if (applicable) {
-                // todo: need to separate scores for each parameter
-                for (int i = 0; i < patternTypes.size(); i++) {
-                    if (types.isSameType(patternTypes.get(i), matcherComponentTypes.get(i))) {
-                        scoreForMatcher += 2;
-                    } else if (types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i))) {
-                        scoreForMatcher += 1;
+                boolean found = true;
+                atLeastOne = true;
+                // for all pattern components
+                for (int i = 0; found && i < patternTypes.size(); i++) {
+                    if (!types.isSameType(patternTypes.get(i), matcherComponentTypes.get(i)) &&
+                            !sameBindingTypeInAllCandidateDtors(typesMatrix, n, i, matcherComponentTypes)) {
+                        found = false;
                     }
                 }
-                score.add(scoreForMatcher);
-            } else {
-                score.add(-1);
+                if (found && selected < 0) {
+                    selected = n;
+                }
             }
+
+            applicable = true;
         }
 
-        var maxScore = Collections.max(score);
-        List<Integer> scoreList = score.toList();
-        var indexOfMaxScore = scoreList.indexOf(maxScore);
-
-        if (maxScore == -1) {
-            log.error(tree.pos(),
-                    Errors.NoCompatibleMatcherFound);
-        } else if (scoreList.stream().filter(s -> s == maxScore).count() > 1) {
+        if (atLeastOne && selected < 0) {
             log.error(tree.pos(),
                     Errors.MatcherOverloadingAmbiguity);
-        } else {
-            return patternDeclarations.get(indexOfMaxScore);
+            return null;
+        } else if (!atLeastOne) {
+            log.error(tree.pos(),
+                    Errors.NoCompatibleMatcherFound);
+            return null;
         }
-        return null;
+
+        return patternDeclarations.get(selected);
+    }
+
+    private boolean sameBindingTypeInAllCandidateDtors(ArrayList<List<Type>> typesMatrix, int n, int i, List<Type> matcherComponentTypes) {
+        boolean allSame = true;
+        for (int n_prime = 0; n_prime < typesMatrix.size(); n_prime++) {
+            if (n_prime != n) {
+                allSame &= types.isSameType(typesMatrix.get(n_prime).get(i), matcherComponentTypes.get(i));
+            }
+        }
+        return allSame;
     }
 
     private static List<MethodSymbol> getPatternDeclarationCandidates(Type site, int nestedPatternCount) {
