@@ -73,7 +73,7 @@ public class OverloadedPatternDeclarations extends TestRunner {
         String source =
                 """
                 package test;
-    
+
                 class Test {
                     static class A {}
                     static class B extends A {}
@@ -82,19 +82,19 @@ public class OverloadedPatternDeclarations extends TestRunner {
                     sealed interface I {}
                     final static class E implements I {}
                     final static class F implements I {}
-                    
+
                     static class Single {
                         public pattern Single($BINDING_1 b1) {
                             System.out.println(1);
                             match Single(new $BINDING_1());
                         }
-                        
+
                         public pattern Single($BINDING_2 b1) {
                             System.out.println(2);
                             match Single(new $BINDING_2());
                         }
                     }
-                
+
                     public static void main(String[] args) {
                         Single t = new Single();
                         switch(t) {
@@ -131,19 +131,19 @@ public class OverloadedPatternDeclarations extends TestRunner {
                 sealed interface I {}
                 final static class E implements I {}
                 final static class F implements I {}
-                
+
                 static class Two {
                     public pattern Two($BINDING_TYPE1_1 b1, $BINDING_TYPE2_1 be) {
                         System.out.println(1);
                         match Two(new $BINDING_TYPE1_1(), new $BINDING_TYPE2_1());
                     }
-                    
+
                     public pattern Two($BINDING_TYPE1_2 b1, $BINDING_TYPE2_2 be) {
                         System.out.println(2);
                         match Two(new $BINDING_TYPE1_2(), new $BINDING_TYPE2_2());
                     }
                 }
-            
+
                 public static void main(String[] args) {
                     Two t = new Two();
                     switch(t) {
