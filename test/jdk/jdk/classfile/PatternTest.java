@@ -69,7 +69,7 @@ class PatternTest {
             else
                 clb.with(cle);
         };
-        cc.transform(cc.parse(PatternTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes()), xform);
+        cc.transformClass(cc.parse(PatternTest.class.getResourceAsStream("/testdata/Points.class").readAllBytes()), xform);
         assertEquals("[Points, true, MethodTypeDesc[(Collection,Collection)void], [Attribute[name=MethodParameters], Attribute[name=Signature], Attribute[name=RuntimeVisibleParameterAnnotations]]]", extractedInfo.toString());
     }
 
