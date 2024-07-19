@@ -24,17 +24,18 @@
 /**
  * @test
  * @enablePreview
- * @compile -parameters ClassPatternDeclarations.java
- * @run main ClassPatternDeclarations
+ * @compile -parameters RecordPatternsOverloadedDeclarations.java
+ * @run main RecordPatternsOverloadedDeclarations
  */
 import java.util.Objects;
 
-public class ClassPatternDeclarations {
+public class RecordPatternsOverloadedDeclarations {
     public static void main(String... args) {
         assertEquals("A:B",  test1A(new Person1("A", "B", false)));
         assertEquals("A",    test1B(new Person1("A", "B", false)));
         assertEquals("Duke", test2(new Person1("Duke", "Java", false)));
         assertEquals("DUKE", test2(new Person1("Duke", "Java", true)));
+        assertEquals("Duke", test3(new Person1("Duke", "Java", true)));
     }
 
     private static String test1A(Object o) {
@@ -58,7 +59,15 @@ public class ClassPatternDeclarations {
         return null;
     }
 
+    private static String test3(Object o) {
+        if (o instanceof Person1(String name, String username, boolean capitalize)) {
+            return name;
+        }
+        return null;
+    }
+
     public static record Person1(String name, String username, boolean capitalize) {
+
         public Person1(String name) {
             this(name, "default", false);
         }

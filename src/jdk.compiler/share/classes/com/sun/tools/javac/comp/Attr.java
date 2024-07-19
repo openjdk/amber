@@ -1160,14 +1160,20 @@ public class Attr extends JCTree.Visitor {
                     boolean isImplicitCanonicalDeconstructor = true;
                     List<? extends RecordComponent> recordComponents = env.enclClass.sym.getRecordComponents();
                     List<Type> recordFieldTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
-                    for (JCVariableDecl param: tree.params) {
-                        boolean paramIsVarArgs = (param.sym.flags_field & VARARGS) != 0;
-                        if (!types.isSameType(param.type, recordFieldTypes.head) ||
-                                (recordComponents.head.isVarargs() != paramIsVarArgs)) {
-                            isImplicitCanonicalDeconstructor = false; break;
+
+                    if (recordComponents.size() == tree.bindings.size()) {
+                        for (JCVariableDecl param : tree.bindings) {
+                            boolean paramIsVarArgs = (param.sym.flags_field & VARARGS) != 0;
+                            if (!types.isSameType(param.type, recordFieldTypes.head) ||
+                                    (recordComponents.head.isVarargs() != paramIsVarArgs)) {
+                                isImplicitCanonicalDeconstructor = false;
+                                break;
+                            }
+                            recordComponents = recordComponents.tail;
+                            recordFieldTypes = recordFieldTypes.tail;
                         }
-                        recordComponents = recordComponents.tail;
-                        recordFieldTypes = recordFieldTypes.tail;
+                    } else {
+                        isImplicitCanonicalDeconstructor = false;
                     }
                     if (isImplicitCanonicalDeconstructor) {
                         log.error(tree, Errors.InvalidCanonicalDeconstructorInRecord(
@@ -4333,34 +4339,28 @@ public class Attr extends JCTree.Visitor {
 
         List<Type> expectedRecordTypes = null;
 
-        // todo: type check cases where a record class has deconstructors as well
-        if (((ClassSymbol) site.tsym).isRecord()) {
-            ClassSymbol record = (ClassSymbol) site.tsym;
-            expectedRecordTypes = record.getRecordComponents()
-                    .stream()
-                    .map(rc -> types.memberType(site, rc))
-                    .map(t -> types.upward(t, types.captures(t)).baseType())
-                    .collect(List.collector());
-            tree.record = record;
-        }
-        else if (site.tsym.kind == Kind.TYP) {
+        if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
-
-            // precalculate types of pattern components (as in method invocation)
-            ListBuffer<Type> patternTypesBuffer = new ListBuffer<>();
-            for (JCTree arg : tree.nested.map(p -> p.getTree())) {
-                Type argtype = chk.checkNonVoid(arg, attribTree(arg, env, resultInfo));
-                patternTypesBuffer.append(argtype);
-            }
-            List<Type> patternTypes = patternTypesBuffer.toList();
 
             List<MethodSymbol> patternDeclarations = getPatternDeclarationCandidates(site, nestedPatternCount);
 
             if (patternDeclarations.size() >= 1) {
-                MethodSymbol patternDeclaration = selectBestPatternDeclarationInScope(tree,
-                        site,
-                        patternDeclarations,
-                        patternTypes);
+                MethodSymbol patternDeclaration = null;
+
+                if (patternDeclarations.size() > 1) {
+                    // precalculate types of pattern components (as in method invocation)
+                    ListBuffer<Type> patternTypesBuffer = new ListBuffer<>();
+                    for (JCTree arg : tree.nested.map(p -> p.getTree())) {
+                        Type argtype = chk.checkNonVoid(arg, attribTree(arg, env, resultInfo));
+                        patternTypesBuffer.append(argtype);
+                    }
+                    List<Type> patternTypes = patternTypesBuffer.toList();
+
+                    patternDeclaration = selectBestPatternDeclarationInScope(tree, site, patternDeclarations, patternTypes);
+                } else {
+                    patternDeclaration = patternDeclarations.getFirst();
+                }
+
                 if (patternDeclaration != null) {
                     expectedRecordTypes = types.memberType(site, patternDeclaration).getBindingTypes();
                     tree.patternDeclaration = patternDeclaration;
@@ -4369,7 +4369,7 @@ public class Attr extends JCTree.Visitor {
         }
 
         if (expectedRecordTypes == null) {
-            log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
+            log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
             expectedRecordTypes = Stream.generate(() -> types.createErrorType(tree.type))
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
@@ -4390,17 +4390,6 @@ public class Attr extends JCTree.Visitor {
                 matchBindings.bindingsWhenTrue.forEach(localEnv.info.scope::enter);
                 nestedPatterns = nestedPatterns.tail;
                 recordTypes = recordTypes.tail;
-            }
-            if (recordTypes.nonEmpty() || nestedPatterns.nonEmpty()) {
-                while (nestedPatterns.nonEmpty()) {
-                    attribExpr(nestedPatterns.head, localEnv, Type.noType);
-                    nestedPatterns = nestedPatterns.tail;
-                }
-                List<Type> nestedTypes =
-                        tree.nested.stream().map(p -> p.type).collect(List.collector());
-                log.error(tree.pos(),
-                          Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
-                                                                 nestedTypes));
             }
         } finally {
             localEnv.info.scope.leave();
@@ -4481,7 +4470,7 @@ public class Attr extends JCTree.Visitor {
         return allSame;
     }
 
-    private static List<MethodSymbol> getPatternDeclarationCandidates(Type site, int nestedPatternCount) {
+    private List<MethodSymbol> getPatternDeclarationCandidates(Type site, int nestedPatternCount) {
         var matchersIt = site.tsym.members()
                 .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                 .iterator();
@@ -4489,6 +4478,22 @@ public class Attr extends JCTree.Visitor {
                 .takeWhile(x -> matchersIt.hasNext())
                 .map(n -> (MethodSymbol) matchersIt.next())
                 .collect(List.collector());
+
+        if (((ClassSymbol) site.tsym).isRecord()) {
+            ClassSymbol record = (ClassSymbol) site.tsym;
+
+            if (record.getRecordComponents().size() == nestedPatternCount) {
+                List<Type> recordComponents = record.getRecordComponents()
+                        .stream()
+                        .map(rc -> rc.type)
+                        .collect(List.collector());
+
+                MethodType mt = new MethodType(List.nil(), syms.voidType, List.nil(), syms.methodClass);
+                mt.bindingtypes = recordComponents;
+                patternDeclarations = patternDeclarations.prepend(new MethodSymbol(PUBLIC | SYNTHETIC, ((ClassSymbol) site.tsym).name, mt, site.tsym));
+            }
+        }
+
         return patternDeclarations;
     }
 

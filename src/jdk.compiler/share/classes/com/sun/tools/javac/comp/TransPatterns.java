@@ -331,7 +331,12 @@ public class TransPatterns extends TreeTranslator {
         BindingSymbol    mSymbol = null;
         MethodSymbol     carriersComponentCallSym = null;
 
-        if (recordPattern.patternDeclaration != null) {
+        // a record pattern always has an associated pattern declaration on the of the following:
+        //  - a pattern declaration or
+        //  - the synthetic, implicitly declared one if it is a record and overload resolves to that
+        Assert.check(recordPattern.patternDeclaration != null);
+
+        if ((recordPattern.patternDeclaration.flags() & Flags.PATTERN) != 0 || (recordPattern.patternDeclaration.flags() & Flags.SYNTHETIC) == 0) {
             mSymbol = new BindingSymbol(Flags.SYNTHETIC,
                     names.fromString(target.syntheticNameChar() + "m" + target.syntheticNameChar() + variableIndex++), syms.objectType,
                     currentMethodSym);
@@ -353,14 +358,14 @@ public class TransPatterns extends TreeTranslator {
                             List.nil());
             components = List.nil();
         } else {
-            components = recordPattern.record.getRecordComponents();
+            components = ((ClassSymbol) recordPattern.patternDeclaration.owner).getRecordComponents();
         }
 
         while (nestedFullComponentTypes.nonEmpty()) {
             Type componentType = types.erasure(nestedFullComponentTypes.head);
             JCExpression accessedComponentValue;
             index++;
-            if (recordPattern.patternDeclaration != null) {
+            if ((recordPattern.patternDeclaration.flags() & Flags.SYNTHETIC) == 0 || (recordPattern.patternDeclaration.flags() & Flags.PATTERN) != 0) {
                 /*
                  *  Generate invoke call for component X
                  *       component$X.invoke(carrier);
