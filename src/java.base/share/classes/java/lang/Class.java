@@ -36,6 +36,7 @@ import java.lang.classfile.attribute.RuntimeVisibleAnnotationsAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleParameterAnnotationsAttribute;
 import java.lang.classfile.attribute.RuntimeVisibleTypeAnnotationsAttribute;
 import java.lang.classfile.attribute.SignatureAttribute;
+import java.lang.classfile.constantpool.Utf8Entry;
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.constant.MethodTypeDesc;
@@ -2457,8 +2458,6 @@ public final class Class<T> implements java.io.Serializable,
                         // parameter names
                         var parameterList = pa.patternTypeSymbol().parameterList();
                         MethodParametersAttribute mp = pa.findAttribute(Attributes.methodParameters()).orElse(null);
-                        List<String> parameterNameList = mp.parameters().stream().map(p -> p.name().get().stringValue()).toList();
-
                         // binding annotations
                         RuntimeVisibleParameterAnnotationsAttribute rvpa = pa.findAttribute(Attributes.runtimeVisibleParameterAnnotations()).orElse(null);
                         ByteBuffer assembled_rvpa = getAnnotationContents(rvpa != null, (BoundAttribute) rvpa);
@@ -2471,7 +2470,7 @@ public final class Class<T> implements java.io.Serializable,
                             Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.privateLookupIn(this, SharedSecrets.getJavaLangInvokeAccess().implLookup()));
                             deconstructorBindings.add(new PatternBinding(
                                     currentDeconstructor,
-                                    parameterNameList.get(i),
+                                    mp.parameters().get(i).name().map(Utf8Entry::stringValue).orElse("arg" + i),
                                     bindingClass,
                                     signatures.get(i),
                                     i,
