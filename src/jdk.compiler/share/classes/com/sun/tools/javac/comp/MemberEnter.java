@@ -120,7 +120,7 @@ public class MemberEnter extends JCTree.Visitor {
             argbuf.append(l.head.vartype.type);
         }
 
-        // Enter and bindings.
+        // Enter and attribute bindings.
         ListBuffer<Type> bindingsbuf = null;
 
         if (bindings != null) {
