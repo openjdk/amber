@@ -5086,10 +5086,16 @@ public class JavacParser implements Parser {
                 }
             }
 
+            boolean isPattern = (mods.flags & PATTERN) != 0;
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
-                                            receiverParam, params, thrown,
+                                            receiverParam, isPattern ? List.nil() : params, thrown,
                                             body, defaultValue));
+
+            if (isPattern) {
+                result.bindings = params;
+            }
+
             attach(result, dc);
             return result;
         } finally {
