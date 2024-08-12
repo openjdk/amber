@@ -95,64 +95,6 @@ public class AnnotationProcessing extends TestRunner {
             .writeAll();
     }
 
-    @Test
-    public void testAnnotationProcessing(Path outerBase) throws Exception {
-        Path src = outerBase.resolve("src");
-        tb.writeJavaFiles(src,
-                """
-                import static java.lang.annotation.RetentionPolicy.CLASS;
-                import static java.lang.annotation.RetentionPolicy.RUNTIME;
-                import java.lang.annotation.Retention;
-                public class T {
-                    @Retention(RUNTIME)
-                    @interface RuntimeAnnotation {
-                        int value() default 0;
-                    }
-                
-                    @Retention(CLASS)
-                    @interface ClassAnnotation {
-                        int value() default 0;
-                    }
-                
-                    public static class Person1 {
-                        private final String name;
-                        private final String username;
-                        private boolean capitalize;
-                
-                        public Person1(String name, String username, boolean capitalize) {
-                            this.name = name;
-                            this.username = username;
-                            this.capitalize = capitalize;
-                        }
-                
-                        @AnnotationProcessing.BindingProcessor.Bindings
-                        public pattern Person1(@ClassAnnotation(21) String name, @RuntimeAnnotation(42) String username) {
-                            if (capitalize) {
-                                match Person1(this.name.toUpperCase(), this.username.toUpperCase());
-                            } else {
-                                match Person1(this.name, this.username);
-                            }
-                        }
-                    }
-                }
-                """);
-        Path classes = outerBase.resolve("classes");
-        Files.createDirectories(classes);
-        List<String> output = new JavacTask(tb)
-                .options("-XDrawDiagnostics", "-proc:only", "-processor", "AnnotationProcessing$BindingProcessor",
-                        "-processorpath", System.getProperty("test.classes"), "-parameters",
-                        "--enable-preview", "--source", System.getProperty("java.specification.version"))
-                .outdir(classes.toString())
-                .files(tb.findJavaFiles(src))
-                .run()
-                .writeAll()
-                .getOutputLines(Task.OutputKind.DIRECT);
-
-        if (!output.contains("- compiler.note.proc.messager: T.Person1.Person1(@T.ClassAnnotation(21) name, @T.RuntimeAnnotation(42) username)")) {
-            throw new AssertionError("Error in annotation processing when processing matchers\n" + output);
-        }
-    }
-
     @SupportedAnnotationTypes("*")
     public static class P extends AbstractProcessor {
         @Override
@@ -163,36 +105,6 @@ public class AnnotationProcessing extends TestRunner {
         @Override
         public SourceVersion getSupportedSourceVersion() {
             return SourceVersion.latest();
-        }
-    }
-
-    @SupportedAnnotationTypes("*")
-    public static class BindingProcessor extends JavacTestingAbstractProcessor {
-
-        @Retention(RetentionPolicy.RUNTIME)
-        @Target({ElementType.METHOD})
-        @interface Bindings {
-            String[] value() default {};
-        }
-
-        @Override
-        public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
-            for (Element element : roundEnv.getElementsAnnotatedWith(Bindings.class)) {
-                if (element instanceof ExecutableElement exec) {
-                    String message = String.format("%s.%s(%s)",
-                            exec.getEnclosingElement(),
-                            exec.getSimpleName(),
-                            exec.getBindings().stream().map(this::printBinding).collect(joining(", ")));
-                    messager.printMessage(Diagnostic.Kind.OTHER, message);
-                }
-            }
-            return false;
-        }
-
-        private String printBinding(VariableElement binding) {
-            return binding.getAnnotationMirrors().stream().map(String::valueOf).collect(joining(" "))
-                    + (binding.getAnnotationMirrors().isEmpty() ? "" : " ")
-                    + binding.getSimpleName();
         }
     }
 }
