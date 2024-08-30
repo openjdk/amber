@@ -4482,9 +4482,9 @@ public class Attr extends JCTree.Visitor {
             ClassSymbol record = (ClassSymbol) site.tsym;
 
             if (record.getRecordComponents().size() == nestedPatternCount) {
-                List<Type> recordComponents = record.getRecordComponents()
+                List<Type> recordComponents = ((ClassSymbol) record.type.tsym).getRecordComponents()
                         .stream()
-                        .map(rc -> rc.type)
+                        .map(rc -> types.memberType(site, rc))
                         .collect(List.collector());
 
                 MethodType mt = new MethodType(List.nil(), syms.voidType, List.nil(), syms.methodClass);

@@ -35,6 +35,8 @@ public class ClassPatternDeclarations {
         assertEquals("A",    test1B(new Person1("A", "B", false)));
         assertEquals("Duke", test2(new Person1("Duke", "Java", false)));
         assertEquals("DUKE", test2(new Person1("Duke", "Java", true)));
+        assertEquals("A:B",  testInSwitch1(new Person1("A", "B", false)));
+        assertEquals("A:B",  testInSwitch2(new Person2("A", "B")));
     }
 
     private static String test1A(Object o) {
@@ -56,6 +58,18 @@ public class ClassPatternDeclarations {
             return name;
         }
         return null;
+    }
+
+    private static String testInSwitch1(Person1 o) {
+        return switch (o){
+            case Person1(String name, String username) -> name + ":" + username;
+        };
+    }
+
+    private static String testInSwitch2(Person2 o) {
+        return switch (o){
+            case Person2(String name, String username) -> name + ":" + username;
+        };
     }
 
     public static record Person1(String name, String username, boolean capitalize) {
@@ -83,6 +97,8 @@ public class ClassPatternDeclarations {
             match Person1(new int[]{1, 2, 3});
         }
     }
+
+    public static record Person2(String name, String username){ }
 
     private static <T> void assertEquals(T expected, T actual) {
         if (!Objects.equals(expected, actual)) {

@@ -3573,9 +3573,7 @@ public class Flow {
             Type[] componentTypes;
 
             if (!record.type.isErroneous()) {
-                componentTypes = ((ClassSymbol) record.type.tsym).getRecordComponents()
-                        .map(r -> types.memberType(record.type, r))
-                        .toArray(s -> new Type[s]);
+                componentTypes = ((JCRecordPattern) pattern).patternDeclaration.type.asMethodType().bindingtypes.toArray(Type[]::new);
             }
             else {
                 componentTypes = record.nested.map(t -> types.createErrorType(t.type)).toArray(s -> new Type[s]);;
