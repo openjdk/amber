@@ -131,4 +131,9 @@ class ReflectAccess implements jdk.internal.access.JavaLangReflectAccess {
     {
         return ctor.newInstanceWithCaller(args, true, caller);
     }
+
+    @Override
+    public String getMangledName(Deconstructor<?> d) {
+        return d.getMangledName();
+    }
 }

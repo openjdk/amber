@@ -423,7 +423,7 @@ public final class Deconstructor<T> extends Executable {
     public Object[] invoke(Object matchCandidate)
         throws IllegalAccessException, MatchException
     {
-        String underlyingName = mangle(this.getDeclaringClass(), Arrays.stream(getPatternBindings()).map(pb -> pb.getType()).toArray(Class[]::new));
+        String underlyingName = getMangledName();
 
         try {
             Method method = this.getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
@@ -471,5 +471,9 @@ public final class Deconstructor<T> extends Executable {
     @Override
     public AnnotatedType getAnnotatedReturnType() {
         return null;
+    }
+
+    String getMangledName() {
+        return mangle(this.getDeclaringClass(), Arrays.stream(getPatternBindings()).map(pb -> pb.getType()).toArray(Class[]::new));
     }
 }
