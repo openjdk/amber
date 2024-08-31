@@ -4344,7 +4344,7 @@ public class Attr extends JCTree.Visitor {
             List<MethodSymbol> patternDeclarations = getPatternDeclarationCandidates(site, nestedPatternCount);
 
             if (patternDeclarations.size() >= 1) {
-                MethodSymbol patternDeclaration = null;
+                MethodSymbol resolvedPatternDeclaration = null;
 
                 if (patternDeclarations.size() > 1) {
                     // precalculate types of pattern components (as in method invocation)
@@ -4355,14 +4355,14 @@ public class Attr extends JCTree.Visitor {
                     }
                     List<Type> patternTypes = patternTypesBuffer.toList();
 
-                    patternDeclaration = selectBestPatternDeclarationInScope(tree, site, patternDeclarations, patternTypes);
+                    resolvedPatternDeclaration = selectBestPatternDeclarationInScope(tree, site, patternDeclarations, patternTypes);
                 } else {
-                    patternDeclaration = patternDeclarations.getFirst();
+                    resolvedPatternDeclaration = patternDeclarations.getFirst();
                 }
 
-                if (patternDeclaration != null) {
-                    expectedRecordTypes = types.memberType(site, patternDeclaration).getBindingTypes();
-                    tree.patternDeclaration = patternDeclaration;
+                if (resolvedPatternDeclaration != null) {
+                    expectedRecordTypes = types.memberType(site, resolvedPatternDeclaration).getBindingTypes();
+                    tree.patternDeclaration = resolvedPatternDeclaration;
                 }
             }
         }
