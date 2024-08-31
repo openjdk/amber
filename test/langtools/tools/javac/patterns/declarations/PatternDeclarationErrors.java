@@ -57,4 +57,14 @@ public class PatternDeclarationErrors {
     public record R(int i) {
         public pattern R(int i) { match R(42); }
     }
+
+    public class R1 {
+        public pattern R1(int i) { match R1(42); }
+        public pattern R1(int i) { match R1(42); }
+    }
+
+    public class R2 {
+        pattern R2(int i) { match R2(42); }
+        pattern R2(int i) { match R2(42); }
+    }
 }

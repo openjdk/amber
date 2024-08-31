@@ -1,3 +1,5 @@
+PatternDeclarationErrors.java:63:24: compiler.err.already.defined: kindname.pattern.declaration, R1(), kindname.class, PatternDeclarationErrors.R1
+PatternDeclarationErrors.java:68:17: compiler.err.already.defined: kindname.pattern.declaration, R2(), kindname.class, PatternDeclarationErrors.R2
 PatternDeclarationErrors.java:12:13: compiler.err.match.not.matching.pattern.declaration.signature
 PatternDeclarationErrors.java:16:13: compiler.err.match.pattern.name.wrong
 PatternDeclarationErrors.java:20:28: compiler.err.prob.found.req: (compiler.misc.inconvertible.types: java.lang.String, java.lang.Double)
@@ -12,4 +14,4 @@ PatternDeclarationErrors.java:58:24: compiler.err.invalid.canonical.deconstructo
 PatternDeclarationErrors.java:29:13: compiler.err.unreachable.stmt
 - compiler.note.preview.filename: PatternDeclarationErrors.java, DEFAULT
 - compiler.note.preview.recompile
-12 errors
+14 errors
