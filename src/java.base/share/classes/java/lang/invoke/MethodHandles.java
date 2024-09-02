@@ -44,10 +44,12 @@ import java.lang.constant.ConstantDescs;
 import java.lang.invoke.LambdaForm.BasicType;
 import java.lang.invoke.MethodHandleImpl.Intrinsic;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Deconstructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.PatternBinding;
 import java.nio.ByteOrder;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -68,7 +70,7 @@ import static java.lang.invoke.MethodHandleStatics.UNSAFE;
 import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
 import static java.lang.invoke.MethodHandleStatics.newInternalError;
 import static java.lang.invoke.MethodType.methodType;
-import java.lang.reflect.Deconstructor;
+
 import java.lang.runtime.Carriers;
 
 /**
@@ -3518,19 +3520,40 @@ return mh1;
          * @throws NullPointerException if the argument is null
          */
         public MethodHandle unreflectDeconstructor(Deconstructor<?> d) throws IllegalAccessException {
+            Class<?> ownerType = d.getDeclaringClass(); // Implicit null-check of d
+            final MethodHandle deconstructorPhysicalHandle;
             try {
-                String mangled = SharedSecrets.getJavaLangReflectAccess().getMangledName(d);
-                Method deconstructorMethod = d.getDeclaringClass().getDeclaredMethod(mangled, d.getDeclaringClass());
-                MethodHandle deconstructorPhysicalHandle = unreflect(deconstructorMethod);
-                List<Class<?>> methodTypeTypes = new ArrayList<>();
-                methodTypeTypes.add(Object.class);
-                MethodType bindingMethodType = MethodType.methodType(Object.class, Arrays.stream(d.getPatternBindings())
-                                                                                         .map(b -> b.getType())
-                                                                                         .toArray(Class[]::new));
-                return MethodHandles.filterReturnValue(deconstructorPhysicalHandle, MethodHandles.insertArguments(CARRIER_TO_ARRAY, 1, Carriers.components(bindingMethodType)));
+                deconstructorPhysicalHandle = unreflect(
+                        ownerType.getDeclaredMethod(
+                                SharedSecrets.getJavaLangReflectAccess().getMangledName(d),
+                                ownerType
+                        )
+                );
             } catch (NoSuchMethodException | SecurityException ex) {
                 throw new InternalError(ex);
             }
+
+            MethodType bindingType = MethodType.methodType(Object.class,
+                    Arrays.stream(d.getPatternBindings()).map(PatternBinding::getType).toArray(Class<?>[]::new)
+            );
+
+            MethodType boxingType = MethodType.methodType(Object.class, Object.class);
+
+            return filterReturnValue(
+                    deconstructorPhysicalHandle,
+                    permuteArguments(
+                            filterArguments(
+                                    identity(Object.class).asCollector(Object[].class, bindingType.parameterCount()),
+                                    0,
+                                    Carriers.components(bindingType)
+                                            .stream()
+                                            .map(c -> c.asType(boxingType))
+                                            .toArray(MethodHandle[]::new)
+                            ),
+                            boxingType,
+                            new int[bindingType.parameterCount()]
+                    )
+            ).asType(MethodType.methodType(Object[].class, ownerType)); // required for invokeExact
         }
 
         private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();

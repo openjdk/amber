@@ -37,14 +37,14 @@ public class UnreflectPattern {
 
     public static void main(String... args) throws Throwable {
         Object[] expected = new Object[] {"correct", -1};
-        Object instance = new UnreflectPattern();
+        UnreflectPattern instance = new UnreflectPattern();
         Deconstructor<?> deconstructor = UnreflectPattern.class.getDeclaredDeconstructor(String.class, int.class);
         Object[] result1 = deconstructor.invoke(instance);
         if (!Arrays.equals(expected, result1)) {
             throw new AssertionError("Unexpected result: " + Arrays.toString(result1));
         }
         MethodHandle deconstructorHandle = MethodHandles.lookup().unreflectDeconstructor(deconstructor);
-        Object[] result2 = (Object[]) deconstructorHandle.invoke(instance);
+        Object[] result2 = (Object[]) deconstructorHandle.invokeExact(instance);
         if (!Arrays.equals(expected, result2)) {
             throw new AssertionError("Unexpected result: " + Arrays.toString(result2));
         }
