@@ -30,7 +30,9 @@
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Deconstructor;
+import java.lang.runtime.Carriers;
 import java.util.Arrays;
 
 public class UnreflectPattern {
@@ -43,7 +45,15 @@ public class UnreflectPattern {
         if (!Arrays.equals(expected, result1)) {
             throw new AssertionError("Unexpected result: " + Arrays.toString(result1));
         }
-        MethodHandle deconstructorHandle = MethodHandles.lookup().unreflectDeconstructor(deconstructor);
+        MethodHandle unreflected =
+                MethodHandles.lookup().unreflectDeconstructor(deconstructor);
+        if (!MethodType.methodType(Object.class, UnreflectPattern.class).equals(unreflected.type()))
+            throw new AssertionError("Unexpected type: " + unreflected.type());
+        MethodHandle deconstructorHandle =
+            MethodHandles.filterReturnValue(
+                unreflected,
+                Carriers.boxedComponentValueArray(MethodType.methodType(Object.class, String.class, Integer.TYPE))
+            );
         Object[] result2 = (Object[]) deconstructorHandle.invokeExact(instance);
         if (!Arrays.equals(expected, result2)) {
             throw new AssertionError("Unexpected result: " + Arrays.toString(result2));

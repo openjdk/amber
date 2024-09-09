@@ -962,4 +962,24 @@ public final class Carriers {
         return component;
     }
 
+    /**
+     * {@return a {@link MethodHandle MethodHandle} which accepts a carrier object
+     * matching the given {@code methodType} which when invoked will return a newly
+     * created object array containing the boxed component values of the carrier object.}
+     *
+     * @param methodType  {@link MethodType} whose parameter types supply the shape of the
+     *                    carrier's components
+     */
+    public static MethodHandle boxedComponentValueArray(MethodType methodType) {
+        var boxingType = MethodType.methodType(Object.class, Object.class);
+        return MethodHandles.permuteArguments(
+            MethodHandles.filterArguments(
+                MethodHandles.identity(Object.class).asCollector(Object[].class, methodType.parameterCount()),
+                0,
+                CarrierFactory.of(methodType).components.stream().map(c -> c.asType(boxingType)).toArray(MethodHandle[]::new)
+            ),
+            boxingType,
+            new int[methodType.parameterCount()]
+        ).asType(boxingType.changeReturnType(Object[].class));
+    }
 }

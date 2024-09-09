@@ -426,19 +426,18 @@ public final class Deconstructor<T> extends Executable {
         String underlyingName = getMangledName();
 
         try {
-            Method method = this.getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
+            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
             method.setAccessible(override);
-            Object carrier = method.invoke(matchCandidate, matchCandidate);
-
-            Class<?>[] bindingClasses = Arrays.stream(this.getPatternBindings()).map(d -> d.getType()).toArray(Class[]::new);
-            MethodType methodType = MethodType.methodType(Object.class, bindingClasses);
-
-            ArrayList<Object> ret = new ArrayList<>();
-            for (int i = 0; i < bindingClasses.length; i++) {
-                ret.add(Carriers.component(methodType, i).invoke(carrier));
-            }
-
-            return ret.stream().toArray();
+            return (Object[])Carriers.boxedComponentValueArray(
+                MethodType.methodType(
+                    Object.class,
+                    Arrays.stream(this.getPatternBindings())
+                          .map(PatternBinding::getType)
+                          .toArray(Class[]::new)
+                )
+            ).invoke(
+                method.invoke(matchCandidate, matchCandidate)
+            );
         } catch (Throwable e) {
             throw new MatchException(e.getMessage(), e);
         }

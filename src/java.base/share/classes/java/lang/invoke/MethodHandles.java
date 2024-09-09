@@ -3521,62 +3521,16 @@ return mh1;
          */
         public MethodHandle unreflectDeconstructor(Deconstructor<?> d) throws IllegalAccessException {
             Class<?> ownerType = d.getDeclaringClass(); // Implicit null-check of d
-            final MethodHandle deconstructorPhysicalHandle;
             try {
-                deconstructorPhysicalHandle = unreflect(
-                        ownerType.getDeclaredMethod(
-                                SharedSecrets.getJavaLangReflectAccess().getMangledName(d),
-                                ownerType
-                        )
+                return unreflect(
+                    ownerType.getDeclaredMethod(
+                        SharedSecrets.getJavaLangReflectAccess().getMangledName(d),
+                        ownerType
+                    )
                 );
             } catch (NoSuchMethodException | SecurityException ex) {
                 throw new InternalError(ex);
             }
-
-            MethodType bindingType = MethodType.methodType(Object.class,
-                    Arrays.stream(d.getPatternBindings()).map(PatternBinding::getType).toArray(Class<?>[]::new)
-            );
-
-            MethodType boxingType = MethodType.methodType(Object.class, Object.class);
-
-            return filterReturnValue(
-                    deconstructorPhysicalHandle,
-                    permuteArguments(
-                            filterArguments(
-                                    identity(Object.class).asCollector(Object[].class, bindingType.parameterCount()),
-                                    0,
-                                    Carriers.components(bindingType)
-                                            .stream()
-                                            .map(c -> c.asType(boxingType))
-                                            .toArray(MethodHandle[]::new)
-                            ),
-                            boxingType,
-                            new int[bindingType.parameterCount()]
-                    )
-            ).asType(MethodType.methodType(Object[].class, ownerType)); // required for invokeExact
-        }
-
-        private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-        private static MethodHandle CARRIER_TO_ARRAY;
-
-        static {
-            try {
-                CARRIER_TO_ARRAY = LOOKUP.findStatic(Lookup.class, "carrier2Array",
-                                               MethodType.methodType(Object[].class, Object.class, List.class));
-            } catch (ReflectiveOperationException e) {
-                throw new ExceptionInInitializerError(e);
-            }
-        }
-
-        private static Object[] carrier2Array(Object carrier, List<MethodHandle> componentHandles) throws Throwable {
-            Object[] result = new Object[componentHandles.size()];
-            int i = 0;
-
-            for (MethodHandle componentAccessor : componentHandles) {
-                result[i++] = componentAccessor.invoke(carrier);
-            }
-
-            return result;
         }
 
         /*
