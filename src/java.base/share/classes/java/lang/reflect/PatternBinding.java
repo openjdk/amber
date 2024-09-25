@@ -44,13 +44,13 @@ import java.util.stream.Collectors;
  * A {@code PatternBinding} provides information about, and dynamic access to,
  * an initialized binding of a deconstructor.
  *
- * @see Deconstructor#getPatternBindings() ()
- * @see Deconstructor
+ * @see MemberPattern#getPatternBindings() ()
+ * @see MemberPattern
  * @since 23
  */
 public final class PatternBinding implements AnnotatedElement {
     // declaring class
-    private Deconstructor<?>                   declaringDeconstructor;
+    private MemberPattern<?> declaringDeconstructor;
     private String                             name;
     private Class<?>                           type;
     private String                             signature;
@@ -76,7 +76,7 @@ public final class PatternBinding implements AnnotatedElement {
      * @param typeAnnotations x
      *
      */
-    public PatternBinding(Deconstructor<?> declaringDeconstructor,
+    public PatternBinding(MemberPattern<?> declaringDeconstructor,
                           String name,
                           Class<?> type,
                           String signature,
@@ -252,7 +252,7 @@ public final class PatternBinding implements AnnotatedElement {
      *
      * @return The deconstructor declaring this pattern binding.
      */
-    public Deconstructor<?> getDeclaringDeconstructor() {
+    public MemberPattern<?> getDeclaringDeconstructor() {
         return declaringDeconstructor;
     }
 }

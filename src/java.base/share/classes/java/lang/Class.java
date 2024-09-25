@@ -47,26 +47,27 @@ import java.lang.ref.SoftReference;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectStreamField;
+import java.lang.reflect.AccessFlag;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.AnnotatedType;
-import java.lang.reflect.AccessFlag;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Deconstructor;
-import java.lang.reflect.PatternBinding;
 import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
+import java.lang.constant.Constable;
+import java.lang.reflect.MemberPattern;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.PatternBinding;
 import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
-import java.lang.constant.Constable;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
@@ -88,7 +89,6 @@ import java.util.stream.Collectors;
 import jdk.internal.access.SharedSecrets;
 import jdk.internal.classfile.impl.BoundAttribute;
 import jdk.internal.constant.ConstantUtils;
-import jdk.internal.javac.PreviewFeature;
 import jdk.internal.loader.BootLoader;
 import jdk.internal.loader.BuiltinClassLoader;
 import jdk.internal.misc.Unsafe;
@@ -113,7 +113,6 @@ import sun.security.util.SecurityConstants;
 import sun.reflect.annotation.*;
 import sun.reflect.misc.ReflectUtil;
 
-import static java.lang.ClassLoader.getPlatformClassLoader;
 import static java.lang.constant.ConstantDescs.CD_void;
 
 /**
@@ -2343,7 +2342,7 @@ public final class Class<T> implements java.io.Serializable,
      * @see #getDeclaredDeconstructors()
      * @since 23
      */
-    public Deconstructor<?> [] getDeconstructors() throws SecurityException {
+    public Deconstructor<?>[] getDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.PUBLIC);
     }
 

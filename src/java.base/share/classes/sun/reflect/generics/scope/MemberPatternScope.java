@@ -25,18 +25,16 @@
 
 package sun.reflect.generics.scope;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Deconstructor;
-
+import java.lang.reflect.MemberPattern;
 
 /**
  * This class represents the scope containing the type variables of
- * a deconstructor.
+ * a member pattern.
  */
-public class DeconstructorScope extends AbstractScope<Deconstructor<?>> {
+public class MemberPatternScope extends AbstractScope<MemberPattern<?>> {
 
     // constructor is private to enforce use of factory method
-    private DeconstructorScope(Deconstructor<?> c){
+    private MemberPatternScope(MemberPattern<?> c){
         super(c);
     }
 
@@ -51,18 +49,18 @@ public class DeconstructorScope extends AbstractScope<Deconstructor<?>> {
      * @return the enclosing scope
      */
     protected Scope computeEnclosingScope() {
-        // the enclosing scope of a (generic) constructor is the scope of the
+        // the enclosing scope of a (generic) member pattern is the scope of the
         // class in which it was declared.
         return ClassScope.make(getEnclosingClass());
     }
 
     /**
-     * Factory method. Takes a {@code Constructor} object and creates a
+     * Factory method. Takes a {@code MemberPattern} object and creates a
      * scope for it.
-     * @param c - A Constructor whose scope we want to obtain
+     * @param c - A member pattern whose scope we want to obtain
      * @return The type-variable scope for the constructor m
      */
-    public static DeconstructorScope make(Deconstructor<?> c) {
-        return new DeconstructorScope(c);
+    public static MemberPatternScope make(MemberPattern<?> c) {
+        return new MemberPatternScope(c);
     }
 }

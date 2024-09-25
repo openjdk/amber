@@ -43,13 +43,7 @@ import java.lang.classfile.ClassModel;
 import java.lang.constant.ConstantDescs;
 import java.lang.invoke.LambdaForm.BasicType;
 import java.lang.invoke.MethodHandleImpl.Intrinsic;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Deconstructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.PatternBinding;
+import java.lang.reflect.*;
 import java.nio.ByteOrder;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -70,8 +64,6 @@ import static java.lang.invoke.MethodHandleStatics.UNSAFE;
 import static java.lang.invoke.MethodHandleStatics.newIllegalArgumentException;
 import static java.lang.invoke.MethodHandleStatics.newInternalError;
 import static java.lang.invoke.MethodType.methodType;
-
-import java.lang.runtime.Carriers;
 
 /**
  * This class consists exclusively of static methods that operate on or return

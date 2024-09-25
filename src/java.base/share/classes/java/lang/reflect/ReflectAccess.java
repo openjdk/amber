@@ -28,6 +28,8 @@ package java.lang.reflect;
 import jdk.internal.reflect.MethodAccessor;
 import jdk.internal.reflect.ConstructorAccessor;
 
+import java.util.ArrayList;
+
 /** Package-private class implementing the
     jdk.internal.access.JavaLangReflectAccess interface, allowing the java.lang
     package to instantiate objects in this package. */
@@ -50,6 +52,23 @@ class ReflectAccess implements jdk.internal.access.JavaLangReflectAccess {
                                   signature,
                                   annotations,
                                   parameterAnnotations);
+    }
+
+    public <T> Deconstructor<T> newDeconstructor(Class<T> declaringClass,
+                                                 int modifiers,
+                                                 int patternFlags,
+                                                 int slot,
+                                                 ArrayList<PatternBinding> patternBindings,
+                                                 String signature,
+                                                 byte[] annotations)
+    {
+        return new Deconstructor<>(declaringClass,
+                modifiers,
+                patternFlags,
+                slot,
+                patternBindings,
+                signature,
+                annotations);
     }
 
     public MethodAccessor getMethodAccessor(Method m) {
@@ -100,7 +119,7 @@ class ReflectAccess implements jdk.internal.access.JavaLangReflectAccess {
 
     //
     // Copying routines, needed to quickly fabricate new Field,
-    // Method, and Constructor objects from templates
+    // Method, Constructor and Deconstructor objects from templates
     //
     public Method      copyMethod(Method arg) {
         return arg.copy();
@@ -114,6 +133,10 @@ class ReflectAccess implements jdk.internal.access.JavaLangReflectAccess {
     }
 
     public <T> Constructor<T> copyConstructor(Constructor<T> arg) {
+        return arg.copy();
+    }
+
+    public <T> Deconstructor<T> copyDeconstructor(Deconstructor<T> arg) {
         return arg.copy();
     }
 
@@ -133,7 +156,7 @@ class ReflectAccess implements jdk.internal.access.JavaLangReflectAccess {
     }
 
     @Override
-    public String getMangledName(Deconstructor<?> d) {
+    public String getMangledName(MemberPattern<?> d) {
         return d.getMangledName();
     }
 }
