@@ -1078,6 +1078,12 @@ public class TransTypes extends TreeTranslator {
         result = tree;
     }
 
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        tree.expr = translate(tree.expr, null);
+        tree.pattern = translate(tree.pattern, null);
+        result = tree;
+    }
+
     public void visitIndexed(JCArrayAccess tree) {
         tree.indexed = translate(tree.indexed, erasure(tree.indexed.type));
         tree.index = translate(tree.index, syms.intType);

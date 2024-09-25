@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import javax.lang.model.SourceVersion;
 
 import com.sun.source.tree.CaseTree;
+import com.sun.source.tree.InstanceOfStatementTree;
 import com.sun.source.tree.MemberReferenceTree.ReferenceMode;
 import com.sun.source.tree.ModuleTree.ModuleKind;
 
@@ -3016,11 +3017,17 @@ public class JavacParser implements Parser {
                 F.at(pos);
                 return localVariableDeclarations(mods, t, dc);
             } else {
-                // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
-                t = checkExprStat(t);
-                accept(SEMI);
-                JCExpressionStatement expr = toP(F.at(pos).Exec(t));
-                return List.of(expr);
+                if (t.getTag() == TYPETEST && allowPatternDeclarations) {
+                    t = term2Rest(t, TreeInfo.orPrec);
+                    accept(SEMI);
+                    return List.of(toP(F.at(pos).TypeTestStatement(((JCInstanceOf) t).expr, ((JCInstanceOf)t ).getPattern())));
+                } else {
+                    // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
+                    t = checkExprStat(t);
+                    accept(SEMI);
+                    JCExpressionStatement expr = toP(F.at(pos).Exec(t));
+                    return List.of(expr);
+                }
             }
         }
     }

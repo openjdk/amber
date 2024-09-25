@@ -498,6 +498,13 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCInstanceOfStatement TypeTestStatement(JCExpression expr, JCPattern pattern) {
+        JCInstanceOfStatement tree = new JCInstanceOfStatement(expr, pattern);
+        tree.pos = pos;
+        return tree;
+    }
+
+
     public JCAnyPattern AnyPattern() {
         JCAnyPattern tree = new JCAnyPattern();
         tree.pos = pos;

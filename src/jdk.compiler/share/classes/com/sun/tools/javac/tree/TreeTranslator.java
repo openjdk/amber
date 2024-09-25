@@ -371,6 +371,12 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        tree.pattern = translate(tree.pattern);
+        tree.expr = translate(tree.expr);
+        result = tree;
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         tree.var = translate(tree.var);
         result = tree;

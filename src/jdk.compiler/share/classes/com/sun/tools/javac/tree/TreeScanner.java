@@ -315,6 +315,11 @@ public class TreeScanner extends Visitor {
         scan(tree.pattern);
     }
 
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        scan(tree.expr);
+        scan(tree.pattern);
+    }
+
     public void visitBindingPattern(JCBindingPattern tree) {
         scan(tree.var);
     }

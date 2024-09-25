@@ -56,6 +56,8 @@ import com.sun.tools.javac.tree.JCTree.JCForLoop;
 import com.sun.tools.javac.tree.JCTree.JCIdent;
 import com.sun.tools.javac.tree.JCTree.JCIf;
 import com.sun.tools.javac.tree.JCTree.JCInstanceOf;
+import com.sun.tools.javac.tree.JCTree.JCInstanceOfStatement;
+import com.sun.tools.javac.tree.JCTree.JCThrow;
 import com.sun.tools.javac.tree.JCTree.JCMethodDecl;
 import com.sun.tools.javac.tree.JCTree.JCSwitch;
 import com.sun.tools.javac.tree.JCTree.JCMatch;
@@ -265,6 +267,44 @@ public class TransPatterns extends TreeTranslator {
             super.visitTypeTest(tree);
         }
     }
+
+    @Override
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        /**
+         * A statement of the form
+         *
+         * <pre>
+         *     <expression> instanceof <pattern>;
+         * </pre>
+         *
+         * (where <pattern> is any pattern) is translated to:
+         *
+         * <pre>{@code
+         *     if (!(<expression> instanceof(<pattern>)) {
+         *         throw new MatchException(null, null);
+         *     }
+         * }</pre>
+         *
+         */
+        bindingContext = new BasicBindingContext();
+        try {
+            List<JCExpression> matchExParams = List.of(makeNull(), makeNull());
+            JCThrow thr = make.Throw(makeNewClass(syms.matchExceptionType, matchExParams));
+
+            JCExpression expr = translate(tree.expr);
+
+            JCInstanceOf instanceOfTree = make.TypeTest(expr, tree.pattern);
+            tree.type = syms.booleanType;
+
+            JCIf ifNode = make.If(makeUnary(Tag.NOT,
+                    translate(instanceOfTree)).setType(syms.booleanType), thr, null);
+
+            result = bindingContext.decorateStatement(ifNode);
+        } finally {
+            bindingContext.pop();
+        }
+    }
+
 
     @Override
     public void visitAnyPattern(JCTree.JCAnyPattern that) {

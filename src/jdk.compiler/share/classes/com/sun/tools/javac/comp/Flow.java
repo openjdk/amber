@@ -696,6 +696,34 @@ public class Flow {
             recordExit(new PendingExit(tree));
         }
 
+        public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+            ListBuffer<PendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+
+            if (tree.pattern instanceof JCRecordPattern rp) {
+                visitRecordPattern(rp);
+            }
+
+            List<JCCase> singletonCaseList = List.of(make.Case(
+                    CaseTree.CaseKind.STATEMENT,
+                    List.of(make.PatternCaseLabel(tree.pattern)),
+                    null,
+                    List.nil(),
+                    null)
+            );
+
+            boolean isExhaustive =
+                    exhausts(tree.expr, singletonCaseList);
+
+            if (!isExhaustive) {
+                log.error(tree, Errors.NotExhaustiveStatement); // TODO replace with instanceof-related error since this refers to switch
+            }
+
+            scan(tree.expr);
+
+            alive = alive.or(resolveBreaks(tree, prevPendingExits));
+        }
+
         public void visitForeachLoop(JCEnhancedForLoop tree) {
             visitVarDef(tree.var);
             ListBuffer<PendingExit> prevPendingExits = pendingExits;

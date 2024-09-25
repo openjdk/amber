@@ -2439,6 +2439,19 @@ public class Attr extends JCTree.Visitor {
         result = null;
     }
 
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        attribExpr(tree.expr, env);
+        attribExpr(tree.pattern, env);
+
+        matchBindings.bindingsWhenTrue.forEach(env.info.scope::enter);
+        matchBindings.bindingsWhenTrue.forEach(BindingSymbol::preserveBinding);
+
+        Type clazztype = tree.pattern.type;
+        checkCastablePattern(tree.expr.pos(), tree.expr.type, clazztype);
+
+        result = null;
+    }
+
     public void visitContinue(JCContinue tree) {
         tree.target = findJumpTarget(tree.pos(), tree.getTag(), tree.label, env);
         result = null;

@@ -1420,6 +1420,23 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        try {
+            open(prec, TreeInfo.ordPrec);
+            printExpr(tree.expr, TreeInfo.ordPrec);
+            print(" instanceof ");
+            if (tree.pattern instanceof JCPattern) {
+                printPattern(tree.pattern);
+            } else {
+                printExpr(tree.getType(), TreeInfo.ordPrec + 1);
+            }
+            close(prec, TreeInfo.ordPrec);
+            print(';');
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void visitIndexed(JCArrayAccess tree) {
         try {
             printExpr(tree.indexed, TreeInfo.postfixPrec);
