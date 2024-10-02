@@ -234,6 +234,9 @@ public class Names {
     public final Name enumSwitch;
     public final Name enumConstant;
 
+    // pattern invocation
+    public final Name invokePattern;
+
     public final Name.Table table;
 
     @SuppressWarnings("this-escape")
@@ -424,6 +427,9 @@ public class Names {
         typeSwitch = fromString("typeSwitch");
         enumSwitch = fromString("enumSwitch");
         enumConstant = fromString("enumConstant");
+
+        // pattern invocation
+        invokePattern = fromString("invokePattern");
     }
 
     protected Name.Table createTable(Options options) {

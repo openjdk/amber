@@ -35,6 +35,7 @@ import com.sun.tools.javac.code.Kinds.Kind;
 import static com.sun.tools.javac.code.TypeTag.*;
 
 import com.sun.tools.javac.code.Preview;
+import com.sun.tools.javac.code.Source;
 import com.sun.tools.javac.code.Symbol;
 import com.sun.tools.javac.code.Symbol.BindingSymbol;
 import com.sun.tools.javac.code.Symbol.ClassSymbol;
@@ -201,7 +202,13 @@ public class TransPatterns extends TreeTranslator {
         names = Names.instance(context);
         target = Target.instance(context);
         preview = Preview.instance(context);
+
+        Source source = Source.instance(context);
+        allowPatternDeclarations = (preview.isEnabled() || !preview.isPreview(Source.Feature.PATTERN_DECLARATIONS)) &&
+                Source.Feature.PATTERN_DECLARATIONS.allowedInSource(source);
     }
+
+    private final boolean allowPatternDeclarations;
 
     @Override
     public void visitTypeTest(JCInstanceOf tree) {
@@ -379,17 +386,15 @@ public class TransPatterns extends TreeTranslator {
         //  - the synthetic, implicitly declared one if it is a record and overload resolves to that
         Assert.check(recordPattern.patternDeclaration != null);
 
-        if ((recordPattern.patternDeclaration.flags() & Flags.PATTERN) != 0 || (recordPattern.patternDeclaration.flags() & Flags.SYNTHETIC) == 0) {
+        if (allowPatternDeclarations) {
             mSymbol = new BindingSymbol(Flags.SYNTHETIC,
                     names.fromString(target.syntheticNameChar() + "m" + target.syntheticNameChar() + variableIndex++), syms.objectType,
                     currentMethodSym);
             JCVariableDecl mVar = make.VarDef(mSymbol, null);
-            JCExpression nullCheck = make.TypeTest(
-                    make.App(make.Select(make.Ident(recordPattern.patternDeclaration.owner), recordPattern.patternDeclaration),
-                                     List.of(make.Ident(tempBind))).setType(syms.objectType),
-                    make.BindingPattern(mVar).setType(mSymbol.type)).setType(syms.booleanType);
 
-            firstLevelChecks = nullCheck;
+            firstLevelChecks = make.TypeTest(
+                    generatePatternCall(recordPattern, tempBind),
+                    make.BindingPattern(mVar).setType(mSymbol.type)).setType(syms.booleanType);
 
             // Resolve Carriers.component(methodType, index) for subsequent constant dynamic call results
             carriersComponentCallSym =
@@ -408,13 +413,12 @@ public class TransPatterns extends TreeTranslator {
             Type componentType = types.erasure(nestedFullComponentTypes.head);
             JCExpression accessedComponentValue;
             index++;
-            if ((recordPattern.patternDeclaration.flags() & Flags.SYNTHETIC) == 0 || (recordPattern.patternDeclaration.flags() & Flags.PATTERN) != 0) {
+            if (allowPatternDeclarations) {
                 /*
                  *  Generate invoke call for component X
                  *       component$X.invoke(carrier);
                  * */
-                List<Type> params = recordPattern.patternDeclaration.bindings
-                        .map(v -> types.erasure(v.type));
+                List<Type> params = recordPattern.patternDeclaration.type.getBindingTypes();
 
                 MethodType methodType = new MethodType(params, syms.objectType, List.nil(), syms.methodClass);
 
@@ -505,6 +509,43 @@ public class TransPatterns extends TreeTranslator {
         }
 
         return new UnrolledRecordPattern((JCBindingPattern) make.BindingPattern(recordBindingVar).setType(recordBinding.type), guard);
+    }
+
+    private JCMethodInvocation generatePatternCall(JCRecordPattern recordPattern, BindingSymbol tempBind) {
+        List<Type> staticArgTypes = List.of(syms.methodHandleLookupType,
+                syms.stringType,
+                syms.methodTypeType,
+                syms.stringType);
+
+        MethodSymbol bsm = rs.resolveInternalMethod(
+                recordPattern.pos(), env, syms.patternBootstrapsType,
+                names.invokePattern, staticArgTypes, List.nil());
+
+        MethodType indyType = new MethodType(
+                List.of(recordPattern.type),
+                syms.objectType,
+                List.nil(),
+                syms.methodClass
+        );
+
+        String mangledName = ((MethodSymbol)(recordPattern.patternDeclaration.baseSymbol())).externalName(types).toString();
+        LoadableConstant[] staticArgValues = new LoadableConstant[] {
+                LoadableConstant.String(mangledName)
+        };
+
+        DynamicMethodSymbol dynSym = new DynamicMethodSymbol(names.invokePattern,
+                syms.noSymbol,
+                bsm.asHandle(),
+                indyType,
+                staticArgValues);
+
+        JCFieldAccess qualifier = make.Select(make.QualIdent(bsm.owner), dynSym.name);
+        qualifier.sym = dynSym;
+        qualifier.type = syms.objectType;
+        return make.Apply(List.nil(),
+                        qualifier,
+                        List.of(make.Ident(tempBind)))
+                .setType(syms.objectType);
     }
 
     record UnrolledRecordPattern(JCBindingPattern primaryPattern, JCExpression newGuard) {}
