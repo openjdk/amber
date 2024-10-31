@@ -278,8 +278,8 @@ public class TreeScanner extends Visitor {
     }
 
     public void visitLambda(JCLambda tree) {
-        scan(tree.body);
         scan(tree.params);
+        scan(tree.body);
     }
 
     public void visitParens(JCParens tree) {

@@ -2088,9 +2088,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         private Name mangledBytecodePatternName(Types types) {
             List<String> parts = bindings().map(param -> {
-                var g = new UnSharedSignatureGenerator(types, name.table.names);
+                var g = new UnSharedSignatureGenerator(types);
                 g.assembleSig(param.erasure(types));
-                String mangled = name.table.names.fromString(BytecodeName.toBytecodeName(g.toName().toString())).toString();
+                String mangled = name.table.names.fromString(BytecodeName.toBytecodeName(g.toName(name.table.names).toString())).toString();
                 mangled = mangled.toString().replaceFirst("\\\\=", "");
                 return mangled;
             });
@@ -2106,11 +2106,9 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
              * An output buffer for type signatures.
              */
             ByteBuffer sigbuf = new ByteBuffer();
-            private final Names names;
 
-            UnSharedSignatureGenerator(Types types, Names names) {
-                super(types);
-                this.names = names;
+            UnSharedSignatureGenerator(Types types) {
+                types.super();
             }
 
             @Override
@@ -2128,11 +2126,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 sigbuf.appendName(name);
             }
 
-            protected void reset() {
-                sigbuf.reset();
-            }
-
-            protected Name toName() {
+            protected Name toName(Names names) {
                 try {
                     return sigbuf.toName(names);
                 } catch (InvalidUtfException e) {
