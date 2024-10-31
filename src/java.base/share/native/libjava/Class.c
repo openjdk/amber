@@ -66,7 +66,6 @@ static JNINativeMethod methods[] = {
     {"getModifiers",     "()I",                     (void *)&JVM_GetClassModifiers},
     {"getDeclaredFields0","(Z)[" FLD,               (void *)&JVM_GetClassDeclaredFields},
     {"getDeclaredMethods0","(Z)[" MHD,              (void *)&JVM_GetClassDeclaredMethods},
-    {"getDeclaredDeconstructors0","(Z)[" MHD,       (void *)&JVM_GetClassDeclaredDeconstructors},
     {"getDeclaredConstructors0","(Z)[" CTR,         (void *)&JVM_GetClassDeclaredConstructors},
     {"getProtectionDomain0", "()" PD,               (void *)&JVM_GetProtectionDomain},
     {"getDeclaredClasses0",  "()[" CLS,             (void *)&JVM_GetDeclaredClasses},
