@@ -262,6 +262,7 @@ public enum Source {
         PRIMITIVE_PATTERNS(JDK23, Fragments.FeaturePrimitivePatterns, DiagKind.PLURAL),
         FLEXIBLE_CONSTRUCTORS(JDK22, Fragments.FeatureFlexibleConstructors, DiagKind.NORMAL),
         MODULE_IMPORTS(JDK23, Fragments.FeatureModuleImports, DiagKind.PLURAL),
+        PRIVATE_MEMBERS_IN_PERMITS_CLAUSE(JDK19),
         PATTERN_DECLARATIONS(JDK24, Fragments.FeaturePatternDeclarations, DiagKind.PLURAL),
         ;
 
