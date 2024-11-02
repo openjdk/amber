@@ -26,7 +26,6 @@
 package java.lang.runtime;
 
 import jdk.internal.constant.ConstantUtils;
-import jdk.internal.constant.ReferenceClassDescImpl;
 import jdk.internal.misc.PreviewFeatures;
 
 import java.lang.Enum.EnumDesc;
