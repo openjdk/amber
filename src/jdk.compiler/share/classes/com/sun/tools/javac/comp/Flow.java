@@ -617,8 +617,11 @@ public class Flow {
                 scanStat(tree.body);
                 tree.completesNormally = alive != Liveness.DEAD;
 
-                if (alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID))
+                if (alive == Liveness.ALIVE && (tree.sym.flags() & PATTERN) != 0) {
+                    log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingMatchStmt);
+                } else if (alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID)) {
                     log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingRetStmt);
+                }
 
                 clearPendingExits(true);
             } finally {

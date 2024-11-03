@@ -1042,8 +1042,16 @@ public class Attr extends JCTree.Visitor {
             }
 
             // Attribute all bindings.
-            for (List<JCVariableDecl> l = tree.bindings; l != null && l.nonEmpty(); l = l.tail) {
-                attribStat(l.head, localEnv);
+            // the bindings have no meaning in the body of the deconstructor,
+            // so enter them in a temporary scope:
+            Env<AttrContext> bindingEnv =
+                    env.dup(tree, localEnv.info.dup(localEnv.info.scope.dup()));
+            try {
+                for (List<JCVariableDecl> l = tree.bindings; l != null && l.nonEmpty(); l = l.tail) {
+                    attribStat(l.head, bindingEnv);
+                }
+            } finally {
+                bindingEnv.info.scope.leave();
             }
 
             chk.checkVarargsMethodDecl(localEnv, tree);
@@ -2434,7 +2442,7 @@ public class Attr extends JCTree.Visitor {
             args = args.tail;
         }
 
-        if (tree.clazz != tree.meth.name) {
+        if (tree.clazz != null && tree.clazz != tree.meth.name) {
             log.error(tree.pos(), Errors.MatchPatternNameWrong);
         }
 

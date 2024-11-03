@@ -101,6 +101,8 @@ public class ExampleJSONTest {
                     && keys2.get("name") instanceof JSONString(var name2)
                     && keys2.get("id") instanceof JSONNumber(int id2)) {
                 match Service(name2, id2);
+            } else {
+                match Service("error", -1);
             }
         }
     }

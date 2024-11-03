@@ -11,7 +11,9 @@ PatternDeclarationErrors.java:49:13: compiler.err.pattern.declaration.no.throws
 PatternDeclarationErrors.java:52:24: compiler.err.pattern.declaration.cant.throw.exception
 PatternDeclarationErrors.java:53:13: compiler.err.pattern.declaration.no.throws
 PatternDeclarationErrors.java:58:24: compiler.err.invalid.canonical.deconstructor.in.record: R
+PatternDeclarationErrors.java:97:17: compiler.err.cant.assign.val.to.var: final, x
+PatternDeclarationErrors.java:98:17: compiler.err.cant.assign.val.to.var: final, y
 PatternDeclarationErrors.java:29:13: compiler.err.unreachable.stmt
 - compiler.note.preview.filename: PatternDeclarationErrors.java, DEFAULT
 - compiler.note.preview.recompile
-14 errors
+16 errors
