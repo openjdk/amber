@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2010, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,26 +21,20 @@
  * questions.
  */
 
-// key: compiler.err.no.compatible.matcher.found
+// key: compiler.err.missing.match.stmt
 // key: compiler.misc.feature.pattern.declarations
 // key: compiler.warn.preview.feature.use.plural
 // options: --enable-preview -source ${jdk.version} -Xlint:preview
 
-public class NoCompatibleMatcherFound {
-    private static int test(D o) {
-        if (o instanceof D(String data, Integer out)) {
-            return out;
-        }
-        return -1;
-    }
+import java.io.IOException;
+import java.io.StringWriter;
+import java.io.Writer;
 
-    public static class D {
-        public pattern D(Object v1, Float out) {
-            match D(new Object(), 10.0f);
-        }
-
-        public pattern D(Float out, Integer v1) {
-            match D(10.0f, 42);
+class MissingMatchStmt {
+    public pattern MissingMatchStmt(String i) {
+        boolean b = true;
+        if (b) {
+            match MissingMatchStmt("true");
         }
     }
 }

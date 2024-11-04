@@ -37,7 +37,7 @@ import javax.tools.Diagnostic;
 public class BindingProcessor extends JavacTestingAbstractProcessor {
 
     @Retention(RetentionPolicy.RUNTIME)
-    @Target({ElementType.METHOD})
+    @Target({ElementType.DECONSTRUCTOR})
     @interface Bindings {
         String[] value() default {};
     }
