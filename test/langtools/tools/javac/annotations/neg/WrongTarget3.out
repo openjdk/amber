@@ -1,0 +1,4 @@
+WrongTarget3.java:20:5: compiler.err.annotation.type.not.applicable
+- compiler.note.preview.filename: WrongTarget3.java, DEFAULT
+- compiler.note.preview.recompile
+1 error

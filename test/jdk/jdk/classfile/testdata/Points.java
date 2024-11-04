@@ -49,7 +49,7 @@ class Points {
         match Points(this.xs, this.ys);
     }
 
-    @Target(ElementType.METHOD)
+    @Target(ElementType.DECONSTRUCTOR)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface MatcherAnnot { }
 

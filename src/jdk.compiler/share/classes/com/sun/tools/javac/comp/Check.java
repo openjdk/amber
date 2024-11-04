@@ -3631,7 +3631,7 @@ public class Check {
                     applicableTargets.add(names.PATTERN_BINDING);
                 }
             } else if (target == names.METHOD) {
-                if (s.kind == MTH && !s.isConstructor())
+                if (s.kind == MTH && !s.isConstructor() && !s.isDeconstructor())
                     applicableTargets.add(names.METHOD);
             } else if (target == names.PARAMETER) {
                 if (s.kind == VAR &&

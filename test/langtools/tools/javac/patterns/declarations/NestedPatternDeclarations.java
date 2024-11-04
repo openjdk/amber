@@ -117,7 +117,7 @@ public class NestedPatternDeclarations {
         }
     }
 
-    @Target(ElementType.METHOD)
+    @Target(ElementType.DECONSTRUCTOR)
     @Retention(RetentionPolicy.RUNTIME)
     public @interface MatcherAnnotation{
         int annotField();
