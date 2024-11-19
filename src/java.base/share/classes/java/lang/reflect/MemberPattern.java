@@ -126,40 +126,6 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * <p> A {@code SecurityException} is also thrown if this object is a
-     * {@code MemberPattern} object for the class {@code Class} and {@code flag}
-     * is true. </p>
-     *
-     * @param flag {@inheritDoc}
-     *
-     * @throws InaccessibleObjectException {@inheritDoc}
-     * @throws SecurityException if the request is denied by the security manager
-     *         or this is a constructor for {@code java.lang.Class}
-     *
-     */
-    @Override
-    @CallerSensitive
-    public final void setAccessible(boolean flag) {
-        AccessibleObject.checkPermission();
-        if (flag) {
-            checkCanSetAccessible(Reflection.getCallerClass());
-        }
-        setAccessible0(flag);
-    }
-
-    @Override
-    void checkCanSetAccessible(Class<?> caller) {
-        checkCanSetAccessible(caller, clazz);
-        if (clazz == Class.class) {
-            // can we change this to InaccessibleObjectException?
-            throw new SecurityException("Cannot make a java.lang.Class"
-                                        + " constructor accessible");
-        }
-    }
-
-    /**
      * Returns the {@code Class} object representing the class that
      * declares the constructor represented by this object.
      */
