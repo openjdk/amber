@@ -675,12 +675,21 @@ public class JavacParser implements Parser {
         var pos = c.getPos();
         if (pos != null) {
             deferredLintHandler.report(lint -> {
-                if (lint.isEnabled(Lint.LintCategory.DANGLING_DOC_COMMENTS)) {
+                if (lint.isEnabled(Lint.LintCategory.DANGLING_DOC_COMMENTS) &&
+                        !shebang(c, pos)) {
                     log.warning(Lint.LintCategory.DANGLING_DOC_COMMENTS,
                             pos, Warnings.DanglingDocComment);
                 }
             });
         }
+    }
+
+    /** Returns true for a comment that acts similarly to shebang in UNIX */
+    private boolean shebang(Comment c, JCDiagnostic.DiagnosticPosition pos) {
+        var src = log.currentSource();
+        return c.getStyle() == Comment.CommentStyle.JAVADOC_LINE &&
+                c.getPos().getStartPosition() == 0 &&
+                src.getLineNumber(pos.getEndPosition(src.getEndPosTable())) == 1;
     }
 
     /**
@@ -4237,6 +4246,9 @@ public class JavacParser implements Parser {
                                     break loop;
                                 }
                                 isTransitive = true;
+                                break;
+                            } else if (token.name() == names.transitive && isTransitive) {
+                                log.error(DiagnosticFlag.SYNTAX, token.pos, Errors.RepeatedModifier);
                                 break;
                             } else {
                                 break loop;
