@@ -135,6 +135,7 @@ import com.sun.tools.classfile.Module_attribute.ProvidesEntry;
 import com.sun.tools.classfile.Module_attribute.RequiresEntry;
 import com.sun.tools.classfile.NestHost_attribute;
 import com.sun.tools.classfile.NestMembers_attribute;
+import com.sun.tools.classfile.Pattern_attribute;
 import com.sun.tools.classfile.PermittedSubclasses_attribute;
 import com.sun.tools.classfile.Record_attribute;
 import com.sun.tools.classfile.Record_attribute.ComponentInfo;
@@ -1134,6 +1135,28 @@ public class CreateSymbols {
             attributes.put(Attribute.AnnotationDefault,
                            new AnnotationDefault_attribute(attributeString, attributeValue));
         }
+        addParameterableAttributes(desc, constantPool, attributes);
+        if (desc.patternDescription != null) {
+            int attributeString =
+                    addString(constantPool, Attribute.Pattern);
+            int signatureIndex =
+                    addString(constantPool, desc.patternDescription.descriptor);
+            ConstantPool.CONSTANT_MethodType_info methodTypeInfo = new ConstantPool.CONSTANT_MethodType_info(null, signatureIndex);
+            addToCP(constantPool, methodTypeInfo);
+            Map<String, Attribute> patternAttribute = new HashMap<>();
+            addParameterableAttributes(desc.patternDescription, constantPool, patternAttribute);
+            Pattern_attribute pattern =
+                    new Pattern_attribute(attributeString,
+                                          desc.patternDescription.flags,
+                                          addString(constantPool, desc.patternDescription.name),
+                                          methodTypeInfo,
+                                          new Attributes(patternAttribute));
+            attributes.put(Attribute.Pattern,
+                           pattern);
+        }
+    }
+
+    private void addParameterableAttributes(ParameterableDescription desc, List<CPInfo> constantPool, Map<String, Attribute> attributes) {
         if (desc.classParameterAnnotations != null && !desc.classParameterAnnotations.isEmpty()) {
             int attributeString =
                     addString(constantPool, Attribute.RuntimeInvisibleParameterAnnotations);
@@ -2604,13 +2627,13 @@ public class CreateSymbols {
             case "Synthetic":
                 break;
             case "RuntimeVisibleParameterAnnotations":
-                assert feature instanceof MethodDescription;
-                ((MethodDescription) feature).runtimeParameterAnnotations =
+                assert feature instanceof ParameterableDescription;
+                ((ParameterableDescription) feature).runtimeParameterAnnotations =
                         parameterAnnotations2Description(cf.constant_pool, attr);
                 break;
             case "RuntimeInvisibleParameterAnnotations":
-                assert feature instanceof MethodDescription;
-                ((MethodDescription) feature).classParameterAnnotations =
+                assert feature instanceof ParameterableDescription;
+                ((ParameterableDescription) feature).classParameterAnnotations =
                         parameterAnnotations2Description(cf.constant_pool, attr);
                 break;
             case Attribute.Module: {
@@ -2716,15 +2739,15 @@ public class CreateSymbols {
                 break;
             }
             case Attribute.MethodParameters: {
-                assert feature instanceof MethodDescription;
+                assert feature instanceof ParameterableDescription;
                 MethodParameters_attribute params = (MethodParameters_attribute) attr;
-                MethodDescription method = (MethodDescription) feature;
+                ParameterableDescription method = (ParameterableDescription) feature;
                 method.methodParameters = new ArrayList<>();
                 for (MethodParameters_attribute.Entry e : params.method_parameter_table) {
                     String name = e.name_index == 0 ? null
                             : cf.constant_pool.getUTF8Value(e.name_index);
-                    MethodDescription.MethodParam param =
-                            new MethodDescription.MethodParam(e.flags, name);
+                    ParameterableDescription.MethodParam param =
+                            new ParameterableDescription.MethodParam(e.flags, name);
                     method.methodParameters.add(param);
                 }
                 break;
@@ -2744,6 +2767,20 @@ public class CreateSymbols {
                 assert feature instanceof ModuleHeaderDescription;
                 ModuleHeaderDescription mhd = (ModuleHeaderDescription) feature;
                 mhd.moduleMainClass = moduleMainClass.getMainClassName(cf.constant_pool);
+                break;
+            }
+            case Attribute.Pattern: {
+                assert feature instanceof MethodDescription;
+                MethodDescription method = (MethodDescription) feature;
+                Pattern_attribute pattern = (Pattern_attribute) attr;
+                PatternDescription pd = new PatternDescription();
+                pd.flags = pattern.pattern_flags;
+                pd.name = cf.constant_pool.getUTF8Value(pattern.pattern_name_index);
+                pd.descriptor = pattern.pattern_methodtype.getType();
+                for (Attribute patternAttr : pattern.attributes) {
+                    readAttribute(cf, pd, patternAttr);
+                }
+                method.patternDescription = pd;
                 break;
             }
             default:
@@ -3900,15 +3937,13 @@ public class CreateSymbols {
 
     }
 
-    static class MethodDescription extends FeatureDescription {
+    static class MethodDescription extends ParameterableDescription {
         static int METHODS_FLAGS_NORMALIZATION = ~0;
         String name;
         String descriptor;
         List<String> thrownTypes;
         Object annotationDefaultValue;
-        List<List<AnnotationDescription>> classParameterAnnotations;
-        List<List<AnnotationDescription>> runtimeParameterAnnotations;
-        List<MethodParam> methodParameters;
+        PatternDescription patternDescription;
 
         public MethodDescription() {
             flagsNormalization = METHODS_FLAGS_NORMALIZATION;
@@ -3945,6 +3980,9 @@ public class CreateSymbols {
             if (!Objects.equals(this.annotationDefaultValue, other.annotationDefaultValue)) {
                 return false;
             }
+            if (!Objects.equals(this.patternDescription, other.patternDescription)) {
+                return false;
+            }
             return true;
         }
 
@@ -3967,6 +4005,144 @@ public class CreateSymbols {
             if (annotationDefaultValue != null)
                 output.append(" annotationDefaultValue " + quote(AnnotationDescription.dumpAnnotationValue(annotationDefaultValue), false));
             writeAttributes(output);
+            output.append("\n");
+
+            if (patternDescription != null) {
+                patternDescription.write(output, baselineVersion, version);
+            }
+        }
+
+        @Override
+        public boolean read(LineBasedReader reader) throws IOException {
+            if (!"method".equals(reader.lineKey))
+                return false;
+
+            name = reader.attributes.get("name");
+            descriptor = reader.attributes.get("descriptor");
+
+            String thrownTypesValue = reader.attributes.get("thrownTypes");
+
+            if (thrownTypesValue != null) {
+                thrownTypes = deserializeList(thrownTypesValue);
+            }
+
+            String inAnnotationDefaultValue = reader.attributes.get("annotationDefaultValue");
+
+            if (inAnnotationDefaultValue != null) {
+                annotationDefaultValue = parseAnnotationValue(inAnnotationDefaultValue, new int[1]);
+            }
+
+            readAttributes(reader);
+
+            reader.moveNext();
+
+            if ("pattern-info".equals(reader.lineKey)) {
+                patternDescription = new PatternDescription();
+                patternDescription.read(reader);
+            }
+
+            return true;
+        }
+
+    }
+
+    static class PatternDescription extends ParameterableDescription {
+        String name;
+        String descriptor;
+
+        public PatternDescription() {
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = super.hashCode();
+            hash = 59 * hash + Objects.hashCode(this.name);
+            hash = 59 * hash + Objects.hashCode(this.descriptor);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (!super.equals(obj)) {
+                return false;
+            }
+            final MethodDescription other = (MethodDescription) obj;
+            if (!Objects.equals(this.name, other.name)) {
+                return false;
+            }
+            if (!Objects.equals(this.descriptor, other.descriptor)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void write(Appendable output, String baselineVersion, String version) throws IOException {
+            output.append("pattern-info");
+            output.append(" name " + quote(name, false));
+            output.append(" descriptor " + quote(descriptor, false));
+            writeAttributes(output);
+            output.append("\n");
+        }
+
+        @Override
+        public boolean read(LineBasedReader reader) throws IOException {
+            if (!"pattern-info".equals(reader.lineKey))
+                return false;
+
+            name = reader.attributes.get("name");
+            descriptor = reader.attributes.get("descriptor");
+
+            readAttributes(reader);
+
+            reader.moveNext();
+
+            return true;
+        }
+
+    }
+
+    static abstract class ParameterableDescription extends FeatureDescription {
+        List<List<AnnotationDescription>> classParameterAnnotations;
+        List<List<AnnotationDescription>> runtimeParameterAnnotations;
+        List<MethodParam> methodParameters;
+
+        public ParameterableDescription() {
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = super.hashCode();
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (!super.equals(obj)) {
+                return false;
+            }
+            final MethodDescription other = (MethodDescription) obj;
+            if (!Objects.equals(this.classParameterAnnotations, other.classParameterAnnotations)) {
+                return false;
+            }
+            if (!Objects.equals(this.runtimeParameterAnnotations, other.runtimeParameterAnnotations)) {
+                return false;
+            }
+            if (!Objects.equals(this.methodParameters, other.methodParameters)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void writeAttributes(Appendable output) throws IOException {
+            super.writeAttributes(output);
             if (classParameterAnnotations != null && !classParameterAnnotations.isEmpty()) {
                 output.append(" classParameterAnnotations ");
                 for (List<AnnotationDescription> pa : classParameterAnnotations) {
@@ -3994,31 +4170,11 @@ public class CreateSymbols {
                                          .collect(Collectors.toList());
                 output.append(" methodParameters " + serializeList(paramsAsStrings));
             }
-            output.append("\n");
         }
 
         @Override
-        public boolean read(LineBasedReader reader) throws IOException {
-            if (!"method".equals(reader.lineKey))
-                return false;
-
-            name = reader.attributes.get("name");
-            descriptor = reader.attributes.get("descriptor");
-
-            String thrownTypesValue = reader.attributes.get("thrownTypes");
-
-            if (thrownTypesValue != null) {
-                thrownTypes = deserializeList(thrownTypesValue);
-            }
-
-            String inAnnotationDefaultValue = reader.attributes.get("annotationDefaultValue");
-
-            if (inAnnotationDefaultValue != null) {
-                annotationDefaultValue = parseAnnotationValue(inAnnotationDefaultValue, new int[1]);
-            }
-
-            readAttributes(reader);
-
+        protected void readAttributes(LineBasedReader reader) {
+            super.readAttributes(reader);
             String inClassParamAnnotations = reader.attributes.get("classParameterAnnotations");
             if (inClassParamAnnotations != null) {
                 List<List<AnnotationDescription>> annos = new ArrayList<>();
@@ -4054,21 +4210,9 @@ public class CreateSymbols {
                                                           .map(string2Param)
                                                           .collect(Collectors.toList());
             }
-
-            reader.moveNext();
-
-            return true;
         }
 
-        public static class MethodParam {
-            public final int flags;
-            public final String name;
-
-            public MethodParam(int flags, String name) {
-                this.flags = flags;
-                this.name = name;
-            }
-        }
+        public record MethodParam(int flags, String name) {}
     }
 
     static class FieldDescription extends FeatureDescription {

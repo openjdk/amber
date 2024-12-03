@@ -1388,6 +1388,22 @@ public class ClassReader {
 
                         msym.name = patternName;
                         msym.flags_field |= PATTERN;
+
+                        //recover pattern flags:
+                        for (PatternFlags flag : PatternFlags.values()) {
+                            if ((patternFlags & flag.value) != 0) {
+                                msym.patternFlags.add(flag);
+                            }
+                        }
+
+                        if (msym.patternFlags.contains(PatternFlags.DECONSTRUCTOR)) {
+                            //TODO: should check the method is static, and has a reasonable first/only parameter?
+                            //reconstitue the deconstructor back:
+                            MethodType mtype = msym.type.asMethodType();
+                            mtype.argtypes = mtype.argtypes.tail;
+                            msym.flags_field &= ~Flags.STATIC;
+                        }
+
                         // todo: check if special handling is needed similar to generic methods for binding types
 
                         msym.type.asMethodType().bindingtypes = patternType.getParameterTypes();

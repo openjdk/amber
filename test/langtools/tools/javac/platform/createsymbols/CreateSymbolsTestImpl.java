@@ -21,6 +21,20 @@
  * questions.
  */
 
+/**
+ * @test
+ * @bug 8072480 8277106 8331027
+ * @summary Unit test for CreateSymbols
+ * @enablePreview
+ * @modules java.compiler
+ *          jdk.compiler/com.sun.tools.javac.api
+ *          jdk.compiler/com.sun.tools.javac.jvm
+ *          jdk.compiler/com.sun.tools.javac.main
+ *          jdk.compiler/com.sun.tools.javac.util
+ *          jdk.jdeps/com.sun.tools.classfile
+ * @clean *
+ * @run main/othervm CreateSymbolsTest
+ */
 import java.io.File;
 import java.io.InputStream;
 import java.io.Writer;
@@ -72,16 +86,17 @@ import java.util.function.Consumer;
 public class CreateSymbolsTestImpl {
 
     static final String CREATE_SYMBOLS_NAME = "symbolgenerator.CreateSymbols";
+    private List<String> additionalCompilerOptions = List.of();
 
     public static void main(String... args) throws Exception {
-        new CreateSymbolsTestImpl().doTest();
+        doTest();
     }
 
-    void doTest() throws Exception {
+    static void doTest() throws Exception {
         boolean testRun = false;
         for (Method m : CreateSymbolsTestImpl.class.getDeclaredMethods()) {
-            if (m.isAnnotationPresent(Test.class)) {
-                m.invoke(this);
+            if (m.isAnnotationPresent(Test.class) && "testPatterns".equals(m.getName())) {
+                m.invoke(new CreateSymbolsTestImpl());
                 testRun = true;
             }
         }
@@ -486,20 +501,22 @@ public class CreateSymbolsTestImpl {
 
         String out;
         out = new JavacTask(tb, Task.Mode.CMDLINE)
-                .options("-d", scratch.toAbsolutePath().toString(), "-classpath", computeClassPath(classes, "7"), "-Xprint", className7)
+                .options(augmentOptions("-d", scratch.toAbsolutePath().toString(), "-classpath", computeClassPath(classes, "7"), "-Xprint", className7))
                 .run(Expect.SUCCESS)
+                .writeAll()
                 .getOutput(Task.OutputKind.STDOUT)
                 .replaceAll("\\R", "\n");
         if (!out.equals(printed7)) {
             throw new AssertionError("out=" + out + "; printed7=" + printed7);
         }
         out = new JavacTask(tb, Task.Mode.CMDLINE)
-                .options("-d", scratch.toAbsolutePath().toString(), "-classpath", computeClassPath(classes, "8"), "-Xprint", className8)
+                .options(augmentOptions("-d", scratch.toAbsolutePath().toString(), "-classpath", computeClassPath(classes, "8"), "-Xprint", className8))
                 .run(Expect.SUCCESS)
+                .writeAll()
                 .getOutput(Task.OutputKind.STDOUT)
                 .replaceAll("\\R", "\n");
         if (!out.equals(printed8)) {
-            throw new AssertionError("out=" + out + "; printed8=" + printed8);
+            throw new AssertionError("out=" + out + "; printed8=" + printed8 + ", classpath: " + computeClassPath(classes, "8"));
         }
     }
 
@@ -792,8 +809,8 @@ public class CreateSymbolsTestImpl {
 
         {
             String out = new JavacTask(tb, Task.Mode.CMDLINE)
-                    .options("-d", scratch.toAbsolutePath().toString(), "--module-path", modulePath,
-                             "--add-modules", "m",  "-Xprint", "api.Api")
+                    .options(augmentOptions("-d", scratch.toAbsolutePath().toString(), "--module-path", modulePath,
+                                            "--add-modules", "m",  "-Xprint", "api.Api"))
                     .run(Expect.SUCCESS)
                     .getOutput(Task.OutputKind.STDOUT)
                     .replaceAll("\\R", "\n");
@@ -805,8 +822,8 @@ public class CreateSymbolsTestImpl {
 
         {
             new JavacTask(tb)
-                    .options("-d", scratch.toAbsolutePath().toString(), "--module-path", modulePath,
-                             "--add-modules", "m")
+                    .options(augmentOptions("-d", scratch.toAbsolutePath().toString(), "--module-path", modulePath,
+                                            "--add-modules", "m"))
                     .sources(depSuccess)
                     .run(Expect.SUCCESS)
                     .writeAll();
@@ -814,16 +831,16 @@ public class CreateSymbolsTestImpl {
 
         {
             String expectedFailure = new JavacTask(tb)
-                    .options("-d", scratch.toAbsolutePath().toString(), "--module-path", output.resolve("temp").toString(),
-                             "--add-modules", "m", "-XDrawDiagnostics")
+                    .options(augmentOptions("-d", scratch.toAbsolutePath().toString(), "--module-path", output.resolve("temp").toString(),
+                                            "--add-modules", "m", "-XDrawDiagnostics"))
                     .sources(depFailure)
                     .run(Expect.FAIL)
                     .getOutput(Task.OutputKind.DIRECT)
                     .replaceAll("\\R", "\n");
 
             String out = new JavacTask(tb)
-                    .options("-d", scratch.toAbsolutePath().toString(), "--module-path", modulePath,
-                             "--add-modules", "m", "-XDrawDiagnostics")
+                    .options(augmentOptions("-d", scratch.toAbsolutePath().toString(), "--module-path", modulePath,
+                                            "--add-modules", "m", "-XDrawDiagnostics"))
                     .sources(depFailure)
                     .run(Expect.FAIL)
                     .getOutput(Task.OutputKind.DIRECT)
@@ -906,6 +923,225 @@ public class CreateSymbolsTestImpl {
                        public static class OtherNested {}
                    }
                    """);
+    }
+
+    @Test
+    void testPatterns() throws Exception {
+        additionalCompilerOptions = List.of("--enable-preview",
+                                            "-source", System.getProperty("java.specification.version"));
+        doPrintElementTest("""
+                           package t;
+                           public class T {
+                               private final int i;
+                               private final long l;
+                               public T(int i, long l) {
+                                   this.i = i;
+                                   this.l = l;
+                               }
+                           }
+                           """,
+                           """
+                           package t;
+                           public class T {
+                               private final int i;
+                               private final long l;
+                               public T(int i, long l) {
+                                   this.i = i;
+                                   this.l = l;
+                               }
+                               public pattern T(int i, long l) {
+                                   match T(i, l);
+                               }
+                           }
+                           """,
+                           "t.T",
+                           """
+                           package t;
+
+                           public class T {
+
+                             public T(int arg0,
+                               long arg1);
+                           }
+                           """,
+                           "t.T",
+                           """
+                           package t;
+
+                           public class T {
+
+                             public T(int arg0,
+                               long arg1);
+
+                             public pattern T(int arg0,
+                               long arg1);
+                           }
+                           """);
+        doPrintElementTest("""
+                           package t;
+                           public class T {
+                               private final int i;
+                               private final long l;
+                               public T(int i, long l) {
+                                   this.i = i;
+                                   this.l = l;
+                               }
+                               public pattern T(int i) {
+                                   match T(i);
+                               }
+                           }
+                           """,
+                           """
+                           package t;
+                           public class T {
+                               private final int i;
+                               private final long l;
+                               public T(int i, long l) {
+                                   this.i = i;
+                                   this.l = l;
+                               }
+                               public pattern T(int i, long l) {
+                                   match T(i, l);
+                               }
+                           }
+                           """,
+                           "t.T",
+                           """
+                           package t;
+
+                           public class T {
+
+                             public T(int arg0,
+                               long arg1);
+
+                             public pattern T(int arg0);
+                           }
+                           """,
+                           "t.T",
+                           """
+                           package t;
+
+                           public class T {
+
+                             public T(int arg0,
+                               long arg1);
+
+                             public pattern T(int arg0,
+                               long arg1);
+                           }
+                           """);
+        doPrintElementTest("""
+                           package t;
+                           public class T {
+                               private final int i;
+                               private final long l;
+                               public T(int i, long l) {
+                                   this.i = i;
+                                   this.l = l;
+                               }
+                           }
+                           """,
+                           """
+                           package t;
+                           import java.lang.annotation.*;
+                           public class T {
+                               private final int i;
+                               private final long l;
+                               public T(int i, long l) {
+                                   this.i = i;
+                                   this.l = l;
+                               }
+                               public pattern T(@Visible @Invisible int i,
+                                                @Visible @Invisible long l) {
+                                   match T(i, l);
+                               }
+                               @Retention(RetentionPolicy.RUNTIME)
+                               public @interface Visible {}
+                               public @interface Invisible {}
+                           }
+                           """,
+                           "t.T",
+                           """
+                           package t;
+
+                           public class T {
+
+                             public T(int arg0,
+                               long arg1);
+                           }
+                           """,
+                           "t.T",
+                           """
+                           package t;
+
+                           public class T {
+
+                             public static @interface Invisible {
+                             }
+
+                             public static @interface Visible {
+                             }
+
+                             public T(int arg0,
+                               long arg1);
+
+                             public pattern T(@t.T.Invisible @t.T.Visible int arg0,
+                               @t.T.Invisible @t.T.Visible long arg1);
+                           }
+                           """);
+    }
+
+    @Test
+    void testPatternsCompile() throws Exception {
+        additionalCompilerOptions = List.of("--enable-preview",
+                                            "-source", System.getProperty("java.specification.version"));
+        doTestComplex("api.Api",
+                      """
+                      package api;
+
+                      public class Api {
+
+                        public Api(int arg0,
+                          long arg1);
+
+                        public pattern Api(int arg0,
+                          long arg1);
+                      }
+                      """,
+                      """
+                      import api.Api;
+                      public class Test {
+                          private void t(Object o) {
+                            boolean b = o instanceof Api(var i, var l);
+                          }
+                      }
+                      """,
+                      """
+                      public class Test {
+                          private void t() {
+                              fail
+                          }
+                      }
+                      """,
+                      """
+                      module m {
+                          exports api;
+                      }
+                      """,
+                      """
+                      package api;
+                      public class Api {
+                          private final int i;
+                          private final long l;
+                          public Api(int i, long l) {
+                              this.i = i;
+                              this.l = l;
+                          }
+                          public pattern Api(int i, long l) {
+                              match Api(this.i, this.l);
+                          }
+                      }
+                      """);
     }
 
     void doTestData(String data,
@@ -1166,7 +1402,7 @@ public class CreateSymbolsTestImpl {
         deleteRecursively(scratch);
         Files.createDirectories(scratch);
         System.err.println(Arrays.asList(code));
-        new JavacTask(tb).sources(code).options("-d", scratch.toAbsolutePath().toString()).run(Expect.SUCCESS);
+        new JavacTask(tb).sources(code).options("-d", scratch.toAbsolutePath().toString(), "--enable-preview", "-source", System.getProperty("java.specification.version")).run(Expect.SUCCESS);
         List<String> classFiles = collectClassFile(scratch);
         Path moduleInfo = scratch.resolve("module-info.class");
         if (Files.exists(moduleInfo)) {
@@ -1235,6 +1471,20 @@ public class CreateSymbolsTestImpl {
                 return FileVisitResult.CONTINUE;
             }
         });
+    }
+
+    private List<String> augmentOptions(String... options) {
+        if (additionalCompilerOptions.isEmpty()) {
+            return List.of(options);
+        }
+
+        List<String> result =
+                new ArrayList<>(options.length + additionalCompilerOptions.size());
+
+        result.addAll(List.of(options));
+        result.addAll(additionalCompilerOptions);
+
+        return result;
     }
 
     @Retention(RetentionPolicy.RUNTIME)

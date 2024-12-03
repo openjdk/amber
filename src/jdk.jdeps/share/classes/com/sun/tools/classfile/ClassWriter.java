@@ -528,8 +528,8 @@ public class ClassWriter {
 
         @Override
         public Void visitMatcher(Pattern_attribute attr, ClassOutputStream out) {
-            out.writeShort(attr.pattern_flags);
             out.writeShort(attr.pattern_name_index);
+            out.writeShort(attr.pattern_flags);
             out.writeShort(attr.pattern_methodtype.descriptor_index);
             int size = attr.attributes.size();
             out.writeShort(size);

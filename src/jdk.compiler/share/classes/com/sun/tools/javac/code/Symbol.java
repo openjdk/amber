@@ -894,7 +894,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             apiComplete();
             for (Symbol sym : members().getSymbols(NON_RECURSIVE)) {
                 sym.apiComplete();
-                if ((sym.flags() & SYNTHETIC) == 0 && sym.owner == this && sym.kind != ERR) {
+                //TODO: patterns should be part of the output, but they are marked synthetic:
+                if (((sym.flags() & SYNTHETIC) == 0 || sym.isPattern()) && sym.owner == this && sym.kind != ERR) {
                     list = list.prepend(sym);
                 }
             }
@@ -2015,6 +2016,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         public Attribute defaultValue = null;
 
+        //TODO: would be good to avoid creating an EnumSet instance for *every* MethodSymbol,
+        //even though only a small fraction of them will be patterns:
         public final Set<PatternFlags> patternFlags = EnumSet.noneOf(PatternFlags.class);
 
 
