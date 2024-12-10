@@ -70,6 +70,7 @@ import java.lang.reflect.TypeVariable;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.security.AccessController;
+import java.security.AllPermission;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -108,9 +109,7 @@ import sun.reflect.generics.repository.ClassRepository;
 import sun.reflect.generics.repository.MethodRepository;
 import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.scope.ClassScope;
-import sun.security.util.SecurityConstants;
 import sun.reflect.annotation.*;
-import sun.reflect.misc.ReflectUtil;
 
 import static java.lang.constant.ConstantDescs.CD_void;
 
@@ -2982,7 +2981,7 @@ public final class Class<T> implements java.io.Serializable,
         private static final ProtectionDomain allPermDomain;
         static {
             Permissions perms = new Permissions();
-            perms.add(SecurityConstants.ALL_PERMISSION);
+            perms.add(new AllPermission());
             allPermDomain = new ProtectionDomain(null, perms);
         }
     }
