@@ -63,7 +63,7 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
         String source =
                 """
                 package test;
-    
+
                 class Test {
                     public static void main(String... args) {
                          Top t = new Top();
@@ -72,11 +72,11 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
                              default -> {}
                          }
                      }
-                    
+
                      static class A {}
                      static class B extends A {}
                      static class C extends B {}
-                    
+
                      static class NestedA {
                          public pattern NestedA(A a) { System.out.println("NestedA1"); match NestedA(new A());}
                          public pattern NestedA(B b) { System.out.println("NestedA2"); match NestedA(new B());}
@@ -92,7 +92,7 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
                          public pattern NestedC(B b) { System.out.println("NestedC2"); match NestedC(new B());}
                          public pattern NestedC(C c) { System.out.println("NestedC3"); match NestedC(new C());}
                      }
-                    
+
                      static class Top {
                          // public pattern Top(NestedA na) { System.out.println("Top1"); match Top(new NestedA());}
                          // public pattern Top(NestedB nb) { System.out.println("Top2"); match Top(new NestedB());}
@@ -112,43 +112,43 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
         String source =
                 """
                 package test;
-    
+
                 class Test {
                     public static void main(String... args) {
                           R r = new R();
-            
+
                           switch (r) {
                               case R(A1 a1) -> {}          // R:A1
                               default -> {}
                           }
-            
+
                           switch (r) {
                               case R(A1(String s)) -> {}   // R:A1, A1
                               default -> {}
                           }
-            
+
                       }
-            
+
                       static class A1 {
                           pattern A1(String s) {
                               System.out.println("A1");
                               match A1("A1");
                           }
                       }
-            
+
                       static class A2 extends A1 {
                           pattern A2(String s) {
                               System.out.println("A2");
                               match A2("A2");
                           }
                       }
-            
+
                       static class R {
                           pattern R(A1 a1) {
                               System.out.println("R:A1");
                               match R(new A1());
                           }
-            
+
                           pattern R(A2 a2) {
                               System.out.println("R:A2");
                               match R(new A2());
@@ -170,33 +170,33 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
         String source =
                 """
                 package test;
-    
+
                 class Test {
                    public static void main(String... args) {
                        R r = new R();
-        
+
                        switch (r) {
                            case R(I i, String s) -> {}
                            default -> {}
                        }
                    }
-        
+
                    sealed interface I {}
                    sealed static interface E extends I {}
                    sealed static interface F extends I {}
                    static final class EF implements E, F {}
-        
+
                    static class R {
                        pattern R(E e, String s) {
                            System.out.println("R:E");
                            match R(new EF(), "");
                        }
-        
+
                        pattern R(F f, String s) {
                            System.out.println("R:F");
                            match R(new EF(), "");
                        }
-        
+
                        pattern R(EF ef, Object o) {
                            System.out.println("R:EF");
                            match R(new EF(), "");
