@@ -2653,12 +2653,12 @@ public class Lower extends TreeTranslator {
 
             m.params = m.params.prepend(implicitThisParam.sym);
             Type olderasure = m.erasure(types);
+            //create an external type for the pattern:
             var mt = new MethodType(
                     olderasure.getParameterTypes().prepend(tree.sym.owner.type),
                     olderasure.getReturnType(),
                     olderasure.getThrownTypes(),
                     syms.methodClass);
-            mt.bindingtypes = olderasure.getBindingTypes();
 
             m.erasure_field = mt;
         }

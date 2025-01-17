@@ -676,6 +676,11 @@ public class JNIWriter {
         }
 
         @Override
+        public R visitPatternType(Type.PatternType t, P p) {
+            return defaultAction(t, p);
+        }
+
+        @Override
         public R visitPackageType(Type.PackageType t, P p) {
             return defaultAction(t, p);
         }

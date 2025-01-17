@@ -1406,7 +1406,7 @@ public class ClassReader {
 
                         // todo: check if special handling is needed similar to generic methods for binding types
 
-                        msym.type.asMethodType().bindingtypes = patternType.getParameterTypes();
+                        msym.type = new PatternType(patternType.getParameterTypes(), syms.voidType, syms.methodClass);
                     }
                 }
             },
@@ -2776,7 +2776,7 @@ public class ClassReader {
     }
 
     void validateMethodType(Name name, Type t) {
-        if ((!t.hasTag(TypeTag.METHOD) && !t.hasTag(TypeTag.FORALL)) ||
+        if ((!t.hasTag(TypeTag.METHOD) && !t.hasTag(TypeTag.FORALL) && !t.hasTag(TypeTag.PATTERN)) ||
             (name == names.init && !t.getReturnType().hasTag(TypeTag.VOID))) {
             throw badClassFile("method.descriptor.invalid", name);
         }

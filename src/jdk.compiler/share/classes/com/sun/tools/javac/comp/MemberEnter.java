@@ -156,17 +156,20 @@ public class MemberEnter extends JCTree.Visitor {
             }
             thrownbuf.append(exc);
         }
-        MethodType mtype = new MethodType(argbuf.toList(),
-                                    restype,
-                                    thrownbuf.toList(),
-                                    syms.methodClass);
-        if (bindings != null) {
-            mtype.bindingtypes = bindingsbuf.toList();
+        if (msym.isPattern()) {
+            Assert.check(params.isEmpty());
+            return new PatternType(bindingsbuf.toList(), restype, syms.methodClass);
+        } else {
+            Assert.check(bindings == null);
+            MethodType mtype = new MethodType(argbuf.toList(),
+                                        restype,
+                                        thrownbuf.toList(),
+                                        syms.methodClass);
+
+            mtype.recvtype = recvtype;
+
+            return tvars.isEmpty() ? mtype : new ForAll(tvars, mtype);
         }
-
-        mtype.recvtype = recvtype;
-
-        return tvars.isEmpty() ? mtype : new ForAll(tvars, mtype);
     }
 
 /* ********************************************************************

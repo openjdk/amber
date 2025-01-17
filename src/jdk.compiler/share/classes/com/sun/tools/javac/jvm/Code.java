@@ -255,6 +255,7 @@ public class Code {
         case CLASS:
         case ARRAY:
         case METHOD:
+        case PATTERN:
         case BOT:
         case TYPEVAR:
         case UNINITIALIZED_THIS:

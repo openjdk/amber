@@ -360,14 +360,17 @@ public class ClassWriter extends ClassFile {
             acount = writeFlagAttrs(sym.flags());
         }
         long flags = sym.flags();
-        boolean needsSignature = !types.isSameType(sym.type, sym.erasure(types)) ||
-                poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes());
-        if (((flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
-            (flags & ANONCONSTR) == 0 &&
-            needsSignature) ||
-                (needsSignature &&
-                    fromPattern &&
-                    sym.isPattern())) {
+        boolean needsSignature;
+        if (fromPattern && sym.isPattern()) {
+            needsSignature = !types.isSameType(sym.type, types.erasure(sym.type)) ||
+                    poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes());
+        } else {
+            needsSignature = !types.isSameType(sym.type, sym.erasure(types)) ||
+                    poolWriter.signatureGen.hasTypeVar(sym.type.getThrownTypes());
+            needsSignature &= (flags & (SYNTHETIC | BRIDGE)) != SYNTHETIC &&
+                    (flags & ANONCONSTR) == 0;
+        }
+        if (needsSignature) {
             // note that a local class with captured variables
             // will get a signature attribute
             int alenIdx = writeAttr(names.Signature);
@@ -887,12 +890,7 @@ public class ClassWriter extends ClassFile {
 
         databuf.appendChar(poolWriter.putName(m.name));
         databuf.appendChar(PatternFlags.value(m.patternFlags));
-        MethodType mt = new MethodType(
-                m.type.getBindingTypes(),
-                m.type.asMethodType().restype,
-                m.type.getThrownTypes(),
-                m.type.tsym);
-        databuf.appendChar(poolWriter.putDescriptor(mt));
+        databuf.appendChar(poolWriter.putDescriptor(m.type));
 
         int acountIdx = beginAttrs();
         int acount = 0;

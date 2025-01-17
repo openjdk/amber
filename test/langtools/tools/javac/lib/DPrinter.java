@@ -1343,6 +1343,13 @@ public class DPrinter {
             return visitType(type, null);
         }
 
+        @Override
+        public Void visitPatternType(PatternType type, Void ignore) {
+            printList("bindingtypes", type.bindingtypes);
+            printType("restype", type.restype, Details.FULL);
+            return visitType(type, null);
+        }
+
         public Void visitModuleType(ModuleType type, Void ignore) {
             return visitType(type, null);
         }

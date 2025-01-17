@@ -634,6 +634,12 @@ public class TypeAnnotations {
                 }
 
                 @Override
+                public Type visitPatternType(Type.PatternType t, List<TypeCompound> s) {
+                    // Impossible?
+                    return t;
+                }
+
+                @Override
                 public Type visitPackageType(PackageType t, List<TypeCompound> s) {
                     // Impossible?
                     return t;

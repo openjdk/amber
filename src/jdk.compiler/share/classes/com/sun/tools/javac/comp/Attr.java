@@ -74,6 +74,7 @@ import com.sun.tools.javac.util.List;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
 import static com.sun.tools.javac.code.Flags.BLOCK;
+import static com.sun.tools.javac.code.Flags.PATTERN;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
@@ -4592,9 +4593,8 @@ public class Attr extends JCTree.Visitor {
                         .map(rc -> types.memberType(site, rc))
                         .collect(List.collector());
 
-                MethodType mt = new MethodType(List.nil(), syms.voidType, List.nil(), syms.methodClass);
-                mt.bindingtypes = recordComponents;
-                patternDeclarations = patternDeclarations.prepend(new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, mt, site.tsym));
+                PatternType pt = new PatternType(recordComponents, syms.voidType, syms.methodClass);
+                patternDeclarations = patternDeclarations.prepend(new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym));
             }
         }
 

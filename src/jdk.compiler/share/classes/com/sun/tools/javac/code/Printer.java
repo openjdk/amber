@@ -251,6 +251,12 @@ public abstract class Printer implements Type.Visitor<String, Locale>, Symbol.Vi
     }
 
     @Override
+    public String visitPatternType(PatternType t, Locale locale) {
+        return "(" + printMethodArgs(t.bindingtypes, false, locale) + ")" +
+            visit(t.restype, locale);
+    }
+
+    @Override
     public String visitPackageType(PackageType t, Locale locale) {
         return t.tsym.getQualifiedName().toString();
     }
