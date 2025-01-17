@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
 import javax.tools.JavaFileObject;
 
 import com.sun.source.tree.CaseTree;
@@ -4334,52 +4335,39 @@ public class Attr extends JCTree.Visitor {
             site = types.capture(tree.type);
         }
 
-        List<Type> expectedRecordTypes = null;
+        List<Type> nestedPatternsTargetTypes = null;
 
         if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
 
             // Resolve deconstructor call for pattern-use side
             // If site refers to a record, then synthesize a MT/MethodSymbol with the signature of the implicitely declared pattern declaration
-            List<MethodSymbol> patternDeclarations = getPatternDeclarationCandidates(site, nestedPatternCount);
+            List<MethodSymbol> patternDeclarations = patternDeclarationCandidatesWithArity(site, nestedPatternCount);
 
             if (patternDeclarations.size() >= 1) {
-                MethodSymbol resolvedPatternDeclaration = null;
+                List<Type> notionalTypes = calculateNotionalTypes(tree);
+                Symbol resolvedPatternDeclaration = selectBestPatternDeclarationInScope(tree.pos(), site, patternDeclarations, notionalTypes);
 
-                if (patternDeclarations.size() > 1) {
-                    // precalculate types of pattern components (as in method invocation)
-                    ListBuffer<Type> patternTypesBuffer = new ListBuffer<>();
-                    for (JCTree arg : tree.nested.map(p -> p.getTree())) {
-                        Type argtype = chk.checkNonVoid(arg, attribTree(arg, env, resultInfo));
-                        patternTypesBuffer.append(argtype);
-                    }
-                    List<Type> patternTypes = patternTypesBuffer.toList();
-
-                    resolvedPatternDeclaration = selectBestPatternDeclarationInScope(tree, site, patternDeclarations, patternTypes);
-                } else {
-                    // only one applicable declaration is discovered
-                    resolvedPatternDeclaration = patternDeclarations.getFirst();
-                }
-
-                if (resolvedPatternDeclaration != null) {
-                    expectedRecordTypes = types.memberType(site, resolvedPatternDeclaration).getBindingTypes();
-                    tree.patternDeclaration = resolvedPatternDeclaration;
+                if (resolvedPatternDeclaration != null && resolvedPatternDeclaration.kind != AMBIGUOUS) {
+                    nestedPatternsTargetTypes = types.memberType(site, resolvedPatternDeclaration).getBindingTypes();
+                    tree.patternDeclaration = (MethodSymbol) resolvedPatternDeclaration;
                 }
             }
+            // TODO: error for classes with non matching arity
         }
 
-        if (expectedRecordTypes == null) {
+        if (nestedPatternsTargetTypes == null) {
             log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
-            expectedRecordTypes = Stream.generate(() -> types.createErrorType(tree.type))
+            nestedPatternsTargetTypes = Stream.generate(() -> types.createErrorType(tree.type))
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
             tree.record = syms.errSymbol;
         } else {
-            tree.fullComponentTypes = expectedRecordTypes;
+            tree.fullComponentTypes = nestedPatternsTargetTypes;
         }
 
         ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
-        List<Type> recordTypes = expectedRecordTypes;
+        List<Type> recordTypes = nestedPatternsTargetTypes;
         List<JCPattern> nestedPatterns = tree.nested;
         Env<AttrContext> localEnv = env.dup(tree, env.info.dup(env.info.scope.dup()));
         try {
@@ -4399,81 +4387,197 @@ public class Attr extends JCTree.Visitor {
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
     }
 
-    private MethodSymbol selectBestPatternDeclarationInScope(JCRecordPattern tree,
-                                                           Type site,
-                                                           List<MethodSymbol> patternDeclarations,
-                                                           List<Type> patternTypes) {
-        List<Type> expectedRecordTypes = null;
-        ListBuffer<Integer> score = new ListBuffer<Integer>();
-
-        ArrayList<List<Type>> typesMatrix = new ArrayList<>();
-        for (int j = 0; j < patternDeclarations.size(); j++) {
-            MethodSymbol matcher = patternDeclarations.get(j);
-
-            List<Type> matcherComponentTypes = matcher.bindings()
-                    .stream()
-                    .map(rc -> types.memberType(site, rc))
-                    .map(t -> types.upward(t, types.captures(t)).baseType())
-                    .collect(List.collector());
-
-            typesMatrix.add(matcherComponentTypes);
+    private List<Type> calculateNotionalTypes(JCRecordPattern tree) {
+        ListBuffer<Type> notionalTypesBuffer = new ListBuffer<>();
+        for (JCPattern pattern : tree.nested) {
+            Type patternType = switch (pattern) {
+                case JCAnyPattern _ -> Type.noType;
+                case JCBindingPattern jcBindingPattern when jcBindingPattern.var.isImplicitlyTyped() -> Type.noType;
+                case JCBindingPattern jcBindingPattern -> attribType(jcBindingPattern.var.vartype, env);
+                case JCRecordPattern jcRecordPattern when jcRecordPattern.deconstructor == null -> Type.noType;
+                case JCRecordPattern jcRecordPattern -> attribType(jcRecordPattern.deconstructor, env);
+            };
+            notionalTypesBuffer.append(patternType);
         }
+        List<Type> notionalTypes = notionalTypesBuffer.toList();
+        return notionalTypes;
+    }
 
-        int selected = -1;
-        boolean atLeastOne = false;
-        for (int n = 0; n < patternDeclarations.size(); n++) {
-            List<Type> matcherComponentTypes = typesMatrix.get(n);
-            boolean applicable = true;
+    enum PatternResolutionPhase {
+        LEAST_SPECIFIC_UNCONDITIONAL,
+        MOST_SPECIFIC_CONDITIONAL,
+        ALL
+    }
+    final List<PatternResolutionPhase> patternResolutionPhases = List.of(
+            PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL,
+            PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL,
+            PatternResolutionPhase.ALL);
 
-            for (int i = 0; applicable && i < patternTypes.size(); i++) {
-                applicable &= types.isCastable(patternTypes.get(i), matcherComponentTypes.get(i));
-            }
-
-            if (applicable) {
-                boolean found = true;
-                atLeastOne = true;
-                // for all pattern components
-                for (int i = 0; found && i < patternTypes.size(); i++) {
-                    if (!types.isSameType(patternTypes.get(i), matcherComponentTypes.get(i)) &&
-                            !sameBindingTypeInAllCandidateDtors(typesMatrix, n, i, matcherComponentTypes)) {
-                        found = false;
+    private Symbol selectBestPatternDeclarationInScope(DiagnosticPosition pos,
+                                                       Type site,
+                                                       List<MethodSymbol> patternDeclarations,
+                                                       List<Type> notionalTypes) {
+        Symbol bestSoFar = null;
+        for (PatternResolutionPhase phase : patternResolutionPhases) {
+            bestSoFar = null;
+            for (int n = 0; n < patternDeclarations.size(); n++) {
+                List<Type> candidateBindingTypes = getBindingTypes(site, patternDeclarations.get(n));
+                if (phase.equals(PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL) &&
+                        evaluateConditionality(candidateBindingTypes, notionalTypes) == ConditionalityResult.ALL_UNCONDITIONAL) {
+                    if (bestSoFar == null) {
+                        bestSoFar = patternDeclarations.get(n);
+                    } else if (bestSoFar.kind != AMBIGUOUS) {
+                        bestSoFar = findSpecific(site, (MethodSymbol) bestSoFar, patternDeclarations.get(n), PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL);
                     }
-                }
-                if (found && selected < 0) {
-                    selected = n;
+                } else if (phase.equals(PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL) &&
+                        isApplicable(candidateBindingTypes, notionalTypes) &&
+                        evaluateConditionality(candidateBindingTypes, notionalTypes) == ConditionalityResult.ALL_CONDITIONAL) {
+                    if (bestSoFar == null) {
+                        bestSoFar = patternDeclarations.get(n);
+                    } else if (bestSoFar.kind != AMBIGUOUS){
+                        bestSoFar = findSpecific(site, (MethodSymbol) bestSoFar, patternDeclarations.get(n), PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL);
+                    }
+                } else if (phase.equals(PatternResolutionPhase.ALL) &&
+                           isApplicable(candidateBindingTypes, notionalTypes)) {
+                    bestSoFar = bestSoFar == null ?
+                            patternDeclarations.get(n) :
+                            new DeconstructorResolutionError(AMBIGUOUS, "compiler.err.matcher.overloading.ambiguity");
                 }
             }
 
-            applicable = true;
+            if (bestSoFar != null && bestSoFar.kind != AMBIGUOUS) {
+                return bestSoFar;
+            }
         }
 
-        if (atLeastOne && selected < 0) {
-            log.error(tree.pos(),
+        if (bestSoFar != null && bestSoFar.kind == AMBIGUOUS) {
+            log.error(pos,
                     Errors.MatcherOverloadingAmbiguity);
-            return null;
-        } else if (!atLeastOne) {
-            log.error(tree.pos(),
+        } else if (bestSoFar == null) {
+            log.error(pos,
                     Errors.NoCompatibleMatcherFound);
-            return null;
         }
 
-        return patternDeclarations.get(selected);
+        return bestSoFar;
     }
 
-    private boolean sameBindingTypeInAllCandidateDtors(ArrayList<List<Type>> typesMatrix, int n, int i, List<Type> matcherComponentTypes) {
-        boolean allSame = true;
-        for (int n_prime = 0; n_prime < typesMatrix.size(); n_prime++) {
-            if (n_prime != n) {
-                allSame &= types.isSameType(typesMatrix.get(n_prime).get(i), matcherComponentTypes.get(i));
+    class DeconstructorResolutionError extends Symbol {
+        final String debugName;
+
+        DeconstructorResolutionError(Kind kind, String debugName) {
+            super(kind, 0, null, null, null);
+            this.debugName = debugName;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
+            throw new AssertionError();
+        }
+
+        @Override
+        public String toString() {
+            return debugName;
+        }
+
+        @Override
+        public boolean exists() {
+            return false;
+        }
+
+        @Override
+        public boolean isStatic() {
+            return false;
+        }
+
+        protected Symbol access(Name name, TypeSymbol location) {
+            return types.createErrorType(name, location, syms.errSymbol.type).tsym;
+        }
+    }
+
+    private Symbol findSpecific(Type site, MethodSymbol bestSoFar, MethodSymbol candidatePatternDeclaration, PatternResolutionPhase patternResolutionPhase) {
+        List<Type> bindingTypesBestSoFar = getBindingTypes(site, bestSoFar);
+        List<Type> bindingTypesCandidatePatternDeclaration = getBindingTypes(site, candidatePatternDeclaration);
+
+        boolean bestSoFarToCandidate = evaluateConditionality(bindingTypesBestSoFar, bindingTypesCandidatePatternDeclaration) == ConditionalityResult.ALL_UNCONDITIONAL;
+        boolean candidateToBestSoFar = evaluateConditionality(bindingTypesCandidatePatternDeclaration, bindingTypesBestSoFar) == ConditionalityResult.ALL_UNCONDITIONAL;
+
+        if (!bestSoFarToCandidate && !candidateToBestSoFar) {
+            return new DeconstructorResolutionError(AMBIGUOUS, "compiler.err.matcher.overloading.ambiguity");
+        }
+
+        return switch (patternResolutionPhase) {
+            case LEAST_SPECIFIC_UNCONDITIONAL ->
+                bestSoFarToCandidate ? candidatePatternDeclaration : bestSoFar;
+            case MOST_SPECIFIC_CONDITIONAL ->
+                candidateToBestSoFar ? candidatePatternDeclaration : bestSoFar;
+            default -> new DeconstructorResolutionError(AMBIGUOUS, "compiler.err.matcher.overloading.ambiguity");
+        };
+    }
+
+    enum ConditionalityResult {
+        ALL_UNCONDITIONAL,
+        ALL_CONDITIONAL,
+        MIXED
+    }
+    private ConditionalityResult evaluateConditionality(List<Type> patternDeclarationBindingTypes, List<Type> notionalType) {
+        ConditionalityResult ret = null;
+
+        while (patternDeclarationBindingTypes.nonEmpty() && notionalType.nonEmpty()) {
+            Type currentPatternDeclarationBindingType = patternDeclarationBindingTypes.head;
+            Type currentNotionalType = notionalType.head;
+
+            if (currentNotionalType != Type.noType) {
+                boolean current = types.isUnconditionallyExact(currentPatternDeclarationBindingType, currentNotionalType);
+                if (current) {
+                    if (ret == null) ret = ConditionalityResult.ALL_UNCONDITIONAL;
+                    else if (ret == ConditionalityResult.ALL_CONDITIONAL) ret = ConditionalityResult.MIXED;
+                } else {
+                    if (ret == null) ret = ConditionalityResult.ALL_CONDITIONAL;
+                    else if (ret == ConditionalityResult.ALL_UNCONDITIONAL) ret = ConditionalityResult.MIXED;
+                }
+            }
+
+            patternDeclarationBindingTypes = patternDeclarationBindingTypes.tail;
+            notionalType = notionalType.tail;
+        }
+
+        return ret == null ? ConditionalityResult.ALL_UNCONDITIONAL: ret;
+    }
+
+    private List<Type> getBindingTypes(Type site, MethodSymbol matcher) {
+        List<Type> patternDeclarationBindingTypes = matcher.bindings()
+                .stream()
+                .map(rc -> types.memberType(site, rc))
+                .map(t -> types.upward(t, types.captures(t)).baseType())
+                .collect(List.collector());
+        return patternDeclarationBindingTypes;
+    }
+
+    private boolean isApplicable(List<Type> patternDeclarationBindingType, List<Type> notionalType) {
+        boolean applicable = true;
+
+        for (int i = 0; applicable && i < notionalType.size(); i++) {
+            if (notionalType.get(i) != Type.noType) {
+                applicable &= types.isCastable(patternDeclarationBindingType.get(i), notionalType.get(i));
             }
         }
-        return allSame;
+        return applicable;
     }
 
-    private List<MethodSymbol> getPatternDeclarationCandidates(Type site, int nestedPatternCount) {
+    /**
+     * Determine the set of pattern declarations for a particular arity.
+     * If the enclosing type is a record, then the implicit pattern declaration based
+     * on the component types is also added on the set (if the arity matches).
+     *
+     * @param site               the type to perform the search
+     * @param nestedPatternCount the number of nested patterns
+     * @return                   a list of MethodSymbols
+     */
+    private List<MethodSymbol> patternDeclarationCandidatesWithArity(Type site, int nestedPatternCount) {
         var matchersIt = site.tsym.members()
                 .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                 .iterator();
+
         List<MethodSymbol> patternDeclarations = Stream.generate(() -> null)
                 .takeWhile(x -> matchersIt.hasNext())
                 .map(n -> (MethodSymbol) matchersIt.next())

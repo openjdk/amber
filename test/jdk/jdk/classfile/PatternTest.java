@@ -43,7 +43,7 @@ import static helpers.ClassRecord.assertEqualsDeep;
 import static helpers.TestUtil.assertEmpty;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.lang.classfile.components.ClassPrinter;
+import jdk.internal.classfile.components.ClassPrinter;
 import org.junit.jupiter.api.Test;
 
 class PatternTest {

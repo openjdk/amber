@@ -62,11 +62,13 @@ public class OverloadedPatternDeclarations extends TestRunner {
     public void testOne(Path base) throws Exception {
         runSingle(base, "A", "B", "B", 2);
         runSingle(base, "B", "C", "B", 1);
-        runSingle(base, "B", "C", "A", 0);
-        runSingle(base, "A", "B", "C", 0);
-        runSingle(base, "A", "C", "B", 0);
-        runSingle(base, "A", "D", "B", 0);
+        runSingle(base, "B", "C", "A", 1);
+        runSingle(base, "A", "B", "C", 2);
+        runSingle(base, "A", "C", "B", 2);
+        runSingle(base, "A", "D", "B", 2);
         runSingle(base, "E", "F", "I", 0);
+
+        runSingle(base, "A", "B", "var", 1);
     }
 
     void runSingle(Path base, String bt_1, String bt_2, String t1, Integer selected) throws IOException {

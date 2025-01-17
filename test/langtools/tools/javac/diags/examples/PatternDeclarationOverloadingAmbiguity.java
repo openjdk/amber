@@ -27,20 +27,22 @@
 // options: --enable-preview -source ${jdk.version} -Xlint:preview
 
 public class PatternDeclarationOverloadingAmbiguity {
-    private static int test(D o) {
-        if (o instanceof D(String data, Integer out)) {
-            return out;
+    interface I {}
+    static class I1 implements I {}
+    static class I2 implements I {}
+
+    private static void test(D o) {
+        if (o instanceof D(I data)) {
         }
-        return -1;
     }
 
     public static class D {
-        public pattern D(Object v, Integer out) {
-            match D(1, 1);
+        public pattern D(I1 v) {
+            match D(new I1());
         }
 
-        public pattern D(CharSequence v, Integer out) {
-            match D("2", 2);
+        public pattern D(I2 v) {
+            match D(new I2());
         }
     }
 }

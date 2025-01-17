@@ -2383,11 +2383,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * Pattern matching forms.
      */
-    public abstract static class JCPattern extends JCTree
+    public sealed abstract static class JCPattern extends JCTree
             implements PatternTree {
     }
 
-    public static class JCAnyPattern extends JCPattern
+    public static final class JCAnyPattern extends JCPattern
             implements AnyPatternTree {
 
         protected JCAnyPattern() {
@@ -2415,7 +2415,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
-    public static class JCBindingPattern extends JCPattern
+    public static final class JCBindingPattern extends JCPattern
             implements BindingPatternTree {
         public JCVariableDecl var;
 
@@ -2554,7 +2554,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
     }
 
-    public static class JCRecordPattern extends JCPattern
+    public static final class JCRecordPattern extends JCPattern
             implements DeconstructionPatternTree {
         public JCExpression deconstructor;
         public List<JCPattern> nested;
