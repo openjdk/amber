@@ -1,2 +1,3 @@
+InstanceOfStatementErrors.java:20:9: compiler.err.instanceof.statement.pattern.only
 InstanceOfStatementErrors.java:12:9: compiler.err.not.exhaustive.statement
-1 error
+2 errors

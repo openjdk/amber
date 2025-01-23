@@ -3036,8 +3036,19 @@ public class JavacParser implements Parser {
             } else {
                 if (t.getTag() == TYPETEST && allowPatternDeclarations) {
                     t = term2Rest(t, TreeInfo.orPrec);
+
                     accept(SEMI);
-                    return List.of(toP(F.at(pos).TypeTestStatement(((JCInstanceOf) t).expr, ((JCInstanceOf)t ).getPattern())));
+
+                    JCExpression expr = ((JCInstanceOf) t).expr;
+                    JCPattern pattern = ((JCInstanceOf) t).getPattern();
+
+                    if (pattern == null) {
+                        log.error(DiagnosticFlag.SYNTAX, expr, Errors.InstanceofStatementPatternOnly);
+                        return List.of(toP(F.at(pos).Exec(checkExprStat(expr))));
+                    }
+
+                    return List.of(toP(F.at(pos).TypeTestStatement(expr, pattern)));
+
                 } else {
                     // This Exec is an "ExpressionStatement"; it subsumes the terminating semicolon
                     t = checkExprStat(t);
