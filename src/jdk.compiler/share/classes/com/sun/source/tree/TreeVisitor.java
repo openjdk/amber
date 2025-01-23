@@ -515,6 +515,14 @@ public interface TreeVisitor<R,P> {
     R visitInstanceOf(InstanceOfTree node, P p);
 
     /**
+     * Visits an {@code InstanceOfStatementTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitInstanceOfStatement(InstanceOfStatementTree node, P p);
+
+    /**
      * Visits a {@code UnaryTree} node.
      * @param node the node being visited
      * @param p a parameter value
@@ -613,4 +621,12 @@ public interface TreeVisitor<R,P> {
      * @since 14
      */
     R visitYield(YieldTree node, P p);
+
+    /**
+     * Visits an {@code MatchTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitMatchStatement(MatchTree node, P p);
 }

@@ -293,17 +293,36 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             if (argtypes1 == argtypes &&
                 restype1 == restype &&
                 thrown1 == thrown) return t;
-            else return new MethodType(argtypes1, restype1, thrown1, t.tsym) {
-                @Override
-                protected boolean needsStripping() {
-                    return true;
-                }
-            };
+            else {
+                MethodType methodType = new MethodType(argtypes1, restype1, thrown1, t.tsym) {
+                    @Override
+                    protected boolean needsStripping() {
+                        return true;
+                    }
+                };
+                return methodType;
+            }
         }
 
         @Override
         public Type visitForAll(ForAll t, S s) {
             return visit(t.qtype, s);
+        }
+
+        @Override
+        public Type visitPatternType(PatternType t, S s) {
+            List<Type> bindingtypes = t.bindingtypes;
+            List<Type> bindingtypes1 = visit(bindingtypes, s);
+            if (bindingtypes1 == bindingtypes) return t;
+            else {
+                PatternType patternType = new PatternType(bindingtypes1, /*XXX*/t.restype, t.tsym) {
+                    @Override
+                    protected boolean needsStripping() {
+                        return true;
+                    }
+                };
+                return patternType;
+            }
         }
     }
 
@@ -593,6 +612,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     public List<Type>        getTypeArguments()  { return List.nil(); }
     public Type              getEnclosingType()  { return null; }
     public List<Type>        getParameterTypes() { return List.nil(); }
+    public List<Type>        getBindingTypes()   { return List.nil(); }
     public Type              getReturnType()     { return null; }
     public Type              getReceiverType()   { return null; }
     public List<Type>        getThrownTypes()    { return List.nil(); }
@@ -712,6 +732,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     /** The underlying method type of this type.
      */
     public MethodType asMethodType() { throw new AssertionError(); }
+
+    public PatternType asPatternType() { throw new AssertionError(); }
 
     /** Complete loading all classes in this type.
      */
@@ -1516,6 +1538,10 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<Type>        getParameterTypes() { return argtypes; }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type>        getBindingTypes() { return List.nil(); }
+
         @DefinedBy(Api.LANGUAGE_MODEL)
         public Type              getReturnType()     { return restype; }
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -1831,6 +1857,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public List<Type> getTypeArguments() { return qtype.getTypeArguments(); }
         public Type getEnclosingType() { return qtype.getEnclosingType(); }
         public List<Type> getParameterTypes() { return qtype.getParameterTypes(); }
+        public List<Type> getBindingTypes() { return qtype.getBindingTypes(); }
         public Type getReturnType() { return qtype.getReturnType(); }
         public Type getReceiverType() { return qtype.getReceiverType(); }
         public List<Type> getThrownTypes() { return qtype.getThrownTypes(); }
@@ -1892,6 +1919,99 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<TypeVar> getTypeVariables() {
             return List.convert(TypeVar.class, getTypeArguments());
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public TypeKind getKind() {
+            return TypeKind.EXECUTABLE;
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public <R, P> R accept(TypeVisitor<R, P> v, P p) {
+            return v.visitExecutable(this, p);
+        }
+    }
+
+    public static class PatternType extends Type implements ExecutableType {
+        public List<Type> bindingtypes;
+        public Type restype;
+
+        public PatternType(List<Type> bindingtypes,
+                           Type restype, //TODO:
+                          TypeSymbol methodClass) {
+            super(methodClass, List.nil());
+            this.bindingtypes = bindingtypes;
+            this.restype = restype;
+        }
+
+        @Override
+        public TypeTag getTag() {
+            return TypeTag.PATTERN;
+        }
+
+        public <R,S> R accept(Type.Visitor<R,S> v, S s) {
+            return v.visitPatternType(this, s);
+        }
+
+        /** The Java source which this type represents.
+         *
+         *  XXX 06/09/99 iris This isn't correct Java syntax, but it probably
+         *  should be.
+         */
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public String toString() {
+            StringBuilder sb = new StringBuilder();
+            appendAnnotationsString(sb);
+            sb.append("(out");
+            sb.append(bindingtypes);
+            sb.append(')');
+            return sb.toString();
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type>        getParameterTypes() { return List.nil(); }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type>        getBindingTypes() { return bindingtypes; }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public Type              getReturnType()     { return restype; }
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public Type              getReceiverType()   {
+            return Type.noType;
+        }
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<Type>        getThrownTypes()    { return List.nil(); }
+
+        @Override
+        public PatternType asPatternType() { return this; }
+
+        public boolean isErroneous() {
+            return
+                bindingtypes != null && isErroneous(bindingtypes);
+        }
+
+        @Override
+        public int poolTag() {
+            return ClassFile.CONSTANT_MethodType; //TODO
+        }
+
+        public boolean contains(Type elem) {
+            return elem.equalsIgnoreMetadata(this);
+        }
+
+        public void complete() {
+            for (List<Type> l = bindingtypes; l.nonEmpty(); l = l.tail)
+                l.head.complete();
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<TypeVar> getTypeVariables() {
+            return List.nil();
+        }
+
+        public TypeSymbol asElement() {
+            return null;
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)
@@ -2425,6 +2545,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         R visitWildcardType(WildcardType t, S s);
         R visitArrayType(ArrayType t, S s);
         R visitMethodType(MethodType t, S s);
+        R visitPatternType(PatternType t, S s);
         R visitPackageType(PackageType t, S s);
         R visitModuleType(ModuleType t, S s);
         R visitTypeVar(TypeVar t, S s);

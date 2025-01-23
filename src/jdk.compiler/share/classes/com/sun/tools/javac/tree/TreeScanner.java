@@ -131,6 +131,7 @@ public class TreeScanner extends Visitor {
         scan(tree.typarams);
         scan(tree.recvparam);
         scan(tree.params);
+        scan(tree.bindings);
         scan(tree.thrown);
         scan(tree.defaultValue);
         scan(tree.body);
@@ -233,6 +234,10 @@ public class TreeScanner extends Visitor {
         scan(tree.value);
     }
 
+    public void visitMatch(JCMatch tree) {
+        scan(tree.args);
+    }
+
     public void visitContinue(JCContinue tree) {
     }
 
@@ -306,6 +311,11 @@ public class TreeScanner extends Visitor {
     }
 
     public void visitTypeTest(JCInstanceOf tree) {
+        scan(tree.expr);
+        scan(tree.pattern);
+    }
+
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
         scan(tree.expr);
         scan(tree.pattern);
     }

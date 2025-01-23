@@ -103,6 +103,7 @@ public class MemberEnter extends JCTree.Visitor {
     Type signature(MethodSymbol msym,
                    List<JCTypeParameter> typarams,
                    List<JCVariableDecl> params,
+                   List<JCVariableDecl> bindings,
                    JCTree res,
                    JCVariableDecl recvparam,
                    List<JCExpression> thrown,
@@ -117,6 +118,18 @@ public class MemberEnter extends JCTree.Visitor {
         for (List<JCVariableDecl> l = params; l.nonEmpty(); l = l.tail) {
             memberEnter(l.head, env);
             argbuf.append(l.head.vartype.type);
+        }
+
+        // Enter and attribute bindings.
+        ListBuffer<Type> bindingsbuf = null;
+
+        if (bindings != null) {
+            bindingsbuf = new ListBuffer<>();
+
+            for (List<JCVariableDecl> l = bindings; l.nonEmpty(); l = l.tail) {
+                memberEnter(l.head, env);
+                bindingsbuf.append(l.head.vartype.type);
+            }
         }
 
         // Attribute result type, if one is given.
@@ -143,13 +156,20 @@ public class MemberEnter extends JCTree.Visitor {
             }
             thrownbuf.append(exc);
         }
-        MethodType mtype = new MethodType(argbuf.toList(),
-                                    restype,
-                                    thrownbuf.toList(),
-                                    syms.methodClass);
-        mtype.recvtype = recvtype;
+        if (msym.isPattern()) {
+            Assert.check(params.isEmpty());
+            return new PatternType(bindingsbuf.toList(), restype, syms.methodClass);
+        } else {
+            Assert.check(bindings == null);
+            MethodType mtype = new MethodType(argbuf.toList(),
+                                        restype,
+                                        thrownbuf.toList(),
+                                        syms.methodClass);
 
-        return tvars.isEmpty() ? mtype : new ForAll(tvars, mtype);
+            mtype.recvtype = recvtype;
+
+            return tvars.isEmpty() ? mtype : new ForAll(tvars, mtype);
+        }
     }
 
 /* ********************************************************************
@@ -197,10 +217,11 @@ public class MemberEnter extends JCTree.Visitor {
         DiagnosticPosition prevLintPos = deferredLintHandler.setPos(tree.pos());
         try {
             // Compute the method type
-            m.type = signature(m, tree.typarams, tree.params,
+            Type t = signature(m, tree.typarams, tree.params, tree.bindings,
                                tree.restype, tree.recvparam,
                                tree.thrown,
                                localEnv);
+            m.type = t;
         } finally {
             deferredLintHandler.setPos(prevLintPos);
         }
@@ -216,11 +237,24 @@ public class MemberEnter extends JCTree.Visitor {
             JCVariableDecl param = lastParam = l.head;
             params.append(Assert.checkNonNull(param.sym));
         }
+
         m.params = params.toList();
 
         // mark the method varargs, if necessary
         if (lastParam != null && (lastParam.mods.flags & Flags.VARARGS) != 0)
             m.flags_field |= Flags.VARARGS;
+
+        // Set m.bindings
+        ListBuffer<VarSymbol> bindings = new ListBuffer<>();
+
+        if (tree.bindings != null) {
+            for (List<JCVariableDecl> l = tree.bindings; l.nonEmpty(); l = l.tail) {
+                JCVariableDecl binding = l.head;
+                bindings.append(Assert.checkNonNull(binding.sym));
+            }
+        }
+
+        m.bindings = bindings.toList();
 
         localEnv.info.scope.leave();
         if (chk.checkUnique(tree.pos(), m, enclScope)) {
@@ -247,9 +281,14 @@ public class MemberEnter extends JCTree.Visitor {
             env.dup(tree, env.info.dup(env.info.scope.dupUnshared(tree.sym)));
         localEnv.enclMethod = tree;
         if (tree.sym.type != null) {
-            //when this is called in the enter stage, there's no type to be set
-            localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
-                                                             tree.sym.type.getReturnType());
+            if (tree.sym.isPattern()) {
+                localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
+                                                                 syms.objectType);
+            } else {
+                //when this is called in the enter stage, there's no type to be set
+                localEnv.info.returnResult = attr.new ResultInfo(KindSelector.VAL,
+                                                                 tree.sym.type.getReturnType());
+            }
         }
         if ((tree.mods.flags & STATIC) != 0) localEnv.info.staticLevel++;
         localEnv.info.yieldResult = null;

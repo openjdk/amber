@@ -401,7 +401,8 @@ public class TypeAnnotations {
                 sym.getKind() == ElementKind.LOCAL_VARIABLE ||
                 sym.getKind() == ElementKind.RESOURCE_VARIABLE ||
                 sym.getKind() == ElementKind.EXCEPTION_PARAMETER ||
-                sym.getKind() == ElementKind.BINDING_VARIABLE) {
+                sym.getKind() == ElementKind.BINDING_VARIABLE ||
+                sym.getKind() == ElementKind.PATTERN_BINDING) {
                 appendTypeAnnotationsToOwner(sym, typeAnnotations);
             }
         }
@@ -628,6 +629,12 @@ public class TypeAnnotations {
 
                 @Override
                 public Type visitMethodType(MethodType t, List<TypeCompound> s) {
+                    // Impossible?
+                    return t;
+                }
+
+                @Override
+                public Type visitPatternType(Type.PatternType t, List<TypeCompound> s) {
                     // Impossible?
                     return t;
                 }
@@ -1133,7 +1140,7 @@ public class TypeAnnotations {
             }
             if (sigOnly) {
                 if (!tree.mods.annotations.isEmpty()) {
-                    if (tree.sym.isConstructor()) {
+                    if (tree.sym.isConstructor() || tree.sym.isPattern()) {
                         final TypeAnnotationPosition pos =
                             TypeAnnotationPosition.methodReturn(tree.pos);
                         // Use null to mark that the annotations go
@@ -1269,6 +1276,8 @@ public class TypeAnnotations {
                 separateAnnotationsKinds(tree, tree.vartype, tree.sym.type, tree.sym, pos);
             } else if (tree.sym.getKind() == ElementKind.ENUM_CONSTANT) {
                 // No type annotations can occur here.
+            } else if (tree.sym.getKind() == ElementKind.PATTERN_BINDING) {
+                // XXX!
             } else {
                 // There is nothing else in a variable declaration that needs separation.
                 Assert.error("Unhandled variable kind: " + tree.sym.getKind());

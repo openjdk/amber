@@ -151,6 +151,8 @@ public class TreeTranslator extends JCTree.Visitor {
         tree.typarams = translateTypeParams(tree.typarams);
         tree.recvparam = translate(tree.recvparam);
         tree.params = translateVarDefs(tree.params);
+        if (tree.bindings != null)
+            tree.bindings = translateVarDefs(tree.bindings);
         tree.thrown = translate(tree.thrown);
         tree.body = translate(tree.body);
         result = tree;
@@ -272,6 +274,11 @@ public class TreeTranslator extends JCTree.Visitor {
         result = tree;
     }
 
+    public void visitMatch(JCMatch tree) {
+        tree.args = translate(tree.args);
+        result = tree;
+    }
+
     public void visitContinue(JCContinue tree) {
         result = tree;
     }
@@ -361,6 +368,12 @@ public class TreeTranslator extends JCTree.Visitor {
     public void visitTypeTest(JCInstanceOf tree) {
         tree.expr = translate(tree.expr);
         tree.pattern = translate(tree.pattern);
+        result = tree;
+    }
+
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        tree.pattern = translate(tree.pattern);
+        tree.expr = translate(tree.expr);
         result = tree;
     }
 

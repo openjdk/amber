@@ -26,6 +26,7 @@ package java.lang.classfile;
 
 import java.lang.classfile.attribute.CodeAttribute;
 import java.lang.classfile.attribute.RecordComponentInfo;
+import java.lang.classfile.attribute.PatternAttribute;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +46,7 @@ import static java.util.Objects.requireNonNull;
  * @since 24
  */
 public sealed interface AttributedElement extends ClassFileElement
-        permits ClassModel, CodeModel, FieldModel, MethodModel,
+        permits ClassModel, CodeModel, FieldModel, MethodModel, PatternAttribute,
                 RecordComponentInfo, AbstractUnboundModel {
 
     /**
