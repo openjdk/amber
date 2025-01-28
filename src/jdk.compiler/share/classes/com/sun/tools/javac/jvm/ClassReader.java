@@ -1068,6 +1068,10 @@ public class ClassReader {
                         } finally {
                             readingClassAttr = false;
                         }
+                    } else if (sym.type.hasTag(TypeTag.PATTERN)){
+                        Type mtype = poolReader.getType(nextChar());
+                        sym.type = new PatternType(mtype.getParameterTypes(), syms.voidType, syms.methodClass);
+                        //TODO: no thrown types for PatternType
                     } else {
                         List<Type> thrown = sym.type.getThrownTypes();
                         sym.type = poolReader.getType(nextChar());
@@ -1377,10 +1381,12 @@ public class ClassReader {
                         parameterNameIndicesMp = null;
                         parameterAccessFlags = null;
 
+                        MethodSymbol msym = (MethodSymbol) sym;
+                        msym.type = new PatternType(patternType.getParameterTypes(), syms.voidType, syms.methodClass);
+
                         readMemberAttrs(sym);
 
-                        MethodSymbol msym = (MethodSymbol) sym;
-                        msym.bindings = computeParamsFromAttribute(msym, patternType.getParameterTypes(), 0);
+                        msym.bindings = computeParamsFromAttribute(msym, msym.type.asPatternType().getBindingTypes(), 0);
 
                         parameterAnnotations = oldParameterAnnotations;
                         parameterNameIndicesLvt = oldParameterNameIndicesLvt;
@@ -1400,14 +1406,10 @@ public class ClassReader {
                         if (msym.patternFlags.contains(PatternFlags.DECONSTRUCTOR)) {
                             //TODO: should check the method is static, and has a reasonable first/only parameter?
                             //reconstitue the deconstructor back:
-                            MethodType mtype = msym.type.asMethodType();
-                            mtype.argtypes = mtype.argtypes.tail;
                             msym.flags_field &= ~Flags.STATIC;
                         }
 
                         // todo: check if special handling is needed similar to generic methods for binding types
-
-                        msym.type = new PatternType(patternType.getParameterTypes(), syms.voidType, syms.methodClass);
                     }
                 }
             },
