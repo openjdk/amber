@@ -4432,22 +4432,22 @@ public class Attr extends JCTree.Visitor {
                         evaluateConditionality(candidateBindingTypes, notionalTypes) == ConditionalityResult.ALL_UNCONDITIONAL) {
                     if (bestSoFar == null) {
                         bestSoFar = patternDeclarations.get(n);
-                    } else if (bestSoFar.kind != AMBIGUOUS) {
-                        bestSoFar = findSpecific(site, (MethodSymbol) bestSoFar, patternDeclarations.get(n), PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL);
+                    } else {
+                        bestSoFar = findSpecific(site, patternDeclarations.get(n), bestSoFar, PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL);
                     }
                 } else if (phase.equals(PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL) &&
                         isApplicable(candidateBindingTypes, notionalTypes) &&
                         evaluateConditionality(candidateBindingTypes, notionalTypes) == ConditionalityResult.ALL_CONDITIONAL) {
                     if (bestSoFar == null) {
                         bestSoFar = patternDeclarations.get(n);
-                    } else if (bestSoFar.kind != AMBIGUOUS){
-                        bestSoFar = findSpecific(site, (MethodSymbol) bestSoFar, patternDeclarations.get(n), PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL);
+                    } else {
+                        bestSoFar = findSpecific(site, patternDeclarations.get(n), bestSoFar, PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL);
                     }
                 } else if (phase.equals(PatternResolutionPhase.ALL) &&
                            isApplicable(candidateBindingTypes, notionalTypes)) {
                     bestSoFar = bestSoFar == null ?
                             patternDeclarations.get(n) :
-                            new DeconstructorResolutionError(AMBIGUOUS, "compiler.err.matcher.overloading.ambiguity");
+                            new DeconstructorResolutionError(bestSoFar, patternDeclarations.get(n));
                 }
             }
 
@@ -4468,21 +4468,34 @@ public class Attr extends JCTree.Visitor {
     }
 
     class DeconstructorResolutionError extends Symbol {
-        final String debugName;
+        List<Symbol> ambiguousSyms = List.nil();
 
-        DeconstructorResolutionError(Kind kind, String debugName) {
-            super(kind, 0, null, null, null);
-            this.debugName = debugName;
+        DeconstructorResolutionError(Symbol sym1, Symbol sym2) {
+            super(AMBIGUOUS, 0, null, null, null);
+            ambiguousSyms = flatten(sym2).appendList(flatten(sym1));
+        }
+
+        private List<Symbol> flatten(Symbol sym) {
+            if (sym.kind == AMBIGUOUS) {
+                return ((DeconstructorResolutionError)sym.baseSymbol()).ambiguousSyms;
+            } else {
+                return List.of(sym);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "current conflicts: " + ambiguousSyms.toString();
+        }
+
+        DeconstructorResolutionError addAmbiguousSymbol(Symbol s) {
+            ambiguousSyms = ambiguousSyms.prepend(s);
+            return this;
         }
 
         @Override @DefinedBy(Api.LANGUAGE_MODEL)
         public <R, P> R accept(ElementVisitor<R, P> v, P p) {
             throw new AssertionError();
-        }
-
-        @Override
-        public String toString() {
-            return debugName;
         }
 
         @Override
@@ -4500,24 +4513,49 @@ public class Attr extends JCTree.Visitor {
         }
     }
 
-    private Symbol findSpecific(Type site, MethodSymbol bestSoFar, MethodSymbol candidatePatternDeclaration, PatternResolutionPhase patternResolutionPhase) {
-        List<Type> bindingTypesBestSoFar = getBindingTypes(site, bestSoFar);
-        List<Type> bindingTypesCandidatePatternDeclaration = getBindingTypes(site, candidatePatternDeclaration);
+    /** Return the most/least specific of the two patterns,
+     *  given that both are accessible and applicable.
+     *
+     * @param site   The original type from where the selection takes place.
+     * @param s1     A new candidate for specificity determination (most or least, according to the phase).
+     * @param s2     The previous specific candidate.
+     * @param phase  The phase we are in: most specific unconditional, least specific conditional, any.
+     * @return the symbol of the most/least specific
+     */
+    private Symbol findSpecific(Type site, Symbol s1, Symbol s2, PatternResolutionPhase phase) {
+        if (s2 instanceof DeconstructorResolutionError amb) {
+            List<Type> bindingTypesCandidate = getBindingTypes(site, (MethodSymbol) s1);
 
-        boolean bestSoFarToCandidate = evaluateConditionality(bindingTypesBestSoFar, bindingTypesCandidatePatternDeclaration) == ConditionalityResult.ALL_UNCONDITIONAL;
-        boolean candidateToBestSoFar = evaluateConditionality(bindingTypesCandidatePatternDeclaration, bindingTypesBestSoFar) == ConditionalityResult.ALL_UNCONDITIONAL;
+            boolean s1BetterThanAllAmbiguous = true;
+            for (var ambiguousSym : amb.ambiguousSyms) {
+                List<Type> bindingTypesAmbiguousSym = getBindingTypes(site, (MethodSymbol) ambiguousSym);
+                s1BetterThanAllAmbiguous &= evaluateConditionality(bindingTypesCandidate, bindingTypesAmbiguousSym) == ConditionalityResult.ALL_UNCONDITIONAL;
+            }
 
-        if (!bestSoFarToCandidate && !candidateToBestSoFar) {
-            return new DeconstructorResolutionError(AMBIGUOUS, "compiler.err.matcher.overloading.ambiguity");
+            if (s1BetterThanAllAmbiguous) {
+                return s1;
+            }
+        } else {
+            List<Type> bindingTypesCandidate = getBindingTypes(site, (MethodSymbol) s1);
+            List<Type> bindingTypesBestSoFar = getBindingTypes(site, (MethodSymbol) s2);
+
+            boolean bestSoFarToCandidate = evaluateConditionality(bindingTypesBestSoFar, bindingTypesCandidate) == ConditionalityResult.ALL_UNCONDITIONAL;
+            boolean candidateToBestSoFar = evaluateConditionality(bindingTypesCandidate, bindingTypesBestSoFar) == ConditionalityResult.ALL_UNCONDITIONAL;
+
+            if (!bestSoFarToCandidate && !candidateToBestSoFar) {
+                return new DeconstructorResolutionError(s1, s2);
+            }
+
+            Symbol symbol = switch (phase) {
+                case LEAST_SPECIFIC_UNCONDITIONAL -> bestSoFarToCandidate ? s1 : s2;
+                case MOST_SPECIFIC_CONDITIONAL -> candidateToBestSoFar ? s1 : s2;
+                default -> new DeconstructorResolutionError(s1, s2);
+            };
+
+            return symbol;
         }
 
-        return switch (patternResolutionPhase) {
-            case LEAST_SPECIFIC_UNCONDITIONAL ->
-                bestSoFarToCandidate ? candidatePatternDeclaration : bestSoFar;
-            case MOST_SPECIFIC_CONDITIONAL ->
-                candidateToBestSoFar ? candidatePatternDeclaration : bestSoFar;
-            default -> new DeconstructorResolutionError(AMBIGUOUS, "compiler.err.matcher.overloading.ambiguity");
-        };
+        return null;
     }
 
     enum ConditionalityResult {

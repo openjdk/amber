@@ -214,6 +214,36 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
                         """, Task.Expect.FAIL);
     }
 
+    @Test
+    public void test4(Path base) throws Exception {
+        String source =
+                """
+                package test;
+
+                class Test {
+                   public static void main(String... args) {
+                       JsonValue r = new JsonValue();
+
+                       switch (r) {
+                           case JsonValue(short s) -> {}
+                           default -> {}
+                       }
+                   }
+
+                   static class JsonValue {
+                        pattern JsonValue(int i)    { System.out.println(1); match JsonValue(1); }
+                        pattern JsonValue(long l)   { System.out.println(2); match JsonValue(2); }
+                        pattern JsonValue(double d) { System.out.println(3); match JsonValue(3); }
+                    }
+                }
+                """;
+
+        compileAndRun(base, source,
+                """
+                        1
+                        """, Task.Expect.SUCCESS);
+    }
+
     private void compileAndRun(Path base, String source, String expected, Task.Expect compilationExpectation) throws IOException {
         Path current = base.resolve(".");
         Path src = current.resolve("src");
