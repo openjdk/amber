@@ -4534,6 +4534,8 @@ public class Attr extends JCTree.Visitor {
 
             if (s1BetterThanAllAmbiguous) {
                 return s1;
+            } else {
+                return amb.addAmbiguousSymbol(s1);
             }
         } else {
             List<Type> bindingTypesCandidate = getBindingTypes(site, (MethodSymbol) s1);
@@ -4554,8 +4556,6 @@ public class Attr extends JCTree.Visitor {
 
             return symbol;
         }
-
-        return null;
     }
 
     enum ConditionalityResult {
