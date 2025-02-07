@@ -158,6 +158,13 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
+    public JCTree visitMatchFailStatement(MatchFailTree node, P p) {
+        JCMatchFail t = (JCMatchFail) node;
+
+        return M.at(t.pos).MatchFail();
+    }
+
+    @DefinedBy(Api.COMPILER_TREE)
     public JCTree visitCase(CaseTree node, P p) {
         JCCase t = (JCCase) node;
         List<JCCaseLabel> labels = copy(t.labels, p);

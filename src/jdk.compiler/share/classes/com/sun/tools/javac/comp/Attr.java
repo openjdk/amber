@@ -1200,12 +1200,16 @@ public class Attr extends JCTree.Visitor {
                 }
             }
 
+            //TODO: should these checks/flag setting be done in MemberEnter?
             if (m.isPattern() && tree.thrown.nonEmpty()) {
                 log.error(tree.pos(), Errors.PatternDeclarationCantThrowException);
             }
 
             if (m.isDeconstructor()) {
                 m.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                if ((tree.mods.flags & Flags.PARTIAL) == 0) {
+                    m.patternFlags.add(PatternFlags.TOTAL);
+                }
             }
 
             // annotation method checks
@@ -2454,6 +2458,14 @@ public class Attr extends JCTree.Visitor {
             log.error(tree.pos(), Errors.MatchPatternNameWrong);
         }
 
+        result = null;
+    }
+
+    @Override
+    public void visitMatchFail(JCMatchFail tree) {
+        if ((env.enclMethod.sym.flags_field & Flags.PARTIAL) == 0) {
+            log.error(tree.pos(), Errors.UnmarkedPartialDeconstructor);
+        }
         result = null;
     }
 
@@ -4647,7 +4659,11 @@ public class Attr extends JCTree.Visitor {
                         .collect(List.collector());
 
                 PatternType pt = new PatternType(recordComponents, syms.voidType, syms.methodClass);
-                patternDeclarations = patternDeclarations.prepend(new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym));
+                MethodSymbol synthetized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
+
+                synthetized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                synthetized.patternFlags.add(PatternFlags.TOTAL);
+                patternDeclarations = patternDeclarations.prepend(synthetized);
             }
         }
 

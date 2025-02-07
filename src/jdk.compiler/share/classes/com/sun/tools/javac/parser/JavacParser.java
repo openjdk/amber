@@ -2949,6 +2949,20 @@ public class JavacParser implements Parser {
                     List<JCExpression> args = arguments();
                     accept(SEMI);
                     return List.of(toP(F.at(pos).Match(name, args)));
+                } else if (next.kind == SUB) {
+                    Token nextNext = S.token(2);
+                    if (nextNext.kind == IDENTIFIER) {
+                        if (nextNext.name().contentEquals("fail")) {
+                            checkSourceLevel(Feature.PATTERN_DECLARATIONS);
+                            nextToken();
+                            nextToken();
+                            nextToken();
+                            accept(LPAREN);
+                            accept(RPAREN);
+                            accept(SEMI);
+                            return List.of(toP(F.at(pos).MatchFail()));
+                        }
+                    }
                 }
             } else
             if (token.name() == names.yield && allowYieldStatement) {
@@ -3627,6 +3641,7 @@ public class JavacParser implements Parser {
             case STRICTFP    : flag = Flags.STRICTFP; break;
             case MONKEYS_AT  : flag = Flags.ANNOTATION; break;
             case DEFAULT     : flag = Flags.DEFAULT; break;
+            case CASE        : flag = Flags.PARTIAL; break;
             case ERROR       : flag = 0; nextToken(); break;
             case IDENTIFIER  : {
                 if (isNonSealedClassStart(false)) {

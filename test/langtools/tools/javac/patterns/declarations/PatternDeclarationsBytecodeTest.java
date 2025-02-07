@@ -249,7 +249,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
             String o = """
                     Pattern:
                           pattern_name: Test
-                          pattern_flags: deconstructor
+                          pattern_flags: deconstructor total
                           pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
                     """;
             containsOrdered(o, javapOut, "Wrongly generated basic structure of Pattern attribute:\n");
@@ -294,7 +294,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
             String output = """
                   Pattern:
                       pattern_name: Test
-                      pattern_flags: deconstructor
+                      pattern_flags: deconstructor total
                       pattern_type: (Ljava/lang/String;Ljava/lang/String;)V
                       MethodParameters:
                         Name                           Flags

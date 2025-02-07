@@ -213,6 +213,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         MATCH,
 
+        /** Match fail statements, of type MatchFail.
+         */
+        MATCHFAIL,
+
         /** Method invocation expressions, of type Apply.
          */
         APPLY,
@@ -1805,6 +1809,28 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @Override
         public Tag getTag() {
             return TYPETEST_STATEMENT;
+        }
+    }
+
+    /**
+     * The match-fail statement
+     */
+    public static class JCMatchFail extends JCStatement implements MatchFailTree {
+
+        protected JCMatchFail() {
+        }
+        @Override
+        public void accept(Visitor v) { v.visitMatchFail(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.MATCH_FAILED; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitMatchFailStatement(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return MATCHFAIL;
         }
     }
 
@@ -3631,6 +3657,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitBreak(JCBreak that)                 { visitTree(that); }
         public void visitYield(JCYield that)                 { visitTree(that); }
         public void visitMatch(JCMatch that)                 { visitTree(that); }
+        public void visitMatchFail(JCMatchFail that)         { visitTree(that); }
         public void visitContinue(JCContinue that)           { visitTree(that); }
         public void visitReturn(JCReturn that)               { visitTree(that); }
         public void visitThrow(JCThrow that)                 { visitTree(that); }

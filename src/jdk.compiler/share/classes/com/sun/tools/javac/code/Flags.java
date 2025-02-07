@@ -282,9 +282,10 @@ public class Flags {
      */
     public static final long THROWS = 1L<<47;
 
-    /*
-     * Currently available: Bit 48.
+    /**
+     * Flag to indicate the given deconstructor is partial
      */
+    public static final long PARTIAL = 1L<<48; //Trees + Symbols
 
     /**
      * Flag that marks a synthetic method body for a lambda expression

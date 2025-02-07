@@ -41,6 +41,8 @@ import java.util.List;
  *
  * @since 23
  */
+@PreviewFeature(feature= PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
+//TODO: maybe MatchSuccessTree?
 public interface MatchTree extends StatementTree {
 
     /**
@@ -48,6 +50,5 @@ public interface MatchTree extends StatementTree {
      *
      * @return the expression
      */
-    @PreviewFeature(feature= PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
     List<? extends ExpressionTree> getArguments();
 }

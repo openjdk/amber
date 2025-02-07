@@ -402,6 +402,12 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCMatchFail MatchFail() {
+        JCMatchFail tree = new JCMatchFail();
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCMethodInvocation Apply(List<JCExpression> typeargs,
                        JCExpression fn,
                        List<JCExpression> args)
