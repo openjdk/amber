@@ -10,14 +10,19 @@ public class OverloadedPatternDeclarationErrors {
     static class I2 implements I {}
 
     private static int test(D o) {
-        if (o instanceof D(String data, Integer out)) { // no compatible matcher found
+        if (o instanceof D(String data, Integer out)) {                        // matching arity exists, no applicable overload found
             return out;
         }
         return -1;
     }
 
     private static void test2(D o) {
-        if (o instanceof D(I data)) {                  // ambiguity
+        if (o instanceof D(I data)) {                                          // matching arity exists, multiple applicable exist, ambiguous
+        }
+    }
+
+    private static void test3(D o) {
+        if (o instanceof D(I data, Integer i1, Integer i2)) {                  // no matching arity matcher exists
         }
     }
 

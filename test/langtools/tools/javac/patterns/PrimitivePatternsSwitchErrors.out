@@ -1,6 +1,6 @@
 PrimitivePatternsSwitchErrors.java:15:18: compiler.err.pattern.dominated
 PrimitivePatternsSwitchErrors.java:24:18: compiler.err.pattern.dominated
-PrimitivePatternsSwitchErrors.java:31:18: compiler.err.no.compatible.matcher.found
+PrimitivePatternsSwitchErrors.java:31:18: compiler.err.cant.apply.deconstruction.pattern: PrimitivePatternsSwitchErrors.R_int
 PrimitivePatternsSwitchErrors.java:70:18: compiler.err.pattern.dominated
 PrimitivePatternsSwitchErrors.java:78:18: compiler.err.pattern.dominated
 PrimitivePatternsSwitchErrors.java:84:18: compiler.err.prob.found.req: (compiler.misc.possible.loss.of.precision: long, byte)

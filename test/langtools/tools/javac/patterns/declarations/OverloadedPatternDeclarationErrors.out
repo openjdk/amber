@@ -1,5 +1,6 @@
-OverloadedPatternDeclarationErrors.java:13:26: compiler.err.no.compatible.matcher.found
-OverloadedPatternDeclarationErrors.java:20:26: compiler.err.matcher.overloading.ambiguity
+OverloadedPatternDeclarationErrors.java:13:26: compiler.err.no.compatible.matcher.found: OverloadedPatternDeclarationErrors.D
+OverloadedPatternDeclarationErrors.java:20:26: compiler.err.matcher.overloading.ambiguity: OverloadedPatternDeclarationErrors.D
+OverloadedPatternDeclarationErrors.java:25:26: compiler.err.no.compatible.matcher.found.arity: OverloadedPatternDeclarationErrors.D, 3
 - compiler.note.preview.filename: OverloadedPatternDeclarationErrors.java, DEFAULT
 - compiler.note.preview.recompile
-2 errors
+3 errors

@@ -175,6 +175,8 @@ public class Attr extends JCTree.Visitor {
                              Feature.PATTERN_SWITCH.allowedInSource(source);
         allowUnconditionalPatternsInstanceOf =
                              Feature.UNCONDITIONAL_PATTERN_IN_INSTANCEOF.allowedInSource(source);
+        allowPatternDeclarations = preview.isEnabled() && Feature.PATTERN_DECLARATIONS.allowedInSource(source);
+
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
 
@@ -203,6 +205,10 @@ public class Attr extends JCTree.Visitor {
     /** Are unconditional patterns in instanceof allowed
      */
     private final boolean allowUnconditionalPatternsInstanceOf;
+
+    /** Are pattern declarations allowed
+     */
+    private final boolean allowPatternDeclarations;
 
     /**
      * Switch: warn about use of variable before declaration?
@@ -4346,24 +4352,36 @@ public class Attr extends JCTree.Visitor {
         if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
 
-            // Resolve deconstructor call for pattern-use side
-            // If site refers to a record, then synthesize a MT/MethodSymbol with the signature of the implicitely declared pattern declaration
-            List<MethodSymbol> patternDeclarations = patternDeclarationCandidatesWithArity(site, nestedPatternCount);
+            List<MethodSymbol> candidates = candidatesWithArity(site, nestedPatternCount);
 
-            if (patternDeclarations.size() >= 1) {
+            if (candidates.size() >= 1) {
                 List<Type> notionalTypes = calculateNotionalTypes(tree);
-                Symbol resolvedPatternDeclaration = selectBestPatternDeclarationInScope(tree.pos(), site, patternDeclarations, notionalTypes);
+                Symbol resolved =
+                        selectBestPatternDeclarationInScope(tree.pos(), site, candidates, notionalTypes);
 
-                if (resolvedPatternDeclaration != null && resolvedPatternDeclaration.kind != AMBIGUOUS) {
-                    nestedPatternsTargetTypes = types.memberType(site, resolvedPatternDeclaration).getBindingTypes();
-                    tree.patternDeclaration = (MethodSymbol) resolvedPatternDeclaration;
+                if (resolved != null && resolved.kind != AMBIGUOUS) {
+                    nestedPatternsTargetTypes = types.memberType(site, resolved).getBindingTypes();
+                    tree.patternDeclaration = (MethodSymbol) resolved;
+                } else if (resolved != null && resolved.kind == AMBIGUOUS){
+                    log.error(tree.pos(), Errors.MatcherOverloadingAmbiguity(site.tsym));
+                } else {
+                    if (site.tsym instanceof ClassSymbol cs && cs.isRecord() || !allowPatternDeclarations) {
+                        log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
+                    } else {
+                        log.error(tree.pos(), Errors.NoCompatibleMatcherFound(site.tsym));
+                    }
+                }
+            } else {
+                if (site.tsym instanceof ClassSymbol cs && cs.isRecord() || !allowPatternDeclarations) {
+                    log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
+                } else {
+                    log.error(tree.pos(),
+                            Errors.NoCompatibleMatcherFoundArity(site.tsym, String.valueOf(nestedPatternCount)));
                 }
             }
-            // TODO: error for classes with non matching arity
         }
 
         if (nestedPatternsTargetTypes == null) {
-            log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
             nestedPatternsTargetTypes = Stream.generate(() -> types.createErrorType(tree.type))
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
@@ -4454,14 +4472,6 @@ public class Attr extends JCTree.Visitor {
             if (bestSoFar != null && bestSoFar.kind != AMBIGUOUS) {
                 return bestSoFar;
             }
-        }
-
-        if (bestSoFar != null && bestSoFar.kind == AMBIGUOUS) {
-            log.error(pos,
-                    Errors.MatcherOverloadingAmbiguity);
-        } else if (bestSoFar == null) {
-            log.error(pos,
-                    Errors.NoCompatibleMatcherFound);
         }
 
         return bestSoFar;
@@ -4617,7 +4627,7 @@ public class Attr extends JCTree.Visitor {
      * @param nestedPatternCount the number of nested patterns
      * @return                   a list of MethodSymbols
      */
-    private List<MethodSymbol> patternDeclarationCandidatesWithArity(Type site, int nestedPatternCount) {
+    private List<MethodSymbol> candidatesWithArity(Type site, int nestedPatternCount) {
         var matchersIt = site.tsym.members()
                 .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                 .iterator();

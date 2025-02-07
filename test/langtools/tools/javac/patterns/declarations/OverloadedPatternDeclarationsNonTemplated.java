@@ -207,7 +207,7 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
 
         compileAndRun(base, source,
                 """
-                        Test.java:8:17: compiler.err.matcher.overloading.ambiguity
+                        Test.java:8:17: compiler.err.matcher.overloading.ambiguity: test.Test.R
                         - compiler.note.preview.filename: Test.java, DEFAULT
                         - compiler.note.preview.recompile
                         1 error
