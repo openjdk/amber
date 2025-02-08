@@ -550,7 +550,7 @@ public class Flags {
         DEPRECATED_ANNOTATION(Flags.DEPRECATED_ANNOTATION),
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
         HAS_RESOURCE(Flags.HAS_RESOURCE),
-        // Bit 48 is currently available
+        PARTIAL(Flags.PARTIAL),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         NAME_FILLED(Flags.NAME_FILLED),
         PREVIEW_API(Flags.PREVIEW_API),

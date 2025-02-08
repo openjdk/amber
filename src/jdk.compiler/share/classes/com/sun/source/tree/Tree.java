@@ -725,12 +725,12 @@ public interface Tree {
         MATCH(MatchTree.class), //TODO: maybe MATCH_SUCCESS
 
         /**
-         * Used for instances of {@link MatchFailTree}.
+         * Used for instances of {@link MatchFailedTree}.
          *
          * @since 25
          */
         @PreviewFeature(feature=PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
-        MATCH_FAILED(MatchFailTree.class),
+        MATCH_FAILED(MatchFailedTree.class),
 
         ;
 

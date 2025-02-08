@@ -633,12 +633,12 @@ public interface TreeVisitor<R,P> {
     R visitMatchStatement(MatchTree node, P p);
 
     /**
-     * Visits an {@code MatchFailTree} node.
+     * Visits an {@code MatchFailedTree} node.
      * @param node the node being visited
      * @param p a parameter value
      * @return a result value
      * @since 25
      */
     @PreviewFeature(feature=PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
-    R visitMatchFailStatement(MatchFailTree node, P p);
+    R visitMatchFailStatement(MatchFailedTree node, P p);
 }

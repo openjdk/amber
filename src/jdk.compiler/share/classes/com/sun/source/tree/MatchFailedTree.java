@@ -42,5 +42,5 @@ import java.util.List;
  * @since 25
  */
 @PreviewFeature(feature= PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
-public interface MatchFailTree extends StatementTree {
+public interface MatchFailedTree extends StatementTree {
 }

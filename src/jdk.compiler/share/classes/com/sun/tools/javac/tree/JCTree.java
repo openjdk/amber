@@ -1815,7 +1815,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * The match-fail statement
      */
-    public static class JCMatchFail extends JCStatement implements MatchFailTree {
+    public static class JCMatchFail extends JCStatement implements MatchFailedTree {
 
         protected JCMatchFail() {
         }

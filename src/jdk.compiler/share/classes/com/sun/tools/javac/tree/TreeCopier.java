@@ -158,7 +158,7 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
     }
 
     @DefinedBy(Api.COMPILER_TREE)
-    public JCTree visitMatchFailStatement(MatchFailTree node, P p) {
+    public JCTree visitMatchFailStatement(MatchFailedTree node, P p) {
         JCMatchFail t = (JCMatchFail) node;
 
         return M.at(t.pos).MatchFail();

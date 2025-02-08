@@ -136,7 +136,7 @@ public class MatchFail extends TestRunner {
             .writeAll()
             .getOutput(Task.OutputKind.STDOUT);
 
-        String expectedOut = "OK\n";
+        String expectedOut = "OK" + System.getProperty("line.separator");
 
         if (!Objects.equals(out, expectedOut)) {
             throw new AssertionError("Unexpected output, expected: " + expectedOut +

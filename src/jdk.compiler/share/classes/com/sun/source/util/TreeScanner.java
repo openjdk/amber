@@ -1251,7 +1251,7 @@ public class TreeScanner<R,P> implements TreeVisitor<R,P> {
      * @return the result of scanning
      */
     @Override
-    public R visitMatchFailStatement(MatchFailTree node, P p) {
+    public R visitMatchFailStatement(MatchFailedTree node, P p) {
         return null;
     }
 
