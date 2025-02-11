@@ -124,6 +124,19 @@ public class PatternBootstraps {
             return new ConstantCallSite(target);
         } catch (Throwable t) {
             // Attempt 2: synthesize the pattern declaration from the record components
+            if (!selectorType.isRecord()) {
+                throw new IllegalArgumentException("Cannot find a pattern");
+            }
+
+            String expectedMangledName = PatternBytecodeName.mangle(selectorType,
+                    Arrays.stream(selectorType.getRecordComponents())
+                    .map(RecordComponent::getType)
+                    .toArray(Class<?>[]::new));
+
+            if (!expectedMangledName.equals(mangledName)) {
+                throw new IllegalArgumentException("\nUnexpected pattern at use site: " + mangledName + "\nWas expecting: " + expectedMangledName);
+            }
+
             target = MethodHandles.insertArguments(StaticHolders.SYNTHETIC_PATTERN, 0, selectorType).asType(invocationType);
 
             return new ConstantCallSite(target);

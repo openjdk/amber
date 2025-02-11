@@ -313,9 +313,11 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public Type visitPatternType(PatternType t, S s) {
             List<Type> bindingtypes = t.bindingtypes;
             List<Type> bindingtypes1 = visit(bindingtypes, s);
+            List<Type> erasedBindingTypes1 = visit(t.erasedBindingTypes, s);
+
             if (bindingtypes1 == bindingtypes) return t;
             else {
-                PatternType patternType = new PatternType(bindingtypes1, /*XXX*/t.restype, t.tsym) {
+                PatternType patternType = new PatternType(bindingtypes1, erasedBindingTypes1, /*XXX*/t.restype, t.tsym) {
                     @Override
                     protected boolean needsStripping() {
                         return true;
@@ -1934,13 +1936,17 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
     public static class PatternType extends Type implements ExecutableType {
         public List<Type> bindingtypes;
+        public List<Type> erasedBindingTypes;
+
         public Type restype;
 
         public PatternType(List<Type> bindingtypes,
+                           List<Type> erasedBindingTypes,
                            Type restype, //TODO:
-                          TypeSymbol methodClass) {
+                           TypeSymbol methodClass) {
             super(methodClass, List.nil());
             this.bindingtypes = bindingtypes;
+            this.erasedBindingTypes = erasedBindingTypes;
             this.restype = restype;
         }
 

@@ -158,7 +158,14 @@ public class MemberEnter extends JCTree.Visitor {
         }
         if (msym.isPattern()) {
             Assert.check(params.isEmpty());
-            return new PatternType(bindingsbuf.toList(), restype, syms.methodClass);
+            var erasedBindingTypes = bindingsbuf.toList()
+                            .stream()
+                            .map(b -> types.erasure(b))
+                            .collect(List.collector());
+
+            PatternType patternType = new PatternType(bindingsbuf.toList(), erasedBindingTypes, restype, syms.methodClass);
+
+            return patternType;
         } else {
             Assert.check(bindings == null);
             MethodType mtype = new MethodType(argbuf.toList(),

@@ -26,7 +26,7 @@ import java.util.Objects;
 /**
  * @test
  * @enablePreview
- * @compile -parameters InstanceOfStatementInPatternsTest.java
+ * @compile InstanceOfStatementInPatternsTest.java
  * @run main InstanceOfStatementInPatternsTest
  */
 public class InstanceOfStatementInPatternsTest {
