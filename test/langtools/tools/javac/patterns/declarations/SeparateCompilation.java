@@ -207,76 +207,76 @@ public class SeparateCompilation extends TestRunner {
                 .writeAll()
                 .getOutput(Task.OutputKind.STDOUT);
     }
-//
-//    @Test
-//    public void testGenericClass(Path base) throws Exception { // TODO: inference issue
-//        Path current = base.resolve(".");
-//        Path lib = current.resolve("lib");
-//        Path libSrc = lib.resolve("src");
-//        Path libClasses = lib.resolve("classes");
-//
-//        tb.writeJavaFiles(libSrc,
-//                """
-//                package lib;
-//                import java.util.List;
-//                public class Box<T extends Integer> {
-//                    public pattern Box(List<T> o) {
-//                        match Box(List.of(1, 2));
-//                    }
-//                }
-//                """);
-//
-//        Files.createDirectories(libClasses);
-//
-//        new JavacTask(tb)
-//                .options("-XDrawDiagnostics", "--enable-preview", "--release", SOURCE_VERSION)
-//                .outdir(libClasses)
-//                .files(tb.findJavaFiles(libSrc))
-//                .run()
-//                .writeAll()
-//                .getOutput(Task.OutputKind.DIRECT);
-//
-//        Path test = current.resolve("test");
-//        Path testSrc = test.resolve("src");
-//        Path testClasses = test.resolve("classes");
-//
-//        tb.writeJavaFiles(testSrc,
-//                """
-//                package test;
-//                import java.util.List;
-//                import lib.Box;
-//
-//                public class Test {
-//                    public static void main(String... args) {
-//                           Box<Integer> l = new Box<>();
-//
-//                           switch (l) {
-//                               case Box<Integer>(List<Integer> l) -> { System.out.println(l.get(0)); }
-//                               default -> {}
-//                           }
-//                    }
-//                }
-//                """);
-//
-//        Files.createDirectories(testClasses);
-//
-//        new JavacTask(tb)
-//                .options("-XDrawDiagnostics", "--enable-preview", "--release", SOURCE_VERSION)
-//                .classpath(libClasses)
-//                .outdir(testClasses)
-//                .files(tb.findJavaFiles(testSrc))
-//                .run()
-//                .writeAll()
-//                .getOutput(Task.OutputKind.DIRECT);
-//
-//        String javaOut = new JavaTask(tb)
-//                .vmOptions("--enable-preview")
-//                .classpath(testClasses.toString() + System.getProperty("path.separator") + libClasses.toString())
-//                .className("test.Test")
-//                .run()
-//                .writeAll()
-//                .getOutput(Task.OutputKind.STDOUT);
-//    }
+
+    @Test
+    public void testGenericClass(Path base) throws Exception {
+        Path current = base.resolve(".");
+        Path lib = current.resolve("lib");
+        Path libSrc = lib.resolve("src");
+        Path libClasses = lib.resolve("classes");
+
+        tb.writeJavaFiles(libSrc,
+                """
+                package lib;
+                public class Box<T extends Integer> {
+                     public pattern Box(GBox<T> o) {
+                         match Box(new GBox<T>());
+                     }
+                     
+                     public static class GBox<T> {}
+                 }
+                """);
+
+        Files.createDirectories(libClasses);
+
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--enable-preview", "--release", SOURCE_VERSION)
+                .outdir(libClasses)
+                .files(tb.findJavaFiles(libSrc))
+                .run()
+                .writeAll()
+                .getOutput(Task.OutputKind.DIRECT);
+
+        Path test = current.resolve("test");
+        Path testSrc = test.resolve("src");
+        Path testClasses = test.resolve("classes");
+
+        tb.writeJavaFiles(testSrc,
+                """
+                package test;
+                import java.util.List;
+                import lib.Box;
+                public class Test {
+                    public static void main(String... args) {
+                        Box<Integer> l = new Box<>();
+                
+                        switch (l) {
+                            case Box(Box.GBox<Integer> ll) -> {  }
+                            default -> {}
+                        }
+                    }
+                }
+                """);
+
+        Files.createDirectories(testClasses);
+
+        new JavacTask(tb)
+                .options("-XDrawDiagnostics", "--enable-preview", "--release", SOURCE_VERSION)
+                .classpath(libClasses)
+                .outdir(testClasses)
+                .files(tb.findJavaFiles(testSrc))
+                .run()
+                .writeAll()
+                .getOutput(Task.OutputKind.DIRECT);
+
+        String javaOut = new JavaTask(tb)
+                .vmOptions("--enable-preview")
+                .classpath(testClasses.toString() + System.getProperty("path.separator") + libClasses.toString())
+                .className("test.Test")
+                .run()
+                .writeAll()
+                .getOutput(Task.OutputKind.STDOUT);
+    }
 
     @Test
     public void testGenericRecord(Path base) throws Exception {

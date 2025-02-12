@@ -1068,7 +1068,13 @@ public class ClassReader {
                         }
                     } else if (sym.type.hasTag(TypeTag.PATTERN)){
                         Type mtype = poolReader.getType(nextChar());
-                        PatternType patternType = new PatternType(mtype.getParameterTypes(), mtype.getParameterTypes(), syms.voidType, syms.methodClass);
+
+                        List<Type> erasedBindingTypes = mtype.getParameterTypes()
+                                .stream()
+                                .map(rc -> types.erasure(rc))
+                                .collect(List.collector());
+
+                        PatternType patternType = new PatternType(mtype.getParameterTypes(), erasedBindingTypes, syms.voidType, syms.methodClass);
 
                         sym.type = patternType;
                         //TODO: no thrown types for PatternType
@@ -1382,7 +1388,7 @@ public class ClassReader {
                         parameterAccessFlags = null;
 
                         MethodSymbol msym = (MethodSymbol) sym;
-                        msym.type = new PatternType(patternType.getParameterTypes(), patternType.getParameterTypes(), syms.voidType, syms.methodClass);
+                        msym.type = new PatternType(patternType.getParameterTypes(), null, syms.voidType, syms.methodClass);
 
                         readMemberAttrs(sym);
 
