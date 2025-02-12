@@ -310,11 +310,11 @@ public class SeparateCompilation extends TestRunner {
                 package test;
                 import java.util.List;
                 import lib.Box;
-                
+
                 public class Test {
                     public static void main(String... args) {
                            Box<Integer> l = new Box<>(42);
-    
+
                            switch (l) {
                                case Box<Integer>(Integer i) -> { System.out.println(i); }
                                default -> {}
