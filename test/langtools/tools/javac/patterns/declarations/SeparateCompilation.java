@@ -222,7 +222,7 @@ public class SeparateCompilation extends TestRunner {
                      public pattern Box(GBox<T> o) {
                          match Box(new GBox<T>());
                      }
-                     
+
                      public static class GBox<T> {}
                  }
                 """);
@@ -249,7 +249,7 @@ public class SeparateCompilation extends TestRunner {
                 public class Test {
                     public static void main(String... args) {
                         Box<Integer> l = new Box<>();
-                
+
                         switch (l) {
                             case Box(Box.GBox<Integer> ll) -> {  }
                             default -> {}
