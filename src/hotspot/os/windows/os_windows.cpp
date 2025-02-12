@@ -24,7 +24,6 @@
 
 // API level must be at least Windows Vista or Server 2008 to use InitOnceExecuteOnce
 
-// no precompiled headers
 #include "classfile/vmSymbols.hpp"
 #include "code/codeCache.hpp"
 #include "code/nativeInst.hpp"
@@ -3639,10 +3638,7 @@ bool os::pd_release_memory(char* addr, size_t bytes) {
     // Handle mapping error. We assert in debug, unconditionally print a warning in release.
     if (err != nullptr) {
       log_warning(os)("bad release: [" PTR_FORMAT "-" PTR_FORMAT "): %s", p2i(start), p2i(end), err);
-#ifdef ASSERT
-      os::print_memory_mappings((char*)start, bytes, tty);
       assert(false, "bad release: [" PTR_FORMAT "-" PTR_FORMAT "): %s", p2i(start), p2i(end), err);
-#endif
       return false;
     }
     // Free this range
@@ -4437,8 +4433,8 @@ bool os::message_box(const char* title, const char* message) {
 void os::init(void) {
   if (is_vm_statically_linked()) {
     // Mimick what is done in DllMain for non-static builds
-    HMODULE hModule = NULL;
-    GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, NULL, &hModule);
+    HMODULE hModule = nullptr;
+    GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, nullptr, &hModule);
     windows_preinit(hModule);
     atexit(windows_atexit);
   }
