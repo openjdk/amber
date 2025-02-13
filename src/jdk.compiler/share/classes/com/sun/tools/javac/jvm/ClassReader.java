@@ -1073,7 +1073,6 @@ public class ClassReader {
                                 .stream()
                                 .map(rc -> types.erasure(rc))
                                 .collect(List.collector());
-
                         PatternType patternType = new PatternType(mtype.getParameterTypes(), erasedBindingTypes, syms.voidType, syms.methodClass);
 
                         sym.type = patternType;
@@ -1388,7 +1387,13 @@ public class ClassReader {
                         parameterAccessFlags = null;
 
                         MethodSymbol msym = (MethodSymbol) sym;
-                        msym.type = new PatternType(patternType.getParameterTypes(), null, syms.voidType, syms.methodClass);
+
+                        // todo: refactor/improve
+                        List<Type> erasedBindingTypes = patternType.getParameterTypes()
+                                .stream()
+                                .map(rc -> types.erasure(rc))
+                                .collect(List.collector());
+                        msym.type = new PatternType(patternType.getParameterTypes(), erasedBindingTypes, syms.voidType, syms.methodClass);
 
                         readMemberAttrs(sym);
 

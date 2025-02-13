@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.lang.model.type.*;
 
@@ -1968,8 +1969,8 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public String toString() {
             StringBuilder sb = new StringBuilder();
             appendAnnotationsString(sb);
-            sb.append("(out");
-            sb.append(bindingtypes);
+            sb.append("(out ");
+            sb.append(bindingtypes.stream().map(String::valueOf).collect(Collectors.joining(", out")));
             sb.append(')');
             return sb.toString();
         }
