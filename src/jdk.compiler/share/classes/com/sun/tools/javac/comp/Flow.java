@@ -34,6 +34,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import com.sun.source.tree.CaseTree;
 import com.sun.source.tree.LambdaExpressionTree.BodyKind;
 import com.sun.tools.javac.code.*;
 import com.sun.tools.javac.code.Scope.WriteableScope;
@@ -391,9 +392,10 @@ public class Flow {
          */
         JCClassDecl initScanClass;
 
-        /** A pending exit.  These are the statements return, break, and
+        /** A pending exit.  These are the statements return, break,
          *  continue.  In addition, exception-throwing expressions or
-         *  statements are put here when not known to be caught.  This
+         *  statements are put here when not known to be caught.
+         *  In the case of pattern declarations match is also put here. This
          *  will typically result in an error unless it is within a
          *  try-finally whose finally block cannot complete normally.
          */
@@ -613,8 +615,11 @@ public class Flow {
                 scanStat(tree.body);
                 tree.completesNormally = alive != Liveness.DEAD;
 
-                if (alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID))
+                if (alive == Liveness.ALIVE && (tree.sym.flags() & PATTERN) != 0) {
+                    log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingMatchStmt);
+                } else if (alive == Liveness.ALIVE && !tree.sym.type.getReturnType().hasTag(VOID)) {
                     log.error(TreeInfo.diagEndPos(tree.body), Errors.MissingRetStmt);
+                }
 
                 clearPendingExits(true);
             } finally {
@@ -628,7 +633,7 @@ public class Flow {
             while (exits.nonEmpty()) {
                 PendingExit exit = exits.head;
                 exits = exits.tail;
-                Assert.check((inMethod && exit.tree.hasTag(RETURN)) ||
+                Assert.check((inMethod && (exit.tree.hasTag(RETURN) || exit.tree.hasTag(MATCH) || exit.tree.hasTag(MATCHFAIL))) ||
                                 log.hasErrorOn(exit.tree.pos()));
             }
         }
@@ -685,6 +690,43 @@ public class Flow {
             scan(tree.step);
             alive = resolveBreaks(tree, prevPendingExits).or(
                 tree.cond != null && !tree.cond.type.isTrue());
+        }
+
+        public void visitMatch(JCMatch tree) {
+            scan(tree.args);
+            recordExit(new PendingExit(tree));
+        }
+
+        public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+            ListBuffer<PendingExit> prevPendingExits = pendingExits;
+            pendingExits = new ListBuffer<>();
+
+            if (tree.pattern instanceof JCRecordPattern rp) {
+                visitRecordPattern(rp);
+            }
+
+            List<JCCase> singletonCaseList = List.of(make.Case(
+                    CaseTree.CaseKind.STATEMENT,
+                    List.of(make.PatternCaseLabel(tree.pattern)),
+                    null,
+                    List.nil(),
+                    null)
+            );
+
+            boolean isExhaustive =
+                    exhausts(tree.expr, singletonCaseList);
+
+            if (!isExhaustive) {
+                log.error(tree, Errors.NotExhaustiveStatement); // TODO replace with instanceof-related error since this refers to switch
+            }
+
+            scan(tree.expr);
+
+            alive = alive.or(resolveBreaks(tree, prevPendingExits));
+        }
+
+        public void visitMatchFail(JCMatchFail tree) {
+            recordExit(new PendingExit(tree));
         }
 
         public void visitForeachLoop(JCEnhancedForLoop tree) {
@@ -789,6 +831,11 @@ public class Flow {
 
                 for (var l : c.labels) {
                     if (l instanceof JCPatternCaseLabel patternLabel) {
+                        if (patternLabel.pat instanceof JCRecordPattern rec &&
+                            rec.patternDeclaration != null &&
+                            !rec.patternDeclaration.patternFlags.contains(PatternFlags.TOTAL)) {
+                            continue;
+                        }
                         for (Type component : components(selector.type)) {
                             patternSet.add(makePatternDescription(component, patternLabel.pat));
                         }
@@ -1546,6 +1593,8 @@ public class Flow {
                     exits = exits.tail;
                     if (!(exit instanceof ThrownPendingExit)) {
                         Assert.check(exit.tree.hasTag(RETURN) ||
+                                         exit.tree.hasTag(MATCH) ||
+                                         exit.tree.hasTag(MATCHFAIL) ||
                                          log.hasErrorOn(exit.tree.pos()));
                     } else {
                         // uncaught throws will be reported later
@@ -1799,6 +1848,15 @@ public class Flow {
 
         public void visitReturn(JCReturn tree) {
             scan(tree.expr);
+            recordExit(new PendingExit(tree));
+        }
+
+        public void visitMatch(JCMatch tree) {
+            scan(tree.args);
+            recordExit(new PendingExit(tree));
+        }
+
+        public void visitMatchFail(JCMatchFail tree) {
             recordExit(new PendingExit(tree));
         }
 
@@ -3537,10 +3595,9 @@ public class Flow {
         } else if (pattern instanceof JCRecordPattern record) {
             Type[] componentTypes;
 
-            if (!record.type.isErroneous()) {
-                componentTypes = ((ClassSymbol) record.type.tsym).getRecordComponents()
-                        .map(r -> types.memberType(record.type, r))
-                        .toArray(s -> new Type[s]);
+            MethodSymbol patternDeclaration = ((JCRecordPattern) pattern).patternDeclaration;
+            if (!record.type.isErroneous() && patternDeclaration != null) {
+                componentTypes = patternDeclaration.type.asPatternType().bindingtypes.toArray(Type[]::new);
             }
             else {
                 componentTypes = record.nested.map(t -> types.createErrorType(t.type)).toArray(s -> new Type[s]);;

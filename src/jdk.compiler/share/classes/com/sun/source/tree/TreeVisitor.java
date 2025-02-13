@@ -25,6 +25,8 @@
 
 package com.sun.source.tree;
 
+import jdk.internal.javac.PreviewFeature;
+
 /**
  * A visitor of trees, in the style of the visitor design pattern.
  * Classes implementing this interface are used to operate
@@ -515,6 +517,14 @@ public interface TreeVisitor<R,P> {
     R visitInstanceOf(InstanceOfTree node, P p);
 
     /**
+     * Visits an {@code InstanceOfStatementTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitInstanceOfStatement(InstanceOfStatementTree node, P p);
+
+    /**
      * Visits a {@code UnaryTree} node.
      * @param node the node being visited
      * @param p a parameter value
@@ -613,4 +623,22 @@ public interface TreeVisitor<R,P> {
      * @since 14
      */
     R visitYield(YieldTree node, P p);
+
+    /**
+     * Visits an {@code MatchTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     */
+    R visitMatchStatement(MatchTree node, P p);
+
+    /**
+     * Visits an {@code MatchFailedTree} node.
+     * @param node the node being visited
+     * @param p a parameter value
+     * @return a result value
+     * @since 25
+     */
+    @PreviewFeature(feature=PreviewFeature.Feature.PATTERN_DECLARATIONS, reflective=true)
+    R visitMatchFailStatement(MatchFailedTree node, P p);
 }

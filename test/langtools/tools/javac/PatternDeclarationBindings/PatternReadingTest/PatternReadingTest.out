@@ -1,0 +1,3 @@
+- compiler.note.proc.messager: PatternReadingTest.Person1.Person1(@PatternReadingTest.ClassAnnotation(21) name, @PatternReadingTest.RuntimeAnnotation(42) username)
+- compiler.note.preview.filename: PatternReadingTest.java, DEFAULT
+- compiler.note.preview.recompile
