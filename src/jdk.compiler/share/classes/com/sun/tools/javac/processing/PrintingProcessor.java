@@ -143,7 +143,7 @@ public class PrintingProcessor extends AbstractProcessor {
                 printFormalTypeParameters(e, true);
 
                 switch(kind) {
-                    case CONSTRUCTOR:
+                    case CONSTRUCTOR, DECONSTRUCTOR:
                     // Print out simple name of the class
                     writer.print(e.getEnclosingElement().getSimpleName());
                     break;
@@ -162,7 +162,11 @@ public class PrintingProcessor extends AbstractProcessor {
                     writer.print(" {} /* compact constructor */ ");
                 } else {
                     writer.print("(");
-                    printParameters(e);
+                    if (e.getKind() == DECONSTRUCTOR) {
+                        printParameters(e.getBindings(), false);
+                    } else {
+                        printParameters(e);
+                    }
                     writer.print(")");
 
                     // Display any default values for an annotation
@@ -469,7 +473,7 @@ public class PrintingProcessor extends AbstractProcessor {
 
         private void printModifiers(Element e) {
             ElementKind kind = e.getKind();
-            if (kind == PARAMETER || kind == RECORD_COMPONENT) {
+            if (kind == PARAMETER || kind == RECORD_COMPONENT || kind == PATTERN_BINDING) {
                 // Print annotation inline
                 writer.print(annotationsToString(e));
             } else {
@@ -623,7 +627,10 @@ public class PrintingProcessor extends AbstractProcessor {
 
         // TODO: Refactor
         private void printParameters(ExecutableElement e) {
-            List<? extends VariableElement> parameters = e.getParameters();
+            printParameters(e.getParameters(), e.isVarArgs());
+        }
+
+        private void printParameters(List<? extends VariableElement> parameters, boolean isVarArgs) {
             int size = parameters.size();
 
             switch (size) {
@@ -634,7 +641,7 @@ public class PrintingProcessor extends AbstractProcessor {
                 for(VariableElement parameter: parameters) {
                     printModifiers(parameter);
 
-                    if (e.isVarArgs() ) {
+                    if (isVarArgs) {
                         TypeMirror tm = parameter.asType();
                         if (tm.getKind() != TypeKind.ARRAY)
                             throw new AssertionError("Var-args parameter is not an array type: " + tm);
@@ -658,7 +665,7 @@ public class PrintingProcessor extends AbstractProcessor {
 
                         printModifiers(parameter);
 
-                        if (i == size && e.isVarArgs() ) {
+                        if (i == size && isVarArgs) {
                             TypeMirror tm = parameter.asType();
                             if (tm.getKind() != TypeKind.ARRAY)
                                 throw new AssertionError("Var-args parameter is not an array type: " + tm);

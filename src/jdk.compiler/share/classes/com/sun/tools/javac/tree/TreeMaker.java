@@ -396,6 +396,18 @@ public class TreeMaker implements JCTree.Factory {
         return tree;
     }
 
+    public JCMatch Match(Name clazz, List<JCExpression> args) {
+        JCMatch tree = new JCMatch(clazz, args);
+        tree.pos = pos;
+        return tree;
+    }
+
+    public JCMatchFail MatchFail() {
+        JCMatchFail tree = new JCMatchFail();
+        tree.pos = pos;
+        return tree;
+    }
+
     public JCMethodInvocation Apply(List<JCExpression> typeargs,
                        JCExpression fn,
                        List<JCExpression> args)
@@ -491,6 +503,13 @@ public class TreeMaker implements JCTree.Factory {
         tree.pos = pos;
         return tree;
     }
+
+    public JCInstanceOfStatement TypeTestStatement(JCExpression expr, JCPattern pattern) {
+        JCInstanceOfStatement tree = new JCInstanceOfStatement(expr, pattern);
+        tree.pos = pos;
+        return tree;
+    }
+
 
     public JCAnyPattern AnyPattern() {
         JCAnyPattern tree = new JCAnyPattern();
@@ -835,7 +854,10 @@ public class TreeMaker implements JCTree.Factory {
         JCExpression tp;
         switch (t.getTag()) {
         case BYTE: case CHAR: case SHORT: case INT: case LONG: case FLOAT:
-        case DOUBLE: case BOOLEAN: case VOID:
+        case DOUBLE: case BOOLEAN:
+            tp = TypeIdent(t.getTag());
+            break;
+            case VOID:
             tp = TypeIdent(t.getTag());
             break;
         case TYPEVAR:

@@ -127,6 +127,10 @@ public class Flags {
      */
     public static final int IMPLICIT_CLASS    = 1<<19;
 
+    /** Method is a matcher method.
+     */
+    public static final int PATTERN = 1<<19; // MethodSymbols
+
     /** Flag is set for compiler-generated anonymous method symbols
      *  that `own' an initializer block.
      */
@@ -278,9 +282,10 @@ public class Flags {
      */
     public static final long THROWS = 1L<<47;
 
-    /*
-     * Currently available: Bit 48.
+    /**
+     * Flag to indicate the given deconstructor is partial
      */
+    public static final long PARTIAL = 1L<<48; //Trees + Symbols
 
     /**
      * Flag that marks a synthetic method body for a lambda expression
@@ -436,13 +441,15 @@ public class Flags {
         MethodFlags                       = AccessFlags | ABSTRACT | STATIC | NATIVE |
                                             SYNCHRONIZED | FINAL | STRICTFP,
         RecordMethodFlags                 = AccessFlags | ABSTRACT | STATIC |
-                                            SYNCHRONIZED | FINAL | STRICTFP;
+                                            SYNCHRONIZED | FINAL | STRICTFP,
+        MatcherMethodFlags                = AccessFlags | STATIC | FINAL | SYNCHRONIZED | ABSTRACT;
+
     public static final long
         ExtendedStandardFlags             = (long)StandardFlags | DEFAULT | SEALED | NON_SEALED,
         ExtendedMemberClassFlags          = (long)MemberClassFlags | SEALED | NON_SEALED,
         ExtendedMemberStaticClassFlags    = (long) MemberStaticClassFlags | SEALED | NON_SEALED,
         ExtendedClassFlags                = (long)ClassFlags | SEALED | NON_SEALED,
-        ModifierFlags                     = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED,
+        ModifierFlags                     = ((long)StandardFlags & ~INTERFACE) | DEFAULT | SEALED | NON_SEALED | PATTERN,
         InterfaceMethodMask               = ABSTRACT | PRIVATE | STATIC | PUBLIC | STRICTFP | DEFAULT,
         AnnotationTypeElementMask         = ABSTRACT | PUBLIC,
         LocalVarFlags                     = FINAL | PARAMETER,
@@ -468,6 +475,8 @@ public class Flags {
             if (0 != (flags & NATIVE))    modifiers.add(Modifier.NATIVE);
             if (0 != (flags & STRICTFP))  modifiers.add(Modifier.STRICTFP);
             if (0 != (flags & DEFAULT))   modifiers.add(Modifier.DEFAULT);
+            if (0 != (flags & PATTERN))   modifiers.add(Modifier.PATTERN);
+
             modifiers = Collections.unmodifiableSet(modifiers);
             modifierSets.put(flags, modifiers);
         }
@@ -510,6 +519,7 @@ public class Flags {
         DEPRECATED(Flags.DEPRECATED),
         HASINIT(Flags.HASINIT),
         IMPLICIT_CLASS(Flags.IMPLICIT_CLASS),
+        PATTERN(Flags.PATTERN),
         BLOCK(Flags.BLOCK),
         FROM_SOURCE(Flags.FROM_SOURCE),
         ENUM(Flags.ENUM),
@@ -545,7 +555,7 @@ public class Flags {
         DEPRECATED_ANNOTATION(Flags.DEPRECATED_ANNOTATION),
         DEPRECATED_REMOVAL(Flags.DEPRECATED_REMOVAL),
         HAS_RESOURCE(Flags.HAS_RESOURCE),
-        // Bit 48 is currently available
+        PARTIAL(Flags.PARTIAL),
         ANONCONSTR_BASED(Flags.ANONCONSTR_BASED),
         NAME_FILLED(Flags.NAME_FILLED),
         PREVIEW_API(Flags.PREVIEW_API),

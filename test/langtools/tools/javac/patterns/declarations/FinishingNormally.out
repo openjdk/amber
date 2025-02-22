@@ -1,0 +1,4 @@
+FinishingNormally.java:7:55: compiler.err.missing.match.stmt
+- compiler.note.preview.filename: FinishingNormally.java, DEFAULT
+- compiler.note.preview.recompile
+1 error

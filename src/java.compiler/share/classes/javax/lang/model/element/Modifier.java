@@ -100,6 +100,12 @@ public enum Modifier {
     STATIC,
 
     /**
+     * The modifier {@code pattern}
+     * @since 23
+     */
+    PATTERN,
+
+    /**
      * The modifier {@code sealed}
      *
      * @jls 8.1.1.2 {@code sealed}, {@code non-sealed}, and {@code final} Classes
