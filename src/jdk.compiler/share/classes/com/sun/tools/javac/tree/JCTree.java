@@ -209,6 +209,14 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
          */
         ASSERT,
 
+        /** Match statements, of type Match.
+         */
+        MATCH,
+
+        /** Match fail statements, of type MatchFail.
+         */
+        MATCHFAIL,
+
         /** Method invocation expressions, of type Apply.
          */
         APPLY,
@@ -240,6 +248,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         /** Type test expressions, of type TypeTest.
          */
         TYPETEST,
+
+        /** Type test statements, of type TypeTest.
+         */
+        TYPETEST_STATEMENT,
 
         /** Patterns.
          */
@@ -921,6 +933,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public JCVariableDecl recvparam;
         /** value parameters */
         public List<JCVariableDecl> params;
+        /** binding parameters */
+        public List<JCVariableDecl> bindings;
         /** exceptions thrown by this method */
         public List<JCExpression> thrown;
         /** statements in the method */
@@ -974,6 +988,10 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         @DefinedBy(Api.COMPILER_TREE)
         public List<JCVariableDecl> getParameters() {
             return params;
+        }
+        @DefinedBy(Api.COMPILER_TREE)
+        public List<JCVariableDecl> getBindings() {
+            return bindings;
         }
         @DefinedBy(Api.COMPILER_TREE)
         public JCVariableDecl getReceiverParameter() { return recvparam; }
@@ -1734,6 +1752,89 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     }
 
     /**
+     * The match statement
+     */
+    public static class JCMatch extends JCStatement implements MatchTree {
+        public  List<JCExpression> args;
+        public  Name clazz;
+        public  JCMethodDecl meth;
+
+        protected JCMatch(Name clazz, List<JCExpression> args) {
+            this.args = args;
+            this.clazz = clazz;
+        }
+        @Override
+        public void accept(Visitor v) { v.visitMatch(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.MATCH; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public List<JCExpression> getArguments() { return args; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitMatchStatement(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return MATCH;
+        }
+    }
+
+    /**
+     * The match statement
+     */
+    public static class JCInstanceOfStatement extends JCStatement implements InstanceOfStatementTree {
+        public JCPattern pattern;
+        public JCExpression expr;
+
+        protected JCInstanceOfStatement(JCExpression expr, JCPattern pattern) {
+            this.pattern = pattern;
+            this.expr = expr;
+        }
+        @Override
+        public void accept(Visitor v) { v.visitTypeTestStatement(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.INSTANCEOF_STATEMENT; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public Tree getPattern() { return pattern; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCTree getType() { return pattern instanceof JCPattern ? pattern.hasTag(BINDINGPATTERN) ? ((JCBindingPattern) pattern).var.vartype : null : pattern; }
+        @DefinedBy(Api.COMPILER_TREE)
+        public JCExpression getExpression() { return expr; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitInstanceOfStatement(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return TYPETEST_STATEMENT;
+        }
+    }
+
+    /**
+     * The match-fail statement
+     */
+    public static class JCMatchFail extends JCStatement implements MatchFailedTree {
+
+        protected JCMatchFail() {
+        }
+        @Override
+        public void accept(Visitor v) { v.visitMatchFail(this); }
+
+        @DefinedBy(Api.COMPILER_TREE)
+        public Kind getKind() { return Kind.MATCH_FAILED; }
+        @Override @DefinedBy(Api.COMPILER_TREE)
+        public <R,D> R accept(TreeVisitor<R,D> v, D d) {
+            return v.visitMatchFailStatement(this, d);
+        }
+        @Override
+        public Tag getTag() {
+            return MATCHFAIL;
+        }
+    }
+
+    /**
      * A continue of a loop.
      */
     public static class JCContinue extends JCStatement implements ContinueTree {
@@ -2307,11 +2408,11 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
     /**
      * Pattern matching forms.
      */
-    public abstract static class JCPattern extends JCTree
+    public sealed abstract static class JCPattern extends JCTree
             implements PatternTree {
     }
 
-    public static class JCAnyPattern extends JCPattern
+    public static final class JCAnyPattern extends JCPattern
             implements AnyPatternTree {
 
         protected JCAnyPattern() {
@@ -2339,7 +2440,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         }
     }
 
-    public static class JCBindingPattern extends JCPattern
+    public static final class JCBindingPattern extends JCPattern
             implements BindingPatternTree {
         public JCVariableDecl var;
 
@@ -2478,12 +2579,13 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
 
     }
 
-    public static class JCRecordPattern extends JCPattern
+    public static final class JCRecordPattern extends JCPattern
             implements DeconstructionPatternTree {
         public JCExpression deconstructor;
         public List<JCPattern> nested;
         public ClassSymbol record;
         public List<Type> fullComponentTypes;
+        public MethodSymbol patternDeclaration;
 
         protected JCRecordPattern(JCExpression deconstructor, List<JCPattern> nested) {
             this.deconstructor = deconstructor;
@@ -3482,6 +3584,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         JCYield Yield(JCExpression value);
         JCContinue Continue(Name label);
         JCReturn Return(JCExpression expr);
+        JCMatch Match(Name expr, List<JCExpression> args);
         JCThrow Throw(JCExpression expr);
         JCAssert Assert(JCExpression cond, JCExpression detail);
         JCMethodInvocation Apply(List<JCExpression> typeargs,
@@ -3553,6 +3656,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitExec(JCExpressionStatement that)    { visitTree(that); }
         public void visitBreak(JCBreak that)                 { visitTree(that); }
         public void visitYield(JCYield that)                 { visitTree(that); }
+        public void visitMatch(JCMatch that)                 { visitTree(that); }
+        public void visitMatchFail(JCMatchFail that)         { visitTree(that); }
         public void visitContinue(JCContinue that)           { visitTree(that); }
         public void visitReturn(JCReturn that)               { visitTree(that); }
         public void visitThrow(JCThrow that)                 { visitTree(that); }
@@ -3568,6 +3673,7 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public void visitBinary(JCBinary that)               { visitTree(that); }
         public void visitTypeCast(JCTypeCast that)           { visitTree(that); }
         public void visitTypeTest(JCInstanceOf that)         { visitTree(that); }
+        public void visitTypeTestStatement(JCInstanceOfStatement that)  { visitTree(that); }
         public void visitAnyPattern(JCAnyPattern that)       { visitTree(that); }
         public void visitBindingPattern(JCBindingPattern that) { visitTree(that); }
         public void visitDefaultCaseLabel(JCDefaultCaseLabel that) { visitTree(that); }
