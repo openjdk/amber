@@ -72,6 +72,14 @@ public interface ExecutableType extends TypeMirror {
     List<? extends TypeMirror> getParameterTypes();
 
     /**
+     * Returns the types of this executable's binding parameters.
+     *
+     * @return the types of this executable's binding parameters,
+     *          or an empty list if there are none or is not a pattern declaration.
+     */
+    List<? extends TypeMirror> getBindingTypes();
+
+    /**
      * Returns the receiver type of this executable,
      * or {@link javax.lang.model.type.NoType NoType} with
      * kind {@link javax.lang.model.type.TypeKind#NONE NONE}

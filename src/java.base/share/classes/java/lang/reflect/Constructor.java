@@ -34,7 +34,7 @@ import jdk.internal.vm.annotation.ForceInline;
 import jdk.internal.vm.annotation.Stable;
 import sun.reflect.annotation.TypeAnnotation;
 import sun.reflect.annotation.TypeAnnotationParser;
-import sun.reflect.generics.repository.ConstructorRepository;
+import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
@@ -84,14 +84,14 @@ public final class Constructor<T> extends Executable {
 
     // Accessor for generic info repository
     @Override
-    ConstructorRepository getGenericInfo() {
+    ExecutableRepository getGenericInfo() {
         var genericInfo = this.genericInfo;
         if (genericInfo == null) {
             var root = this.root;
             if (root != null) {
                 genericInfo = root.getGenericInfo();
             } else {
-                genericInfo = ConstructorRepository.make(getSignature(), getFactory());
+                genericInfo = ExecutableRepository.make(getSignature(), getFactory());
             }
             this.genericInfo = genericInfo;
         }
@@ -104,7 +104,7 @@ public final class Constructor<T> extends Executable {
      * Some lazily initialized immutable states can be stored on root and shared to the copies.
      */
     private Constructor<T> root;
-    private transient volatile ConstructorRepository genericInfo;
+    private transient volatile ExecutableRepository genericInfo;
     private @Stable ConstructorAccessor constructorAccessor;
     // End shared states
 

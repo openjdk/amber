@@ -83,6 +83,12 @@ public interface MethodTree extends Tree {
     List<? extends VariableTree> getParameters();
 
     /**
+     * Returns the bindings of the pattern declaration being declared.
+     * @return the bindings
+     */
+    List<? extends VariableTree> getBindings();
+
+    /**
      * Return an explicit receiver parameter ("this" parameter),
      * or {@code null} if none.
      *

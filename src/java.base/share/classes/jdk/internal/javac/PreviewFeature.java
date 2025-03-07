@@ -81,6 +81,8 @@ public @interface PreviewFeature {
         @JEP(number=478, title="Key Derivation Function API", status="Preview")
         KEY_DERIVATION,
         LANGUAGE_MODEL,
+        @JEP(number=999, title="Pattern Declarations", status="Preview")
+        PATTERN_DECLARATIONS,
         /**
          * A key for testing.
          */

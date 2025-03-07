@@ -104,6 +104,7 @@ import static com.sun.tools.javac.code.Flags.SYNTHETIC;
 import static com.sun.tools.javac.code.Kinds.Kind.MTH;
 import static com.sun.tools.javac.code.Kinds.Kind.TYP;
 import static com.sun.tools.javac.code.Kinds.Kind.VAR;
+import com.sun.tools.javac.code.Symbol.DynamicVarSymbol;
 import static com.sun.tools.javac.code.TypeTag.BOT;
 import static com.sun.tools.javac.code.TypeTag.VOID;
 
@@ -1214,6 +1215,7 @@ public class LambdaToMethod extends TreeTranslator {
             @Override
             public void visitIdent(JCIdent tree) {
                 if (!tree.sym.isStatic() &&
+                        !(tree.sym instanceof DynamicVarSymbol) &&
                         tree.sym.owner.kind == TYP &&
                         (tree.sym.kind == VAR || tree.sym.kind == MTH) &&
                         !seenClasses.contains(tree.sym.owner)) {
