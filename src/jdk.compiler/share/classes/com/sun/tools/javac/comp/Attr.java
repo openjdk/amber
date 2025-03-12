@@ -1208,6 +1208,7 @@ public class Attr extends JCTree.Visitor {
             }
 
             if (m.isDeconstructor()) {
+                //TODO: for instance/named patterns
                 m.patternFlags.add(PatternFlags.DECONSTRUCTOR);
                 if ((tree.mods.flags & Flags.PARTIAL) == 0) {
                     m.patternFlags.add(PatternFlags.TOTAL);
@@ -2472,7 +2473,7 @@ public class Attr extends JCTree.Visitor {
 
     @Override
     public void visitMatchFail(JCMatchFail tree) {
-        if ((env.enclMethod.sym.flags_field & Flags.PARTIAL) == 0) {
+        if (env.enclMethod.sym.isTotalPattern()) {
             log.error(tree.pos(), Errors.UnmarkedPartialDeconstructor);
         }
         result = null;
@@ -4349,23 +4350,43 @@ public class Attr extends JCTree.Visitor {
     @Override
     public void visitRecordPattern(JCRecordPattern tree) {
         Type site;
+        Type uncapturedSite;
+        Name deconstructorName;
 
         if (tree.deconstructor == null) {
             log.error(tree.pos(), Errors.DeconstructionPatternVarNotAllowed);
             tree.record = syms.errSymbol;
-            site = tree.type = types.createErrorType(tree.record.type);
+            uncapturedSite = site = tree.type = types.createErrorType(tree.record.type);
+            deconstructorName = names.empty;
         } else {
-            Type type = attribType(tree.deconstructor, env);
-            if (type.isRaw() && type.tsym.getTypeParameters().nonEmpty()) {
-                Type inferred = infer.instantiatePatternType(resultInfo.pt, type.tsym);
-                if (inferred == null) {
-                    log.error(tree.pos(), Errors.PatternTypeCannotInfer);
-                } else {
-                    type = inferred;
+            //TODO: if there's a deconstructor and instance pattern with the same name, which one prevails?
+            if (deferredAttr.attribSpeculative(tree.deconstructor, env, new ResultInfo(KindSelector.TYP, Type.noType)).type.hasTag(TypeTag.CLASS)) {
+                Type type = attribType(tree.deconstructor, env);
+                if (type.isRaw() && type.tsym.getTypeParameters().nonEmpty()) {
+                    Type inferred = infer.instantiatePatternType(resultInfo.pt, type.tsym);
+                    if (inferred == null) {
+                        log.error(tree.pos(), Errors.PatternTypeCannotInfer);
+                    } else {
+                        type = inferred;
+                    }
                 }
+                uncapturedSite = type;
+                site = types.capture(type);
+                deconstructorName = TreeInfo.name(tree.deconstructor);
+            } else if (tree.deconstructor instanceof JCFieldAccess acc) {
+                Type type = attribTree(acc.selected, env, new ResultInfo(KindSelector.VAL_TYP, Type.noType));
+                site = type; //TODO: capture?
+                uncapturedSite = type;
+                deconstructorName = acc.name;
+            } else if (tree.deconstructor instanceof JCIdent ident) {
+                Type type = pt();
+                site = type; //TODO: capture?
+                uncapturedSite = type;
+                deconstructorName = ident.name;
+            } else {
+                //TODO: error recovery
+                throw Assert.error("Not handled.");
             }
-            tree.type = tree.deconstructor.type = type;
-            site = types.capture(tree.type);
         }
 
         List<Type> nestedPatternsTargetTypes = null;
@@ -4373,7 +4394,7 @@ public class Attr extends JCTree.Visitor {
         if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
 
-            List<MethodSymbol> candidates = candidatesWithArity(site, nestedPatternCount);
+            List<MethodSymbol> candidates = candidatesWithArity(site, deconstructorName, nestedPatternCount);
 
             if (candidates.size() >= 1) {
                 List<Type> notionalTypes = calculateNotionalTypes(tree);
@@ -4426,6 +4447,12 @@ public class Attr extends JCTree.Visitor {
             }
         } finally {
             localEnv.info.scope.leave();
+        }
+        //TODO: are these types sensible?
+        if (tree.patternDeclaration != null && tree.patternDeclaration.getParameters().size() == 1) { // TODO: improve error recovery
+            tree.type = tree.deconstructor.type = tree.patternDeclaration.getParameters().head.type;
+        } else {
+            tree.type = tree.deconstructor.type = uncapturedSite;
         }
         chk.validate(tree.deconstructor, env, true);
         result = tree.type;
@@ -4648,9 +4675,9 @@ public class Attr extends JCTree.Visitor {
      * @param nestedPatternCount the number of nested patterns
      * @return                   a list of MethodSymbols
      */
-    private List<MethodSymbol> candidatesWithArity(Type site, int nestedPatternCount) {
+    private List<MethodSymbol> candidatesWithArity(Type site, Name deconstructorName, int nestedPatternCount) {
         var matchersIt = site.tsym.members()
-                .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
+                .getSymbolsByName(deconstructorName, sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                 .iterator();
 
         List<MethodSymbol> patternDeclarations = Stream.generate(() -> null)
@@ -4674,11 +4701,11 @@ public class Attr extends JCTree.Visitor {
                         .collect(List.collector());
                 PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, syms.methodClass);
 
-                MethodSymbol synthetized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
+                MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
 
-                synthetized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
-                synthetized.patternFlags.add(PatternFlags.TOTAL);
-                patternDeclarations = patternDeclarations.prepend(synthetized);
+                synthesized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                synthesized.patternFlags.add(PatternFlags.TOTAL);
+                patternDeclarations = patternDeclarations.prepend(synthesized);
             }
         }
 

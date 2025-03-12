@@ -1970,7 +1970,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
             StringBuilder sb = new StringBuilder();
             appendAnnotationsString(sb);
             sb.append("(out ");
-            sb.append(bindingtypes.stream().map(String::valueOf).collect(Collectors.joining(", out")));
+            sb.append(bindingtypes.stream().map(String::valueOf).collect(Collectors.joining(", out ")));
             sb.append(')');
             return sb.toString();
         }

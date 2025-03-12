@@ -157,7 +157,8 @@ public class MemberEnter extends JCTree.Visitor {
             thrownbuf.append(exc);
         }
         if (msym.isPattern()) {
-            Assert.check(params.isEmpty());
+            //TODO: anything to do with the params?
+            //Assert.check(params.isEmpty());
             var erasedBindingTypes = bindingsbuf.toList()
                             .stream()
                             .map(b -> types.erasure(b))

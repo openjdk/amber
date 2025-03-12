@@ -534,7 +534,7 @@ public class TransPatterns extends TreeTranslator {
         return new UnrolledRecordPattern((JCBindingPattern) make.BindingPattern(recordBindingVar).setType(recordBinding.type), guard);
     }
 
-    private JCMethodInvocation generatePatternCall(JCRecordPattern recordPattern, BindingSymbol tempBind) {
+    private JCMethodInvocation generatePatternCall(JCRecordPattern recordPattern, BindingSymbol matchCandidate) {
         List<Type> staticArgTypes = List.of(syms.methodHandleLookupType,
                 syms.stringType,
                 syms.methodTypeType,
@@ -544,8 +544,26 @@ public class TransPatterns extends TreeTranslator {
                 recordPattern.pos(), env, syms.patternBootstrapsType,
                 names.invokePattern, staticArgTypes, List.nil());
 
+        List<JCExpression> invocationParams = List.of(make.Ident(matchCandidate));
+        List<Type> invocationParamTypes;
+
+        if (true /*is instance pattern*/) {
+            if (recordPattern.deconstructor instanceof JCFieldAccess acc &&
+                    !TreeInfo.isStaticSelector(acc.selected, names)) {
+                invocationParamTypes = List.of(/*receiver:*/acc.selected.type,
+                                               /*match candidate:*/recordPattern.type);
+                invocationParams = invocationParams.prepend(acc.selected);
+            } else {
+                invocationParamTypes = List.of(/*receiver:*/recordPattern.type,
+                                               /*match candidate:*/recordPattern.type);
+                invocationParams = invocationParams.prepend(make.Ident(matchCandidate));
+            }
+        }
+//        else { // this will be needed for static patterns later
+//            invocationParamTypes = List.of(recordPattern.type);
+//        }
         MethodType indyType = new MethodType(
-                List.of(recordPattern.type),
+                invocationParamTypes,
                 syms.objectType,
                 List.nil(),
                 syms.methodClass
@@ -567,7 +585,7 @@ public class TransPatterns extends TreeTranslator {
         qualifier.type = syms.objectType;
         return make.Apply(List.nil(),
                         qualifier,
-                        List.of(make.Ident(tempBind)))
+                        invocationParams)
                 .setType(syms.objectType);
     }
 

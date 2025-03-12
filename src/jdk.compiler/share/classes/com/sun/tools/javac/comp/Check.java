@@ -4878,6 +4878,10 @@ public class Check {
                     if (existingNested.size() != currentNested.size()) {
                         return false;
                     }
+                    if (!existingRecordPattern.patternDeclaration.isTotalPattern()) {
+                        //partial patterns cannot dominate(?)
+                        return false;
+                    }
                     while (existingNested.nonEmpty()) {
                         if (!patternDominated(existingNested.head, currentNested.head)) {
                             return false;
