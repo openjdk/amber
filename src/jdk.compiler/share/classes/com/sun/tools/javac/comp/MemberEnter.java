@@ -106,6 +106,7 @@ public class MemberEnter extends JCTree.Visitor {
                    List<JCVariableDecl> bindings,
                    JCTree res,
                    JCVariableDecl recvparam,
+                   JCVariableDecl matchcandidateparam,
                    List<JCExpression> thrown,
                    Env<AttrContext> env) {
 
@@ -144,6 +145,15 @@ public class MemberEnter extends JCTree.Visitor {
             recvtype = null;
         }
 
+        // Attribute match candidate type, if one is given.
+        Type matchcandidatetype;
+        if (matchcandidateparam!=null) {
+            memberEnter(matchcandidateparam, env);
+            matchcandidatetype = matchcandidateparam.vartype.type;
+        } else {
+            matchcandidatetype = null;
+        }
+
         // Attribute thrown exceptions.
         ListBuffer<Type> thrownbuf = new ListBuffer<>();
         for (List<JCExpression> l = thrown; l.nonEmpty(); l = l.tail) {
@@ -164,11 +174,13 @@ public class MemberEnter extends JCTree.Visitor {
                             .map(b -> types.erasure(b))
                             .collect(List.collector());
 
-            PatternType patternType = new PatternType(bindingsbuf.toList(), erasedBindingTypes, restype, syms.methodClass);
+            PatternType patternType = new PatternType(bindingsbuf.toList(), erasedBindingTypes, restype, matchcandidatetype, syms.methodClass);
 
             return patternType;
         } else {
             Assert.check(bindings == null);
+            Assert.check(matchcandidateparam == null);
+
             MethodType mtype = new MethodType(argbuf.toList(),
                                         restype,
                                         thrownbuf.toList(),
@@ -226,7 +238,7 @@ public class MemberEnter extends JCTree.Visitor {
         try {
             // Compute the method type
             Type t = signature(m, tree.typarams, tree.params, tree.bindings,
-                               tree.restype, tree.recvparam,
+                               tree.restype, tree.recvparam, tree.matchcandparam,
                                tree.thrown,
                                localEnv);
             m.type = t;

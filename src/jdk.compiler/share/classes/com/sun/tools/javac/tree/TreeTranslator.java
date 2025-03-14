@@ -150,6 +150,7 @@ public class TreeTranslator extends JCTree.Visitor {
         tree.restype = translate(tree.restype);
         tree.typarams = translateTypeParams(tree.typarams);
         tree.recvparam = translate(tree.recvparam);
+        tree.matchcandparam = translate(tree.matchcandparam);
         tree.params = translateVarDefs(tree.params);
         if (tree.bindings != null)
             tree.bindings = translateVarDefs(tree.bindings);

@@ -1047,6 +1047,10 @@ public class Attr extends JCTree.Visitor {
                         tree.recvparam.pos(),
                         Errors.IntfAnnotationMembersCantHaveParams);
 
+            if (tree.sym.isPattern()) {
+                attribStat(tree.matchcandparam, localEnv);
+            }
+
             // Attribute all value parameters.
             for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
                 attribStat(l.head, localEnv);
@@ -4394,7 +4398,7 @@ public class Attr extends JCTree.Visitor {
         if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
 
-            List<MethodSymbol> candidates = candidatesWithArity(site, deconstructorName, nestedPatternCount);
+            List<MethodSymbol> candidates = candidatesWithArity(site, uncapturedSite, deconstructorName, nestedPatternCount);
 
             if (candidates.size() >= 1) {
                 List<Type> notionalTypes = calculateNotionalTypes(tree);
@@ -4449,10 +4453,10 @@ public class Attr extends JCTree.Visitor {
             localEnv.info.scope.leave();
         }
         //TODO: are these types sensible?
-        if (tree.patternDeclaration != null && tree.patternDeclaration.getParameters().size() == 1) { // TODO: improve error recovery
-            tree.type = tree.deconstructor.type = tree.patternDeclaration.getParameters().head.type;
-        } else {
-            tree.type = tree.deconstructor.type = uncapturedSite;
+        if (tree.patternDeclaration != null) { // TODO: improve error recovery
+            tree.type = tree.deconstructor.type = tree.patternDeclaration.type.getMatchCandidateType();
+        } else if (tree.deconstructor != null) {
+            tree.type = tree.deconstructor.type = uncapturedSite;;
         }
         chk.validate(tree.deconstructor, env, true);
         result = tree.type;
@@ -4675,7 +4679,7 @@ public class Attr extends JCTree.Visitor {
      * @param nestedPatternCount the number of nested patterns
      * @return                   a list of MethodSymbols
      */
-    private List<MethodSymbol> candidatesWithArity(Type site, Name deconstructorName, int nestedPatternCount) {
+    private List<MethodSymbol> candidatesWithArity(Type site, Type uncaptured, Name deconstructorName, int nestedPatternCount) {
         var matchersIt = site.tsym.members()
                 .getSymbolsByName(deconstructorName, sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                 .iterator();
@@ -4699,7 +4703,7 @@ public class Attr extends JCTree.Visitor {
                         .stream()
                         .map(rc -> types.erasure(rc.type))
                         .collect(List.collector());
-                PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, syms.methodClass);
+                PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, uncaptured, syms.methodClass);
 
                 MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
 

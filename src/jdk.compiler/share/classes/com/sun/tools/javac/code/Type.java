@@ -318,7 +318,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
 
             if (bindingtypes1 == bindingtypes) return t;
             else {
-                PatternType patternType = new PatternType(bindingtypes1, erasedBindingTypes1, /*XXX*/t.restype, t.tsym) {
+                PatternType patternType = new PatternType(bindingtypes1, erasedBindingTypes1, /*XXX*/t.restype, t.matchcandidatetype, t.tsym) {
                     @Override
                     protected boolean needsStripping() {
                         return true;
@@ -618,6 +618,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
     public List<Type>        getBindingTypes()   { return List.nil(); }
     public Type              getReturnType()     { return null; }
     public Type              getReceiverType()   { return null; }
+    public Type              getMatchCandidateType()   { return null; }
     public List<Type>        getThrownTypes()    { return List.nil(); }
     public Type              getUpperBound()     { return null; }
     public Type              getLowerBound()     { return null; }
@@ -1863,6 +1864,7 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public List<Type> getBindingTypes() { return qtype.getBindingTypes(); }
         public Type getReturnType() { return qtype.getReturnType(); }
         public Type getReceiverType() { return qtype.getReceiverType(); }
+        public Type getMatchCandidateType() { return qtype.getMatchCandidateType(); }
         public List<Type> getThrownTypes() { return qtype.getThrownTypes(); }
         public List<Type> allparams() { return qtype.allparams(); }
         public Type getUpperBound() { return qtype.getUpperBound(); }
@@ -1940,14 +1942,17 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public List<Type> erasedBindingTypes;
 
         public Type restype;
+        public Type matchcandidatetype;
 
         public PatternType(List<Type> bindingtypes,
                            List<Type> erasedBindingTypes,
                            Type restype, //TODO:
+                           Type matchcandidatetype,
                            TypeSymbol methodClass) {
             super(methodClass, List.nil());
             this.bindingtypes = bindingtypes;
             this.erasedBindingTypes = erasedBindingTypes;
+            this.matchcandidatetype = matchcandidatetype;
             this.restype = restype;
         }
 
@@ -1986,6 +1991,10 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         @DefinedBy(Api.LANGUAGE_MODEL)
         public Type              getReceiverType()   {
             return Type.noType;
+        }
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public Type              getMatchCandidateType()   {
+            return (matchcandidatetype == null) ? Type.noType : matchcandidatetype;
         }
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<Type>        getThrownTypes()    { return List.nil(); }

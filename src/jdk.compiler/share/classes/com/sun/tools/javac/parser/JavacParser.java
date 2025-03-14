@@ -4852,7 +4852,7 @@ public class JavacParser implements Parser {
             if (mods.pos == Position.NOPOS)
                 mods.pos = mods.annotations.head.pos;
         }
-        List<JCVariableDecl> matcherCandidate = List.nil();
+        JCVariableDecl matcherCandidate = null;
         Token tk = token;
         pos = token.pos;
         JCExpression type;
@@ -4875,11 +4875,11 @@ public class JavacParser implements Parser {
 
             JCExpression matchCandidateType = type;
 
-            matcherCandidate = List.of(toP(F.at(pos).VarDef(
-                    F.Modifiers(Flags.PARAMETER | Flags.GENERATED_MEMBER),
+            matcherCandidate = toP(F.at(pos).VarDef(
+                    F.Modifiers(Flags.GENERATED_MEMBER),
                     names._that,
                     matchCandidateType,
-                    null)));
+                    null));
         }
 
         // Constructor or deconstructor
@@ -5144,7 +5144,7 @@ public class JavacParser implements Parser {
                               boolean isInterface, boolean isVoid,
                               boolean isRecord,
                               Comment dc) {
-        return methodDeclaratorRest(pos, mods, type, name, typarams, List.nil(), isInterface, isVoid, isRecord, dc);
+        return methodDeclaratorRest(pos, mods, type, name, typarams, null, isInterface, isVoid, isRecord, dc);
     }
 
     protected JCTree methodDeclaratorRest(int pos,
@@ -5152,7 +5152,7 @@ public class JavacParser implements Parser {
                               JCExpression type,
                               Name name,
                               List<JCTypeParameter> typarams,
-                              List<JCVariableDecl> matcherCandidateParams,
+                              JCVariableDecl matchCandidate,
                               boolean isInterface, boolean isVoid,
                               boolean isRecord,
                               Comment dc) {
@@ -5211,11 +5211,12 @@ public class JavacParser implements Parser {
             boolean isPattern = (mods.flags & PATTERN) != 0;
             JCMethodDecl result =
                     toP(F.at(pos).MethodDef(mods, name, type, typarams,
-                                            receiverParam, isPattern ? matcherCandidateParams : params, thrown,
+                                            receiverParam, isPattern ? List.nil() : params, thrown,
                                             body, defaultValue));
 
             if (isPattern) {
                 result.bindings = params;
+                result.matchcandparam = matchCandidate;
             }
 
             attach(result, dc);

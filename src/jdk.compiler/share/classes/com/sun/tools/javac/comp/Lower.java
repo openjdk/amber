@@ -2648,14 +2648,18 @@ public class Lower extends TreeTranslator {
             implicitThisParam.mods.flags |= SYNTHETIC;
             implicitThisParam.sym.flags_field |= SYNTHETIC;
 
-            MethodSymbol m = tree.sym;
-            tree.params = tree.params.prepend(implicitThisParam);
+            JCVariableDecl implicitThatParam = tree.getMatchCandidateParameter();
+            implicitThisParam.mods.flags |= SYNTHETIC;
+            implicitThisParam.sym.flags_field |= SYNTHETIC;
 
-            m.params = m.params.prepend(implicitThisParam.sym);
+            MethodSymbol m = tree.sym;
+            tree.params = tree.params.prepend(implicitThatParam).prepend(implicitThisParam);
+
+            m.params = m.params.prepend(implicitThatParam.sym).prepend(implicitThisParam.sym);
             Type olderasure = m.erasure(types);
             //create an external type for the pattern:
             var mt = new MethodType(
-                    olderasure.getParameterTypes().prepend(tree.sym.owner.type),
+                    olderasure.getParameterTypes().prepend(tree.matchcandparam.type).prepend(tree.sym.owner.type),
                     olderasure.getReturnType(),
                     olderasure.getThrownTypes(),
                     syms.methodClass);

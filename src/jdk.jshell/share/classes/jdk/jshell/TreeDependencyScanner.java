@@ -85,6 +85,7 @@ class TreeDependencyScanner extends TreeScanner<Void, Set<String>> {
         scan(node.getParameters(), p);
         scan(node.getBindings(), p);
         scan(node.getReceiverParameter(), p);
+        scan(node.getMatchCandidateParameter(), p);
         scan(node.getThrows(), p);
         scan(node.getBody(), body);
         scan(node.getDefaultValue(), body);

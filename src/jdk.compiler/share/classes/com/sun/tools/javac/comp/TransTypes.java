@@ -481,6 +481,7 @@ public class TransTypes extends TreeTranslator {
             tree.typarams = List.nil();
             tree.params = translateVarDefs(tree.params);
             tree.recvparam = translate(tree.recvparam, null);
+            tree.matchcandparam = translate(tree.matchcandparam, null);
             tree.thrown = translate(tree.thrown, null);
             tree.body = translate(tree.body, tree.sym.erasure(types).getReturnType());
             tree.type = erasure(tree.type);

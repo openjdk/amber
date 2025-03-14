@@ -467,6 +467,7 @@ public class TreeDiffer extends TreeScanner {
                         && scan(tree.restype, that.restype)
                         && scan(tree.typarams, that.typarams)
                         && scan(tree.recvparam, that.recvparam)
+                        && scan(tree.matchcandparam, that.matchcandparam)
                         && scan(tree.params, that.params)
                         && scan(tree.thrown, that.thrown)
                         && scan(tree.body, that.body)

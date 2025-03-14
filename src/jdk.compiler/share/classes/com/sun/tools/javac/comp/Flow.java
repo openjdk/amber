@@ -2564,6 +2564,13 @@ public class Flow {
                          */
                         initParam(def);
                     }
+
+                    if (tree.sym.isPattern()) {
+                        JCVariableDecl def = tree.getMatchCandidateParameter();
+                        scan(def);
+                        initParam(def);
+                    }
+
                     // else we are in an instance initializer block;
                     // leave caught unchanged.
                     scan(tree.body);

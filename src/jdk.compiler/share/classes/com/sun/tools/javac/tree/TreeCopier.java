@@ -312,11 +312,13 @@ public class TreeCopier<P> implements TreeVisitor<JCTree,P> {
         List<JCVariableDecl> params = copy(t.params, p);
         List<JCVariableDecl> bindings = copy(t.bindings, p);
         JCVariableDecl recvparam = copy(t.recvparam, p);
+        JCVariableDecl matchcandparam = copy(t.matchcandparam, p);
         List<JCExpression> thrown = copy(t.thrown, p);
         JCBlock body = copy(t.body, p);
         JCExpression defaultValue = copy(t.defaultValue, p);
         JCMethodDecl decl = M.at(t.pos).MethodDef(mods, t.name, restype, typarams, recvparam, params, thrown, body, defaultValue);
         decl.bindings = bindings;
+        decl.matchcandparam = matchcandparam;
         return decl;
     }
 

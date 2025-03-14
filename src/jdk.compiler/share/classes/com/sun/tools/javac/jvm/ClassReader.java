@@ -1073,7 +1073,14 @@ public class ClassReader {
                                 .stream()
                                 .map(rc -> types.erasure(rc))
                                 .collect(List.collector());
-                        PatternType patternType = new PatternType(mtype.getParameterTypes(), erasedBindingTypes, syms.voidType, syms.methodClass);
+
+                        Type matchCandidateType = sym.type.getMatchCandidateType();
+                        PatternType patternType = new PatternType(
+                                mtype.getParameterTypes(),
+                                erasedBindingTypes,
+                                syms.voidType,
+                                matchCandidateType,
+                                syms.methodClass);
 
                         sym.type = patternType;
                         //TODO: no thrown types for PatternType
@@ -1393,7 +1400,10 @@ public class ClassReader {
                                 .stream()
                                 .map(rc -> types.erasure(rc))
                                 .collect(List.collector());
-                        msym.type = new PatternType(patternType.getParameterTypes(), erasedBindingTypes, syms.voidType, syms.methodClass);
+
+                        // up until here msym.type contains a type as a methodtype of the physical method
+                        Type matchcandidatetype = msym.type.getParameterTypes().head;
+                        msym.type = new PatternType(patternType.getParameterTypes(), erasedBindingTypes, syms.voidType, matchcandidatetype, syms.methodClass);
 
                         readMemberAttrs(sym);
 
