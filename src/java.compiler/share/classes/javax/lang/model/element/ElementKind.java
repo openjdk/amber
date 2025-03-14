@@ -71,6 +71,8 @@ public enum ElementKind {
     LOCAL_VARIABLE,
     /** A parameter of an exception handler. */
     EXCEPTION_PARAMETER,
+    /** A binding of a pattern declaration. */
+    PATTERN_BINDING,
 
     // Executables
     /** A method. */
@@ -120,8 +122,16 @@ public enum ElementKind {
     /**
      * A binding variable in a pattern.
      * @since 16
+     *
      */
-    BINDING_VARIABLE;
+    BINDING_VARIABLE,
+
+    /**
+     * A deconstructor.
+     * @since 23
+     *
+     */
+    DECONSTRUCTOR;
 
     // Maintenance note: check if the default implementation of
     // Elements.getOutermostTypeElement needs updating when new kind
@@ -178,7 +188,7 @@ public enum ElementKind {
      */
     public boolean isExecutable() {
         return switch(this) {
-        case METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT -> true;
+        case METHOD, CONSTRUCTOR, STATIC_INIT, INSTANCE_INIT, DECONSTRUCTOR -> true;
         default -> false;
         };
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2022, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,10 +21,36 @@
  * questions.
  */
 
-// key: compiler.err.deconstruction.pattern.only.records
+import java.util.Objects;
 
-class DeconstructionpatternOnlyRecords {
-    public boolean deconstruction(Object o) {
-        return o instanceof String(var content);
+/**
+ * @test
+ * @enablePreview
+ * @compile OverloadedPrimitivePatternDeclarations.java
+ * @run main OverloadedPrimitivePatternDeclarations
+ */
+
+public class OverloadedPrimitivePatternDeclarations {
+    public static void main(String... args) {
+        assertEquals( 1, testBoxing(new D()));
+    }
+
+    private static int testBoxing(D o) {
+        if (o instanceof D(String data, Integer outI)) {
+            return outI;
+        }
+        return -1;
+    }
+
+    public static class D {
+        public pattern D(String out, int outI) {
+            match D("42", 1);
+        }
+    }
+
+    private static void assertEquals(int expected, int actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
+        }
     }
 }

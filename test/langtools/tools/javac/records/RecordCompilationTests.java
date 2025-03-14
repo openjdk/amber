@@ -440,7 +440,7 @@ class RecordCompilationTests extends CompilationTestCase {
         for (ElementType e : values())
             annotations.put(e, template.replace("#", "ElementType." + e.name()));
         EnumSet<ElementType> goodSet = EnumSet.of(RECORD_COMPONENT, FIELD, METHOD, PARAMETER, TYPE_USE);
-        EnumSet<ElementType> badSet = EnumSet.of(CONSTRUCTOR, PACKAGE, TYPE, LOCAL_VARIABLE, ANNOTATION_TYPE, TYPE_PARAMETER, MODULE);
+        EnumSet<ElementType> badSet = EnumSet.of(CONSTRUCTOR, PACKAGE, TYPE, LOCAL_VARIABLE, ANNOTATION_TYPE, TYPE_PARAMETER, MODULE, DECONSTRUCTOR, PATTERN_BINDING);
 
         Assert.check(goodSet.size() + badSet.size() == values().length);
         String A_GOOD = template.replace("#",

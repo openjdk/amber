@@ -59,6 +59,8 @@ public class Names {
     public final Name _class;
     public final Name _super;
     public final Name _this;
+    public final Name _that;
+
     public final Name var;
     public final Name exports;
     public final Name opens;
@@ -73,6 +75,8 @@ public class Names {
     public final Name when;
     public final Name with;
     public final Name yield;
+    public final Name match;
+    public final Name pattern;
 
     // field and method names
     public final Name _name;
@@ -94,6 +98,8 @@ public class Names {
     public final Name hashCode;
     public final Name init;
     public final Name invoke;
+    public final Name component;
+    public final Name methodType;
     public final Name iterator;
     public final Name length;
     public final Name next;
@@ -147,6 +153,7 @@ public class Names {
     public final Name LineNumberTable;
     public final Name LocalVariableTable;
     public final Name LocalVariableTypeTable;
+    public final Name Pattern;
     public final Name MethodParameters;
     public final Name Module;
     public final Name ModuleResolution;
@@ -182,6 +189,8 @@ public class Names {
     public final Name TYPE_PARAMETER;
     public final Name TYPE_USE;
     public final Name RECORD_COMPONENT;
+    public final Name DECONSTRUCTOR;
+    public final Name PATTERN_BINDING;
 
     // members of java.lang.annotation.RetentionPolicy
     public final Name CLASS;
@@ -228,6 +237,9 @@ public class Names {
     public final Name enumSwitch;
     public final Name enumConstant;
 
+    // pattern invocation
+    public final Name invokePattern;
+
     public final Name.Table table;
 
     @SuppressWarnings("this-escape")
@@ -247,6 +259,8 @@ public class Names {
         _class = fromString("class");
         _super = fromString("super");
         _this = fromString("this");
+        _that = fromString("that");
+
         var = fromString("var");
         exports = fromString("exports");
         opens = fromString("opens");
@@ -261,6 +275,8 @@ public class Names {
         when = fromString("when");
         with = fromString("with");
         yield = fromString("yield");
+        match = fromString("match");
+        pattern = fromString("pattern");
 
         // field and method names
         _name = fromString("name");
@@ -282,6 +298,8 @@ public class Names {
         hashCode = fromString("hashCode");
         init = fromString("<init>");
         invoke = fromString("invoke");
+        component = fromString("component");
+        methodType = fromString("methodType");
         iterator = fromString("iterator");
         length = fromString("length");
         next = fromString("next");
@@ -336,6 +354,7 @@ public class Names {
         LineNumberTable = fromString("LineNumberTable");
         LocalVariableTable = fromString("LocalVariableTable");
         LocalVariableTypeTable = fromString("LocalVariableTypeTable");
+        Pattern = fromString("Pattern");
         MethodParameters = fromString("MethodParameters");
         Module = fromString("Module");
         ModuleResolution = fromString("ModuleResolution");
@@ -371,6 +390,8 @@ public class Names {
         TYPE_PARAMETER = fromString("TYPE_PARAMETER");
         TYPE_USE = fromString("TYPE_USE");
         RECORD_COMPONENT = fromString("RECORD_COMPONENT");
+        DECONSTRUCTOR = fromString("DECONSTRUCTOR");
+        PATTERN_BINDING = fromString("PATTERN_BINDING");
 
         // members of java.lang.annotation.RetentionPolicy
         CLASS = fromString("CLASS");
@@ -412,6 +433,9 @@ public class Names {
         typeSwitch = fromString("typeSwitch");
         enumSwitch = fromString("enumSwitch");
         enumConstant = fromString("enumConstant");
+
+        // pattern invocation
+        invokePattern = fromString("invokePattern");
     }
 
     protected Name.Table createTable(Options options) {

@@ -21,7 +21,7 @@
  * questions.
  */
 
-// key: compiler.err.incorrect.number.of.nested.patterns
+// key: compiler.err.cant.apply.deconstruction.pattern
 
 class IncorrectNumberOfNestedPatterns {
     private boolean t(Object o) {

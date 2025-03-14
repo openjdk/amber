@@ -68,6 +68,8 @@ public class ElementFilter {
                                                ElementKind.ENUM_CONSTANT));
     private static final Set<ElementKind> METHOD_KIND =
         Collections.unmodifiableSet(EnumSet.of(ElementKind.METHOD));
+    private static final Set<ElementKind> DECONSTRUCTOR_KIND =
+            Collections.unmodifiableSet(EnumSet.of(ElementKind.DECONSTRUCTOR));
 
     private static final Set<ElementKind> PACKAGE_KIND =
         Collections.unmodifiableSet(EnumSet.of(ElementKind.PACKAGE));
@@ -157,6 +159,24 @@ public class ElementFilter {
     public static Set<ExecutableElement>
             methodsIn(Set<? extends Element> elements) {
         return setFilter(elements, METHOD_KIND, ExecutableElement.class);
+    }
+
+    /**
+     * {@return a list of methods in {@code elements}}
+     * @param elements the elements to filter
+     */
+    public static List<ExecutableElement>
+    deconstructorsIn(Iterable<? extends Element> elements) {
+        return listFilter(elements, DECONSTRUCTOR_KIND, ExecutableElement.class);
+    }
+
+    /**
+     * {@return a set of methods in {@code elements}}
+     * @param elements the elements to filter
+     */
+    public static Set<ExecutableElement>
+    deconstructorsIn(Set<? extends Element> elements) {
+        return setFilter(elements, DECONSTRUCTOR_KIND, ExecutableElement.class);
     }
 
     /**

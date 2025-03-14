@@ -84,6 +84,7 @@ public enum TypeTag {
     /** The tag of all (monomorphic) method types.
      */
     METHOD,
+    PATTERN,
 
     /** The tag of all package "types".
      */
