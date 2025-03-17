@@ -29,6 +29,7 @@ import jdk.internal.foreign.abi.NativeEntryPoint;
 
 import java.lang.foreign.MemoryLayout;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Constructor;
@@ -172,5 +173,5 @@ public interface JavaLangInvokeAccess {
     MethodHandle serializableConstructor(Class<?> decl, Constructor<?> ctorToCall) throws IllegalAccessException;
 
     // TODO: extra check if needed
-    Lookup implLookup();
+    MethodHandles.Lookup implLookup();
 }
