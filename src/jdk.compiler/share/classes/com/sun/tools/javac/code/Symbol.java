@@ -2099,18 +2099,18 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         private Name mangledBytecodePatternName(Types types) {
             List<Type> bindingTypes = ((PatternType) this.type).erasedBindingTypes;
-
-            List<String> parts = bindingTypes.map(type -> {
+            List<String> bindingTypesStringParts = bindingTypes.map(type -> {
                 var g = new UnSharedSignatureGenerator(types);
                 g.assembleSig(type);
                 String mangled = name.table.names.fromString(BytecodeName.toBytecodeName(g.toName(name.table.names).toString())).toString();
                 mangled = mangled.toString().replaceFirst("\\\\=", "");
                 return mangled;
             });
+            String bindingTypesString = String.join(":", bindingTypesStringParts);
 
-            String postFix = String.join(":", parts);
+            String patternNameString = isDeconstructor() ? BytecodeName.toBytecodeName(name.table.names.dinit.toString()) + ":" + owner.name.toString() : name.toString();
 
-            return name.table.names.fromString((isDeconstructor() ? owner.name.toString() : name) + ":" + postFix);
+            return name.table.names.fromString(patternNameString + ":" + bindingTypesString);
         }
 
         static class UnSharedSignatureGenerator extends Types.SignatureGenerator {

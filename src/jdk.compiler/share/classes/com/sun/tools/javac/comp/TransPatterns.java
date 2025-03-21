@@ -546,8 +546,7 @@ public class TransPatterns extends TreeTranslator {
 
         List<JCExpression> invocationParams = List.of(make.Ident(matchCandidate));
         List<Type> invocationParamTypes;
-
-        if (true /*is instance pattern*/) {
+        if (true) {
             if (recordPattern.deconstructor instanceof JCFieldAccess acc &&
                     !TreeInfo.isStaticSelector(acc.selected, names)) {
                 invocationParamTypes = List.of(/*receiver:*/acc.selected.type,

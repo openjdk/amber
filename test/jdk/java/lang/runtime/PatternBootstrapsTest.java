@@ -54,6 +54,8 @@ import static org.testng.Assert.*;
 public class PatternBootstrapsTest {
 
     public static final MethodHandle INVK_PATTERN;
+    private static final String DINIT = "\\^dinit\\_";
+
     static {
         try {
             INVK_PATTERN = MethodHandles.lookup().findStatic(PatternBootstraps.class, "invokePattern",
@@ -86,7 +88,7 @@ public class PatternBootstrapsTest {
     }
 
     public void testPatternInvocations() throws Throwable {
-        testPatternInvocation(new R(1, 2), R.class, "R:I:I", 0, 1);
-        testPatternInvocation(new R2(1, 2), R2.class, "R2:I:I", 0, 1);
+        testPatternInvocation(new R(1, 2), R.class, DINIT + ":R:I:I", 0, 1);
+        testPatternInvocation(new R2(1, 2), R2.class, DINIT + ":R2:I:I", 0, 1);
     }
 }

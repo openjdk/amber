@@ -1375,7 +1375,7 @@ public class Code {
         List<Type> arg_types = ((MethodType)meth.externalType(types)).argtypes;
         int len = arg_types.length();
         int count = 0;
-        if (!(meth.isStatic() || meth.isPattern())) {
+        if (!(meth.isStatic() || meth.isDeconstructor())) {
             Type thisType = meth.owner.type;
             frame.locals = new Type[len+1];
             if (meth.isConstructor() && thisType != syms.objectType) {

@@ -1,6 +1,9 @@
 package java.lang.reflect;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+
+import static java.lang.runtime.PatternBytecodeName.mangle;
 
 /**
  * {@code Deconstructor} provides information about, and access to, a single
@@ -94,5 +97,10 @@ public final class Deconstructor<T> extends MemberPattern<T> {
                 this.annotations);
         res.root = this;
         return res;
+    }
+
+    private static final String DINIT = "\\^dinit\\_";
+    String getMangledName() {
+        return DINIT + ":" + super.getMangledName();
     }
 }
