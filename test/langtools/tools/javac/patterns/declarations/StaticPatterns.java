@@ -71,7 +71,7 @@ public class StaticPatterns extends TestRunner {
                               public Test(boolean named) {
                                   this.named = named;
                               }
-                              
+
                               public static pattern Test named(int i) {
                                   if (!that.named) {
                                       match-fail();
