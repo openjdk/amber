@@ -2643,19 +2643,14 @@ public class Lower extends TreeTranslator {
             tree.mods.flags |= SYNTHETIC;
 
             // match-candidate parameter
-            JCVariableDecl implicitThatParam =
-                    tree.getMatchCandidateParameter();
+            JCVariableDecl implicitThatParam = tree.getMatchCandidateParameter();
             implicitThatParam.mods.flags |= SYNTHETIC;
             implicitThatParam.sym.flags_field |= SYNTHETIC;
-
             tree.params = tree.params.prepend(implicitThatParam);
             m.params = m.params.prepend(implicitThatParam.sym);
 
             // this parameter
-            if (tree.sym.isStatic() || tree.sym.isDeconstructor()) {
-                tree.mods.flags |= STATIC;
-                tree.sym.flags_field |= STATIC;
-
+            if ((!tree.sym.isInstancePattern() && !tree.sym.isStaticPattern()) || tree.sym.isDeconstructor()) {
                 JCVariableDecl implicitThisParam = make_at(tree.pos()).
                         Param(names._this, tree.sym.owner.type, tree.sym);
                 implicitThisParam.mods.flags |= SYNTHETIC;
@@ -2669,10 +2664,12 @@ public class Lower extends TreeTranslator {
 
             //create an external type for the pattern:
             List<Type> argtypes = olderasure.getParameterTypes().prepend(tree.matchcandparam.type);
-            if (tree.sym.isStatic() || tree.sym.isDeconstructor()) {
+            if (!tree.sym.isInstancePattern() || tree.sym.isDeconstructor()) {
                 argtypes = argtypes.prepend(tree.sym.owner.type);
-
+                tree.mods.flags |= STATIC;
+                tree.sym.flags_field |= STATIC;
             }
+
             var mt = new MethodType(
                     argtypes,
                     olderasure.getReturnType(),

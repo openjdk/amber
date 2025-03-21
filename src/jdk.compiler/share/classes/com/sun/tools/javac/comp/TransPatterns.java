@@ -546,21 +546,21 @@ public class TransPatterns extends TreeTranslator {
 
         List<JCExpression> invocationParams = List.of(make.Ident(matchCandidate));
         List<Type> invocationParamTypes;
-        if (true) {
-            if (recordPattern.deconstructor instanceof JCFieldAccess acc &&
-                    !TreeInfo.isStaticSelector(acc.selected, names)) {
-                invocationParamTypes = List.of(/*receiver:*/acc.selected.type,
-                                               /*match candidate:*/recordPattern.type);
-                invocationParams = invocationParams.prepend(acc.selected);
-            } else {
-                invocationParamTypes = List.of(/*receiver:*/recordPattern.type,
-                                               /*match candidate:*/recordPattern.type);
-                invocationParams = invocationParams.prepend(make.Ident(matchCandidate));
-            }
+
+        // deconstructors, instance patterns and static patterns
+        if (recordPattern.deconstructor instanceof JCFieldAccess acc &&
+                !TreeInfo.isStaticSelector(acc.selected, names)) {
+            invocationParamTypes = List.of(/*receiver:*/acc.selected.type,
+                                           /*match candidate:*/recordPattern.type);
+            invocationParams = invocationParams.prepend(acc.selected);
+        } else if (!recordPattern.patternDeclaration.isStatic()) {
+            invocationParamTypes = List.of(/*receiver:*/recordPattern.type,
+                                           /*match candidate:*/recordPattern.type);
+            invocationParams = invocationParams.prepend(make.Ident(matchCandidate));
         }
-//        else { // this will be needed for static patterns later
-//            invocationParamTypes = List.of(recordPattern.type);
-//        }
+        else {
+            invocationParamTypes = List.of(recordPattern.type);
+        }
         MethodType indyType = new MethodType(
                 invocationParamTypes,
                 syms.objectType,

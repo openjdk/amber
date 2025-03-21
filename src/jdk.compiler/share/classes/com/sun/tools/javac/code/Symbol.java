@@ -483,6 +483,18 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         return isPattern() && name == owner.name;
     }
 
+    /** Is this symbol an instance pattern?
+     */
+    public boolean isInstancePattern() {
+        return isPattern() && !isStaticPattern();
+    }
+
+    /** Is this symbol a static pattern?
+     */
+    public boolean isStaticPattern() {
+        return isPattern() && isStatic();
+    }
+
     public boolean isTotalPattern() {
         //TODO: some non-deconstructor patterns can also be total, to be implemented.
         return isDeconstructor() && (flags() & PARTIAL) == 0;

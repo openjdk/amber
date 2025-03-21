@@ -112,7 +112,7 @@ public class PatternBootstraps {
                 } catch (Throwable t) {
                     // Attempt 2: synthesize the pattern declaration from the record components
                     if (!matchCandidateType.isRecord() || !receiverType.equals(matchCandidateType)) {
-                        throw new IllegalArgumentException("Implicit deconstructor invocation with erroneous match-candidate type or received type");
+                        throw new IllegalArgumentException("Unexpected implicit deconstructor pattern for record: " + mangledName + " (type: " + invocationType + ")");
                     }
 
                     String expectedMangledName = DINIT + ':' + PatternBytecodeName.mangle(matchCandidateType,
@@ -134,7 +134,7 @@ public class PatternBootstraps {
                     target = lookup.findVirtual(receiverType, mangledName, MethodType.methodType(Object.class, matchCandidateType));
                 }
                 catch (Throwable t) {
-                    throw new IllegalArgumentException("Unexpected instance pattern");
+                    throw new IllegalArgumentException("Unexpected instance pattern: " + mangledName + " (type: " + invocationType + ")");
                 }
             }
             case StaticPattern -> {
@@ -143,7 +143,7 @@ public class PatternBootstraps {
                     target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType));
                 }
                 catch (Throwable t) {
-                    throw new IllegalArgumentException("Unexpected static pattern");
+                    throw new IllegalArgumentException("Unexpected static pattern: " + mangledName + " (type: " + invocationType + ")");
                 }
             }
         }
