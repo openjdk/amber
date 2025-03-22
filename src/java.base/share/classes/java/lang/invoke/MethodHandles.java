@@ -44,11 +44,7 @@ import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDescs;
 import java.lang.invoke.LambdaForm.BasicType;
 import java.lang.invoke.MethodHandleImpl.Intrinsic;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Member;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.nio.ByteOrder;
 import java.security.ProtectionDomain;
 import java.util.ArrayList;
@@ -3349,6 +3345,29 @@ return mh1;
             @SuppressWarnings("deprecation")
             Lookup lookup = c.isAccessible() ? IMPL_LOOKUP : this;
             return lookup.getDirectConstructor(ctor.getDeclaringClass(), ctor);
+        }
+
+        /**
+         * Produces a method handle for a reflected deconstructor.
+         * TBD
+         * @param d the reflected deconstructor
+         * @return a method handle which can invoke the reflected deconstructor
+         * @throws IllegalAccessException if access checking fails
+         * @throws NullPointerException if the argument is null
+         */
+        public MethodHandle unreflectDeconstructor(Deconstructor<?> d) throws IllegalAccessException {
+            Class<?> ownerType = d.getDeclaringClass(); // Implicit null-check of d
+            try {
+                return unreflect(
+                    ownerType.getDeclaredMethod(
+                        SharedSecrets.getJavaLangReflectAccess().getMangledName(d),
+                        ownerType,
+                        ownerType
+                    )
+                );
+            } catch (NoSuchMethodException | SecurityException ex) {
+                throw new InternalError(ex);
+            }
         }
 
         /*

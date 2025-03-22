@@ -1118,6 +1118,7 @@ public class Annotate {
             scan(tree.restype);
             scan(tree.typarams);
             scan(tree.recvparam);
+            scan(tree.matchcandparam);
             scan(tree.params);
             scan(tree.thrown);
             scan(tree.defaultValue);
