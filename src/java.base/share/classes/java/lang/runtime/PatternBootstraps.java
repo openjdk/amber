@@ -104,14 +104,13 @@ public class PatternBootstraps {
 
         switch (detectPatternUseSite(invocationType, mangledName)) {
             case Deconstructor -> {
-                Class<?> receiverType = invocationType.parameterType(0);
-                Class<?> matchCandidateType = invocationType.parameterType(1);
+                Class<?> matchCandidateType = invocationType.parameterType(0);
                 try {
                     // Attempt 1: discover the deconstructor
-                    target = lookup.findStatic(receiverType, mangledName, MethodType.methodType(Object.class, receiverType, matchCandidateType));
+                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType));
                 } catch (Throwable t) {
                     // Attempt 2: synthesize the pattern declaration from the record components
-                    if (!matchCandidateType.isRecord() || !receiverType.equals(matchCandidateType)) {
+                    if (!matchCandidateType.isRecord()) {
                         throw new IllegalArgumentException("Unexpected implicit deconstructor pattern for record: " + mangledName + " (type: " + invocationType + ")");
                     }
 
@@ -169,13 +168,10 @@ public class PatternBootstraps {
 
         MethodHandle carrierCreator = initializingConstructor.asSpreader(Object[].class, ctypes.length);
 
-        return MethodHandles.dropArguments(
-                        MethodHandles.insertArguments(StaticHolders.SYNTHETIC_PATTERN,
-                                0,
-                                accessors,
-                                carrierCreator),
-                        1,
-                        Object.class).asType(invocationType);
+        return MethodHandles.insertArguments(StaticHolders.SYNTHETIC_PATTERN,
+                0,
+                accessors,
+                carrierCreator).asType(invocationType);
     }
 
     enum PatternUseSite {
@@ -185,10 +181,12 @@ public class PatternBootstraps {
     }
     static PatternUseSite detectPatternUseSite(MethodType invocationType,
                                                String mangledName) {
-        if (invocationType.parameterCount() == 2) {
-            return mangledName.startsWith(DINIT + ':') ? PatternUseSite.Deconstructor : PatternUseSite.InstancePattern;
+        if (invocationType.parameterCount() == 1 && mangledName.startsWith(DINIT + ':')) {
+            return PatternUseSite.Deconstructor;
         } else if (invocationType.parameterCount() == 1) {
             return PatternUseSite.StaticPattern;
+        } else if (invocationType.parameterCount() == 2) {
+            return PatternUseSite.InstancePattern;
         } else if ((!invocationType.returnType().equals(Object.class))) {
             throw new IllegalArgumentException("Illegal return type: " + invocationType);
         } else {

@@ -486,7 +486,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     /** Is this symbol an instance pattern?
      */
     public boolean isInstancePattern() {
-        return isPattern() && !isStaticPattern();
+        return isPattern() && !isStaticPattern() && !isDeconstructor();
     }
 
     /** Is this symbol a static pattern?

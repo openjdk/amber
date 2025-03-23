@@ -401,7 +401,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
         String underlyingName = getMangledName();
 
         try {
-            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass(), matchCandidate.getClass());
+            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
             method.setAccessible(override);
             return (Object[])Carriers.boxedComponentValueArray(
                 MethodType.methodType(
@@ -411,7 +411,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
                           .toArray(Class[]::new)
                 )
             ).invoke(
-                method.invoke(matchCandidate, matchCandidate, matchCandidate)
+                method.invoke(matchCandidate, matchCandidate)
             );
         } catch (Throwable e) {
             throw new MatchException(e.getMessage(), e);

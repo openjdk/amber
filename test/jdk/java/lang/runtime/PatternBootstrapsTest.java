@@ -81,10 +81,10 @@ public class PatternBootstrapsTest {
     }
 
     private void testPatternInvocation(Object target, Class<?> targetType, String mangledName, int componentNo, int result) throws Throwable {
-        MethodType dtorType = MethodType.methodType(Object.class, targetType, targetType);
+        MethodType dtorType = MethodType.methodType(Object.class, targetType);
         MethodHandle indy = ((CallSite) INVK_PATTERN.invoke(MethodHandles.lookup(), "", dtorType, mangledName)).dynamicInvoker();
         List<MethodHandle> components = Carriers.components(MethodType.methodType(Object.class, int.class, int.class));
-        assertEquals((int) components.get(componentNo).invokeExact(indy.invoke(target, target)), result);
+        assertEquals((int) components.get(componentNo).invokeExact(indy.invoke(target)), result);
     }
 
     public void testPatternInvocations() throws Throwable {

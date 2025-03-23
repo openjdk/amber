@@ -47,14 +47,14 @@ public class UnreflectPattern {
         }
         MethodHandle unreflected =
                 MethodHandles.lookup().unreflectDeconstructor(deconstructor);
-        if (!MethodType.methodType(Object.class, UnreflectPattern.class, UnreflectPattern.class).equals(unreflected.type()))
+        if (!MethodType.methodType(Object.class, UnreflectPattern.class).equals(unreflected.type()))
             throw new AssertionError("Unexpected type: " + unreflected.type());
         MethodHandle deconstructorHandle =
             MethodHandles.filterReturnValue(
                 unreflected,
                 Carriers.boxedComponentValueArray(MethodType.methodType(Object.class, String.class, Integer.TYPE))
             );
-        Object[] result2 = (Object[]) deconstructorHandle.invokeExact(instance, instance);
+        Object[] result2 = (Object[]) deconstructorHandle.invokeExact(instance);
         if (!Arrays.equals(expected, result2)) {
             throw new AssertionError("Unexpected result: " + Arrays.toString(result2));
         }

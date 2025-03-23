@@ -94,7 +94,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            if (!javapOut.contains("public static java.lang.Object \\^dinit\\_:Test:Ljava\\|lang\\|String\\?:Ljava\\|lang\\|String\\?(test.Test, test.Test)"))
+            if (!javapOut.contains("public static java.lang.Object \\^dinit\\_:Test:Ljava\\|lang\\|String\\?:Ljava\\|lang\\|String\\?(test.Test)"))
                 throw new AssertionError("Wrongly generated signature of pattern declaration:\n" + javapOut);
         }
     }

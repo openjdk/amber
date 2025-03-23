@@ -544,21 +544,20 @@ public class TransPatterns extends TreeTranslator {
                 recordPattern.pos(), env, syms.patternBootstrapsType,
                 names.invokePattern, staticArgTypes, List.nil());
 
-        List<JCExpression> invocationParams = List.of(make.Ident(matchCandidate));
+        List<JCExpression> invocationParams;
         List<Type> invocationParamTypes;
 
         // deconstructors, instance patterns and static patterns
-        if (recordPattern.deconstructor instanceof JCFieldAccess acc &&
-                !TreeInfo.isStaticSelector(acc.selected, names)) {
-            invocationParamTypes = List.of(/*receiver:*/acc.selected.type,
-                                           /*match candidate:*/recordPattern.type);
-            invocationParams = invocationParams.prepend(acc.selected);
-        } else if (!recordPattern.patternDeclaration.isStatic()) {
-            invocationParamTypes = List.of(/*receiver:*/recordPattern.type,
-                                           /*match candidate:*/recordPattern.type);
-            invocationParams = invocationParams.prepend(make.Ident(matchCandidate));
+        if (recordPattern.deconstructor instanceof JCFieldAccess acc && !TreeInfo.isStaticSelector(acc.selected, names)) {
+                                           /*receiver                , match candidate            */
+            invocationParamTypes = List.of(acc.selected.type         , recordPattern.type);
+            invocationParams     = List.of(acc.selected              , make.Ident(matchCandidate));
+        } else if (!recordPattern.patternDeclaration.isStatic() && !recordPattern.patternDeclaration.isDeconstructor()) {
+            invocationParamTypes = List.of(recordPattern.type        , recordPattern.type);
+            invocationParams     = List.of(make.Ident(matchCandidate), make.Ident(matchCandidate));
         }
         else {
+            invocationParams     = List.of(make.Ident(matchCandidate));
             invocationParamTypes = List.of(recordPattern.type);
         }
         MethodType indyType = new MethodType(

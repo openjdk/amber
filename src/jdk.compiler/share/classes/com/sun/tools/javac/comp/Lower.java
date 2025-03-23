@@ -2643,14 +2643,16 @@ public class Lower extends TreeTranslator {
             tree.mods.flags |= SYNTHETIC;
 
             // match-candidate parameter
-            JCVariableDecl implicitThatParam = tree.getMatchCandidateParameter();
-            implicitThatParam.mods.flags |= SYNTHETIC;
-            implicitThatParam.sym.flags_field |= SYNTHETIC;
-            tree.params = tree.params.prepend(implicitThatParam);
-            m.params = m.params.prepend(implicitThatParam.sym);
+            if (tree.sym.isInstancePattern() || tree.sym.isStaticPattern()) {
+                JCVariableDecl implicitThatParam = tree.getMatchCandidateParameter();
+                implicitThatParam.mods.flags |= SYNTHETIC;
+                implicitThatParam.sym.flags_field |= SYNTHETIC;
+                tree.params = tree.params.prepend(implicitThatParam);
+                m.params = m.params.prepend(implicitThatParam.sym);
+            }
 
             // this parameter
-            if ((!tree.sym.isInstancePattern() && !tree.sym.isStaticPattern()) || tree.sym.isDeconstructor()) {
+            if (tree.sym.isDeconstructor()) {
                 JCVariableDecl implicitThisParam = make_at(tree.pos()).
                         Param(names._this, tree.sym.owner.type, tree.sym);
                 implicitThisParam.mods.flags |= SYNTHETIC;
@@ -2663,9 +2665,15 @@ public class Lower extends TreeTranslator {
             Type olderasure = m.erasure(types);
 
             //create an external type for the pattern:
-            List<Type> argtypes = olderasure.getParameterTypes().prepend(tree.matchcandparam.type);
-            if (!tree.sym.isInstancePattern() || tree.sym.isDeconstructor()) {
+            List<Type> argtypes = olderasure.getParameterTypes();
+            if (tree.sym.isInstancePattern() || tree.sym.isStaticPattern()) {
+                argtypes = argtypes.prepend(tree.matchcandparam.type);
+            }
+            if (tree.sym.isDeconstructor()) {
                 argtypes = argtypes.prepend(tree.sym.owner.type);
+            }
+
+            if (tree.sym.isStaticPattern() || tree.sym.isDeconstructor()) {
                 tree.mods.flags |= STATIC;
                 tree.sym.flags_field |= STATIC;
             }
