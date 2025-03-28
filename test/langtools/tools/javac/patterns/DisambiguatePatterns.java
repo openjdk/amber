@@ -65,6 +65,28 @@ public class DisambiguatePatterns {
                                  ExpressionType.EXPRESSION);
         test.disambiguationTest("((0x1))",
                                  ExpressionType.EXPRESSION);
+        test.disambiguationTest("a | b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a || b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a & b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a && b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a < b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a > b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a >> b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a >>> b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a < b | a > b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a << b | a >> b",
+                                 ExpressionType.EXPRESSION);
+        test.disambiguationTest("a << b || a < b | a >>> b",
+                                 ExpressionType.EXPRESSION);
         test.disambiguationTest("(a > b)",
                                  ExpressionType.EXPRESSION);
         test.disambiguationTest("(a >> b)",
@@ -77,6 +99,8 @@ public class DisambiguatePatterns {
                                  ExpressionType.EXPRESSION);
         test.disambiguationTest("(a << b || a < b | a >>> b)",
                                  ExpressionType.EXPRESSION);
+        test.disambiguationTest("a < c > b",
+                                 ExpressionType.PATTERN);
         test.disambiguationTest("a < c.d > b",
                                  ExpressionType.PATTERN);
         test.disambiguationTest("a<? extends c.d> b",
@@ -113,6 +137,65 @@ public class DisambiguatePatterns {
                                  ExpressionType.PATTERN);
         test.disambiguationTest("R(int x) when (x > 0)",
                                  ExpressionType.PATTERN);
+        test.disambiguationTest("R(int x) when foo.x() > 0",
+                                 ExpressionType.PATTERN);
+
+        test.disambiguationTest("test().R()",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("test().R(var v)",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("test().R(int v)",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("test().R(int _)",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("test().R(_)",
+                                 ExpressionType.PATTERN);
+
+        test.disambiguationTest("test().R(test().R(_))",
+                                 ExpressionType.PATTERN);
+
+        //TODO: error recovery, can be ignored if needed
+        //expressions with method invocations can never be constant expessions,
+        //and hence would fail later during attribution anyway:
+//        test.disambiguationTest("test().R(test().R(1))",
+//                                 ExpressionType.EXPRESSION);
+
+        test.disambiguationTest("test().test().test().R(test().test().R(int i), test().test().R(int i), other.pack.Rec(var v))",
+                                 ExpressionType.PATTERN);
+
+        test.disambiguationTest("""
+                                 test(t -> 0)
+                                .test((t) -> 0)
+                                .test((var t) -> {int j = 0;})
+                                .R( test(t -> 0)
+                                   .test((t) -> 0)
+                                   .R(int i),
+                                    test((var t1) -> {
+                                       final class Object {
+                                           private void test() {
+                                               for (int i = 0; i < 10; i++) {}
+                                           }
+                                       }
+                                   })
+                                   .test((var t1, var t2) -> {})
+                                   .R(int i),
+                                    other.pack.Rec(var v)
+                                  )
+                                """,
+                                 ExpressionType.PATTERN);
+
+        test.disambiguationTest("int _ when 0 == 0",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("Box<String>()",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("Box<String, Integer> b",
+                                 ExpressionType.PATTERN);
+        test.disambiguationTest("Box<String, Integer>()",
+                                 ExpressionType.PATTERN);
+
+        //TODO: in JDK 24 parsed as two expression:
+//        test.disambiguationTest("a < b, b > a",
+//                                 ExpressionType.EXPRESSION);
     }
 
     private final ParserFactory factory;
