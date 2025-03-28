@@ -3598,8 +3598,16 @@ public class Check {
                 if (s.getKind() == ElementKind.RECORD_COMPONENT) {
                     applicableTargets.add(names.RECORD_COMPONENT);
                 }
+            } else if (target == names.DECONSTRUCTOR) {
+                if (s.kind == MTH && s.isDeconstructor()) {
+                    applicableTargets.add(names.DECONSTRUCTOR);
+                }
+            } else if (target == names.PATTERN_BINDING) {
+                if (s.getKind() == ElementKind.PATTERN_BINDING) {
+                    applicableTargets.add(names.PATTERN_BINDING);
+                }
             } else if (target == names.METHOD) {
-                if (s.kind == MTH && !s.isConstructor())
+                if (s.kind == MTH && !s.isConstructor() && !s.isDeconstructor())
                     applicableTargets.add(names.METHOD);
             } else if (target == names.PARAMETER) {
                 if (s.kind == VAR &&
@@ -4172,6 +4180,8 @@ public class Check {
                 } else if (sym.kind == MTH && !types.hasSameArgs(sym.type, byName.type, false)) {
                     duplicateErasureError(pos, sym, byName);
                     sym.flags_field |= CLASH;
+                    return true;
+                } else if (sym.isPattern() && byName.isPattern() && !types.hasSameArgs(sym.type, byName.type, false)) {
                     return true;
                 } else if ((sym.flags() & MATCH_BINDING) != 0 &&
                            (byName.flags() & MATCH_BINDING) != 0 &&
@@ -4874,6 +4884,10 @@ public class Check {
                     List<JCPattern> existingNested = existingRecordPattern.nested;
                     List<JCPattern> currentNested = currentRecordPattern.nested;
                     if (existingNested.size() != currentNested.size()) {
+                        return false;
+                    }
+                    if (!existingRecordPattern.patternDeclaration.isTotalPattern()) {
+                        //partial patterns cannot dominate(?)
                         return false;
                     }
                     while (existingNested.nonEmpty()) {

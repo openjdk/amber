@@ -162,6 +162,14 @@ public record ClassRemapperImpl(Function<ClassDesc, ClassDesc> mapFunction) impl
                 case RuntimeInvisibleTypeAnnotationsAttribute aa ->
                     mb.with(RuntimeInvisibleTypeAnnotationsAttribute.of(
                             mapTypeAnnotations(aa.annotations())));
+                case PatternAttribute ma -> {
+                    List<Attribute<?>> matcherAttrs = ma.attributes().stream().<Attribute<?>>map(this::mapMatcherAttributes).toList();
+                    mb.with(PatternAttribute.of(
+                                    ma.patternName().stringValue(),
+                                    ma.patternFlagsMask(),
+                                    ma.patternTypeSymbol(),
+                                    matcherAttrs));
+                }
                 default ->
                     mb.with(me);
             }
@@ -265,6 +273,26 @@ public record ClassRemapperImpl(Function<ClassDesc, ClassDesc> mapFunction) impl
                                     mapTypeAnnotations(aa.annotations()));
                         default -> atr;
                     }).toList());
+    }
+
+    Attribute<?> mapMatcherAttributes(Attribute<?> matcherAnnotation) {
+        return switch (matcherAnnotation) {
+            case SignatureAttribute sa ->
+                    SignatureAttribute.of(
+                            mapSignature(sa.asMethodSignature().result()));
+            case RuntimeVisibleParameterAnnotationsAttribute aa ->
+                    RuntimeVisibleParameterAnnotationsAttribute.of(
+                            aa.parameterAnnotations().stream().map(this::mapAnnotations).toList());
+            case RuntimeInvisibleParameterAnnotationsAttribute aa ->
+                    RuntimeInvisibleParameterAnnotationsAttribute.of(
+                            aa.parameterAnnotations().stream().map(this::mapAnnotations).toList());
+            case DeprecatedAttribute a ->
+                    DeprecatedAttribute.of();
+            case MethodParametersAttribute a ->
+                    MethodParametersAttribute.of(a.parameters().stream().map(mp ->
+                            MethodParameterInfo.ofParameter(mp.name().map(Utf8Entry::stringValue), mp.flagsMask())).toArray(MethodParameterInfo[]::new));
+            default -> matcherAnnotation;
+        };
     }
 
     DirectMethodHandleDesc mapDirectMethodHandle(DirectMethodHandleDesc dmhd) {
