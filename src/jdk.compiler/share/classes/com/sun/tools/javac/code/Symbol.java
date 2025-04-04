@@ -30,7 +30,6 @@ import java.lang.annotation.Inherited;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -75,6 +74,8 @@ import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.Scope.LookupKind.NON_RECURSIVE;
 import com.sun.tools.javac.code.Scope.WriteableScope;
+import sun.invoke.util.BytecodeName;
+
 import static com.sun.tools.javac.code.TypeTag.CLASS;
 import static com.sun.tools.javac.code.TypeTag.FORALL;
 import static com.sun.tools.javac.code.TypeTag.TYPEVAR;
@@ -83,6 +84,7 @@ import static com.sun.tools.javac.jvm.ByteCodes.ishll;
 import static com.sun.tools.javac.jvm.ByteCodes.lushrl;
 import static com.sun.tools.javac.jvm.ByteCodes.lxor;
 import static com.sun.tools.javac.jvm.ByteCodes.string_add;
+import java.util.stream.Collectors;
 
 /** Root class for Java symbols. It contains subclasses
  *  for specific sorts of symbols, such as variables, methods and operators,
@@ -363,6 +365,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                                   t.getReturnType(),
                                   t.getThrownTypes(),
                                   t.tsym);
+        } else if ((flags() & PATTERN) != 0) {
+            MethodSymbol thisAsMethod = (MethodSymbol) this;
+            List<Type> parameterTypes = thisAsMethod.getParameters().map(p -> types.erasure(p.type));
+
+            return new MethodType(parameterTypes, types.syms.objectType, List.nil(), t.tsym);
         } else {
             return t;
         }
@@ -462,6 +469,35 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
      */
     public boolean isConstructor() {
         return name == name.table.names.init;
+    }
+
+    /** Is this symbol a pattern declaration?
+     */
+    public boolean isPattern() {
+        return (flags() & PATTERN) != 0;
+    }
+
+    /** Is this symbol a deconstructor?
+     */
+    public boolean isDeconstructor() {
+        return isPattern() && name == owner.name;
+    }
+
+    /** Is this symbol an instance pattern?
+     */
+    public boolean isInstancePattern() {
+        return isPattern() && !isStaticPattern() && !isDeconstructor();
+    }
+
+    /** Is this symbol a static pattern?
+     */
+    public boolean isStaticPattern() {
+        return isPattern() && isStatic();
+    }
+
+    public boolean isTotalPattern() {
+        //TODO: some non-deconstructor patterns can also be total, to be implemented.
+        return isDeconstructor() && (flags() & PARTIAL) == 0;
     }
 
     public boolean isDynamic() {
@@ -878,7 +914,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             apiComplete();
             for (Symbol sym : members().getSymbols(NON_RECURSIVE)) {
                 sym.apiComplete();
-                if ((sym.flags() & SYNTHETIC) == 0 && sym.owner == this && sym.kind != ERR) {
+                //TODO: patterns should be part of the output, but they are marked synthetic:
+                if (((sym.flags() & SYNTHETIC) == 0 || sym.isPattern()) && sym.owner == this && sym.kind != ERR) {
                     list = list.prepend(sym);
                 }
             }
@@ -1007,7 +1044,6 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         public Completer usesProvidesCompleter = Completer.NULL_COMPLETER;
         public final Set<ModuleFlags> flags = EnumSet.noneOf(ModuleFlags.class);
         public final Set<ModuleResolutionFlags> resolutionFlags = EnumSet.noneOf(ModuleResolutionFlags.class);
-
         /**
          * Create a ModuleSymbol with an associated module-info ClassSymbol.
          */
@@ -1151,6 +1187,24 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         }
 
         private ModuleResolutionFlags(int value) {
+            this.value = value;
+        }
+
+        public final int value;
+    }
+
+    public enum PatternFlags {
+        DECONSTRUCTOR(0x3000),
+        TOTAL(0x4000);
+
+        public static int value(Set<PatternFlags> s) {
+            int v = 0;
+            for (PatternFlags f: s)
+                v |= f.value;
+            return v;
+        }
+
+        private PatternFlags(int value) {
             this.value = value;
         }
 
@@ -1761,6 +1815,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             if ((flags & PARAMETER) != 0) {
                 if (isExceptionParameter())
                     return ElementKind.EXCEPTION_PARAMETER;
+                else if (owner.isPattern())
+                    return ElementKind.PATTERN_BINDING;
                 else
                     return ElementKind.PARAMETER;
             } else if ((flags & ENUM) != 0) {
@@ -1971,11 +2027,19 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         /** The parameters of the method. */
         public List<VarSymbol> params = null;
 
+        /** The bindings of the method if it is a pattern declaration. */
+        public List<VarSymbol> bindings = null;
+
         /** For an annotation type element, its default value if any.
          *  The value is null if none appeared in the method
          *  declaration.
          */
         public Attribute defaultValue = null;
+
+        //TODO: would be good to avoid creating an EnumSet instance for *every* MethodSymbol,
+        //even though only a small fraction of them will be patterns:
+        public final Set<PatternFlags> patternFlags = EnumSet.noneOf(PatternFlags.class);
+
 
         /** Construct a method symbol, given its flags, name, type and owner.
          */
@@ -2037,6 +2101,64 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return false;
         }
 
+        public Name externalName(Types types) {
+            if ((flags() & PATTERN) != 0) {
+                return mangledBytecodePatternName(types);
+            } else {
+                return name;
+            }
+        }
+
+        private Name mangledBytecodePatternName(Types types) {
+            List<Type> bindingTypes = ((PatternType) this.type).erasedBindingTypes;
+            List<String> bindingTypesStringParts = bindingTypes.map(type -> {
+                var g = new UnSharedSignatureGenerator(types);
+                g.assembleSig(type);
+                String mangled = name.table.names.fromString(BytecodeName.toBytecodeName(g.toName(name.table.names).toString())).toString();
+                mangled = mangled.toString().replaceFirst("\\\\=", "");
+                return mangled;
+            });
+            String bindingTypesString = String.join(":", bindingTypesStringParts);
+
+            String patternNameString = isDeconstructor() ? BytecodeName.toBytecodeName(name.table.names.dinit.toString()) + ":" + owner.name.toString() : name.toString();
+
+            return name.table.names.fromString(patternNameString + ":" + bindingTypesString);
+        }
+
+        static class UnSharedSignatureGenerator extends Types.SignatureGenerator {
+
+            /**
+             * An output buffer for type signatures.
+             */
+            ByteBuffer sigbuf = new ByteBuffer();
+
+            UnSharedSignatureGenerator(Types types) {
+                types.super();
+            }
+
+            @Override
+            protected void append(char ch) {
+                sigbuf.appendByte(ch);
+            }
+
+            @Override
+            protected void append(byte[] ba) {
+                sigbuf.appendBytes(ba);
+            }
+
+            @Override
+            protected void append(Name name) {
+                sigbuf.appendName(name);
+            }
+
+            protected Name toName(Names names) {
+                try {
+                    return sigbuf.toName(names);
+                } catch (InvalidUtfException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
 
         public MethodHandleSymbol asHandle() {
             return new MethodHandleSymbol(this);
@@ -2264,6 +2386,23 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             return params;
         }
 
+        public List<VarSymbol> bindings() {
+            owner.complete();
+            if (bindings == null) {
+                ListBuffer<VarSymbol> newBindings = new ListBuffer<>();
+                int i = 0;
+                for (Type t : type.getBindingTypes()) {
+                    Name bindingName = name.table.fromString("bind" + i);
+                    VarSymbol binding = new VarSymbol(PARAMETER, bindingName, t, this);
+                    newBindings.append(binding);
+                    i++;
+                }
+                bindings = newBindings.toList();
+            }
+            Assert.checkNonNull(bindings);
+            return bindings;
+        }
+
         public Symbol asMemberOf(Type site, Types types) {
             return new MethodSymbol(flags_field, name, types.memberType(site, this), owner);
         }
@@ -2276,6 +2415,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                 return ElementKind.STATIC_INIT;
             else if ((flags() & BLOCK) != 0)
                 return isStatic() ? ElementKind.STATIC_INIT : ElementKind.INSTANCE_INIT;
+            else if (isDeconstructor())
+                return ElementKind.DECONSTRUCTOR;
             else
                 return ElementKind.METHOD;
         }
@@ -2293,6 +2434,11 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
         @DefinedBy(Api.LANGUAGE_MODEL)
         public List<VarSymbol> getParameters() {
             return params();
+        }
+
+        @DefinedBy(Api.LANGUAGE_MODEL)
+        public List<VarSymbol> getBindings() {
+            return bindings();
         }
 
         @DefinedBy(Api.LANGUAGE_MODEL)

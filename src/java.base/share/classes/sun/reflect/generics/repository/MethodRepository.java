@@ -37,7 +37,7 @@ import sun.reflect.generics.visitor.Reifier;
  * The code is not dependent on a particular reflective implementation.
  * It is designed to be used unchanged by at least core reflection and JDI.
  */
-public class MethodRepository extends ConstructorRepository {
+public class MethodRepository extends ExecutableRepository {
 
     /** The generic return type info.  Lazily initialized. */
     private volatile Type returnType;

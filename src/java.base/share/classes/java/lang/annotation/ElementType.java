@@ -127,5 +127,19 @@ public enum ElementType {
      *
      * @since 16
      */
-    RECORD_COMPONENT;
+    RECORD_COMPONENT,
+
+    /**
+     * Deconstructor
+     *
+     * @since 23
+     */
+    DECONSTRUCTOR,
+
+    /**
+     * Pattern binding
+     *
+     * @since 23
+     */
+    PATTERN_BINDING;
 }
