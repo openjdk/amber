@@ -34,8 +34,12 @@ import com.sun.source.tree.CaseLabelTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.ConstantCaseLabelTree;
+import com.sun.source.tree.IfTree;
+import com.sun.source.tree.InstanceOfTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.PatternCaseLabelTree;
+import com.sun.source.tree.PatternTree;
 import com.sun.source.tree.SwitchTree;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.parser.JavacParser;
@@ -49,110 +53,110 @@ public class DisambiguatePatterns {
 
     public static void main(String... args) throws Throwable {
         DisambiguatePatterns test = new DisambiguatePatterns();
-        test.disambiguationTest("String s",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("String s when s.isEmpty()",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("String s",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("@Ann String s",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("String s",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("(String) s",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("((String) s)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("((0x1))",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a | b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a || b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a & b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a && b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a < b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a > b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a >> b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a >>> b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a < b | a > b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a << b | a >> b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a << b || a < b | a >>> b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("(a > b)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("(a >> b)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("(a >>> b)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("(a < b | a > b)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("(a << b | a >> b)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("(a << b || a < b | a >>> b)",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a < c > b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a < c.d > b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<? extends c.d> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("@Ann a<? extends c.d> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<? extends @Ann c.d> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<? super c.d> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<? super @Ann c.d> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<b<c.d>> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<b<@Ann c.d>> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a<b<c<d>>> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a[] b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a[][] b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("int i",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("int[] i",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("a[a]",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a[b][c]",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("a & b",
-                                 ExpressionType.EXPRESSION);
-        test.disambiguationTest("R r when (x > 0)",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("R(int x) when (x > 0)",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("R(int x) when foo.x() > 0",
-                                 ExpressionType.PATTERN);
+        test.caseDisambiguationTest("String s",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("String s when s.isEmpty()",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("String s",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("@Ann String s",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("String s",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("(String) s",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("((String) s)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("((0x1))",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a | b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a || b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a & b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a && b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a < b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a > b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a >> b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a >>> b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a < b | a > b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a << b | a >> b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a << b || a < b | a >>> b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("(a > b)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("(a >> b)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("(a >>> b)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("(a < b | a > b)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("(a << b | a >> b)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("(a << b || a < b | a >>> b)",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a < c > b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a < c.d > b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<? extends c.d> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("@Ann a<? extends c.d> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<? extends @Ann c.d> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<? super c.d> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<? super @Ann c.d> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<b<c.d>> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<b<@Ann c.d>> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a<b<c<d>>> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a[] b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a[][] b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("int i",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("int[] i",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("a[a]",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a[b][c]",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("a & b",
+                                    CaseExpressionType.EXPRESSION);
+        test.caseDisambiguationTest("R r when (x > 0)",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("R(int x) when (x > 0)",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("R(int x) when foo.x() > 0",
+                                    CaseExpressionType.PATTERN);
 
-        test.disambiguationTest("test().R()",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("test().R(var v)",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("test().R(int v)",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("test().R(int _)",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("test().R(_)",
-                                 ExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().R()",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().R(var v)",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().R(int v)",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().R(int _)",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().R(_)",
+                                    CaseExpressionType.PATTERN);
 
-        test.disambiguationTest("test().R(test().R(_))",
-                                 ExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().R(test().R(_))",
+                                    CaseExpressionType.PATTERN);
 
         //TODO: error recovery, can be ignored if needed
         //expressions with method invocations can never be constant expessions,
@@ -160,42 +164,44 @@ public class DisambiguatePatterns {
 //        test.disambiguationTest("test().R(test().R(1))",
 //                                 ExpressionType.EXPRESSION);
 
-        test.disambiguationTest("test().test().test().R(test().test().R(int i), test().test().R(int i), other.pack.Rec(var v))",
-                                 ExpressionType.PATTERN);
+        test.caseDisambiguationTest("test().test().test().R(test().test().R(int i), test().test().R(int i), other.pack.Rec(var v))",
+                                    CaseExpressionType.PATTERN);
 
-        test.disambiguationTest("""
-                                 test(t -> 0)
-                                .test((t) -> 0)
-                                .test((var t) -> {int j = 0;})
-                                .R( test(t -> 0)
-                                   .test((t) -> 0)
-                                   .R(int i),
-                                    test((var t1) -> {
-                                       final class Object {
-                                           private void test() {
-                                               for (int i = 0; i < 10; i++) {}
+        test.caseDisambiguationTest("""
+                                    test(t -> 0)
+                                    .test((t) -> 0)
+                                    .test((var t) -> {int j = 0;})
+                                    .R( test(t -> 0)
+                                       .test((t) -> 0)
+                                       .R(int i),
+                                        test((var t1) -> {
+                                           final class Object {
+                                               private void test() {
+                                                   for (int i = 0; i < 10; i++) {}
+                                               }
                                            }
-                                       }
-                                   })
-                                   .test((var t1, var t2) -> {})
-                                   .R(int i),
-                                    other.pack.Rec(var v)
-                                  )
-                                """,
-                                 ExpressionType.PATTERN);
+                                       })
+                                       .test((var t1, var t2) -> {})
+                                       .R(int i),
+                                        other.pack.Rec(var v)
+                                      )
+                                   """,
+                                   CaseExpressionType.PATTERN);
 
-        test.disambiguationTest("int _ when 0 == 0",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("Box<String>()",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("Box<String, Integer> b",
-                                 ExpressionType.PATTERN);
-        test.disambiguationTest("Box<String, Integer>()",
-                                 ExpressionType.PATTERN);
+        test.caseDisambiguationTest("int _ when 0 == 0",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("Box<String>()",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("Box<String, Integer> b",
+                                    CaseExpressionType.PATTERN);
+        test.caseDisambiguationTest("Box<String, Integer>()",
+                                    CaseExpressionType.PATTERN);
 
         //TODO: in JDK 24 parsed as two expression:
 //        test.disambiguationTest("a < b, b > a",
 //                                 ExpressionType.EXPRESSION);
+
+        test.ifDisambiguationTest("byte[]", InstanceOfType.TYPE);
     }
 
     private final ParserFactory factory;
@@ -207,7 +213,7 @@ public class DisambiguatePatterns {
         factory = ParserFactory.instance(context);
     }
 
-    void disambiguationTest(String snippet, ExpressionType expectedType) {
+    void caseDisambiguationTest(String snippet, CaseExpressionType expectedType) {
         String code = """
                       public class Test {
                           private void test() {
@@ -223,9 +229,9 @@ public class DisambiguatePatterns {
         MethodTree method = (MethodTree) clazz.getMembers().get(0);
         SwitchTree st = (SwitchTree) method.getBody().getStatements().get(0);
         CaseLabelTree label = st.getCases().get(0).getLabels().get(0);
-        ExpressionType actualType = switch (label) {
-            case ConstantCaseLabelTree et -> ExpressionType.EXPRESSION;
-            case PatternCaseLabelTree pt -> ExpressionType.PATTERN;
+        CaseExpressionType actualType = switch (label) {
+            case ConstantCaseLabelTree et -> CaseExpressionType.EXPRESSION;
+            case PatternCaseLabelTree pt -> CaseExpressionType.PATTERN;
             default -> throw new AssertionError("Unexpected result: " + result);
         };
         if (expectedType != actualType) {
@@ -234,9 +240,40 @@ public class DisambiguatePatterns {
         }
     }
 
-    enum ExpressionType {
+    enum CaseExpressionType {
         PATTERN,
         EXPRESSION;
     }
 
+    void ifDisambiguationTest(String snippet, InstanceOfType expectedType) {
+        String code = """
+                      public class Test {
+                          private void test(Object o) {
+                              if (o instanceof SNIPPET) {
+                              }
+                          }
+                      }
+                      """.replace("SNIPPET", snippet);
+        JavacParser parser = factory.newParser(code, false, false, false);
+        CompilationUnitTree result = parser.parseCompilationUnit();
+        ClassTree clazz = (ClassTree) result.getTypeDecls().get(0);
+        MethodTree method = (MethodTree) clazz.getMembers().get(0);
+        IfTree it = (IfTree) method.getBody().getStatements().get(0);
+        InstanceOfTree instOf = (InstanceOfTree) ((ParenthesizedTree) it.getCondition()).getExpression();
+        InstanceOfType actualType;
+        if (instOf instanceof PatternTree) {
+            actualType = InstanceOfType.PATTERN;
+        } else {
+            actualType = InstanceOfType.TYPE;
+        }
+        if (expectedType != actualType) {
+            throw new AssertionError("Expected: " + expectedType + ", actual: " + actualType +
+                                      ", for: " + code + ", parsed: " + result);
+        }
+    }
+
+    enum InstanceOfType {
+        PATTERN,
+        TYPE
+    }
 }

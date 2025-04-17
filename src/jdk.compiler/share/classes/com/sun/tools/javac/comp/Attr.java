@@ -4404,7 +4404,7 @@ public class Attr extends JCTree.Visitor {
 
                 if (resolved != null && resolved.kind != AMBIGUOUS) {
                     nestedPatternsTargetTypes = types.memberType(site, resolved).getBindingTypes();
-                    tree.patternDeclaration = (MethodSymbol) resolved;
+                    TreeInfo.setSymbol(tree.deconstructor, tree.patternDeclaration = (MethodSymbol) resolved);
                 } else if (resolved != null && resolved.kind == AMBIGUOUS){
                     log.error(tree.pos(), Errors.MatcherOverloadingAmbiguity(site.tsym));
                 } else {

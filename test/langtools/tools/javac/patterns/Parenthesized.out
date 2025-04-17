@@ -5,10 +5,10 @@ Parenthesized.java:42:28: compiler.err.expected: ->
 Parenthesized.java:42:33: compiler.err.expected2: :, ->
 Parenthesized.java:42:45: compiler.err.expected: ';'
 Parenthesized.java:42:58: compiler.err.not.stmt
+Parenthesized.java:45:26: compiler.err.illegal.start.of.type
 Parenthesized.java:45:36: compiler.err.expected: ->
 Parenthesized.java:45:37: compiler.err.illegal.start.of.expr
-Parenthesized.java:48:45: compiler.err.expected: ->
-Parenthesized.java:48:46: compiler.err.illegal.start.of.expr
-Parenthesized.java:48:61: compiler.err.expected: '.'
-Parenthesized.java:49:9: compiler.err.expected: token.identifier
+Parenthesized.java:45:51: compiler.err.expected: ';'
+Parenthesized.java:48:35: compiler.err.illegal.start.of.type
+Parenthesized.java:48:44: compiler.err.expected: ';'
 13 errors

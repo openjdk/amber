@@ -209,7 +209,6 @@ public class InstancePatterns extends TestRunner {
     @Test
     public void testSeparateReceivedMatchCandidate(Path outerBase) throws Exception {
         Path src = outerBase.resolve("src");
-        //XXX: the receiver and match candidate types must be different so that the test is more powerful(!)
         tb.writeJavaFiles(src,
                           """
                           public class Test {
@@ -271,6 +270,97 @@ public class InstancePatterns extends TestRunner {
             "do_match: 1, 0",
             "do_match: 0, 0",
             "against Object: do_match: 0, 1"
+        );
+
+        if (!expectedOutput.equals(actualOutput)) {
+            throw new AssertionError("Expected: " + expectedOutput +
+                                     ", but got: " + actualOutput);
+        }
+        ClassFile cf = ClassFile.of();
+        ClassModel model = cf.parse(classes.resolve("Test.class"));
+        MethodModel pattern = model.methods().stream().filter(m -> m.methodName().equalsString("do_match:I:I")).findAny().orElseThrow();
+        Optional<PatternAttribute> patternAttribute = pattern.findAttribute(Attributes.pattern());
+        assertTrue("expect not a deconstructor",
+                   !patternAttribute.orElseThrow().patternFlags().contains(AccessFlag.DECONSTRUCTOR));
+    }
+
+    @Test
+    public void testInstancePatternParsing(Path outerBase) throws Exception {
+        Path src = outerBase.resolve("src");
+        tb.writeJavaFiles(src,
+                          """
+                          public class Test {
+                              private static Test create(boolean named) {
+                                  return new Test(named);
+                              }
+                              private final boolean named;
+                              public Test(boolean named) {
+                                  this.named = named;
+                              }
+                              public pattern MatchCandidate do_match(int i, int j) {
+                                  match do_match(named ? 1 : 0, that.named ? 1 : 0);
+                              }
+                              public static void main(String... args) {
+                                  for (MatchCandidate t1 : new MatchCandidate[] {new MatchCandidate(true),
+                                                                                 new MatchCandidate(false)}) {
+                                    for (boolean t2 : new boolean[] {true, false}) {
+                                        switch (t1) {
+                                            case Test.create(t2).do_match(var i, var j) ->
+                                                System.out.println("do_match_switch: " + i + ", " + j);
+                                            default ->
+                                                throw new AssertionError("Unexpected!");
+                                        }
+                                    }
+                                  }
+                                  for (MatchCandidate t1 : new MatchCandidate[] {new MatchCandidate(true),
+                                                                                 new MatchCandidate(false)}) {
+                                    for (boolean t2 : new boolean[] {true, false}) {
+                                        if (t1 instanceof Test.create(t2).do_match(var i, var j)) {
+                                            System.out.println("do_match_if: " + i + ", " + j);
+                                        }
+                                        if (t1 instanceof new Test(t2).do_match(var i, var j)) {
+                                            System.out.println("do_match_if_2: " + i + ", " + j);
+                                        }
+                                    }
+                                  }
+                              }
+                              public static class MatchCandidate {
+                                  private final boolean named;
+                                  public MatchCandidate(boolean named) {
+                                      this.named = named;
+                                  }
+                              }
+                          }
+                          """);
+
+        Path classes = outerBase.resolve("classes");
+        Files.createDirectories(classes);
+
+        new JavacTask(tb)
+            .options("--enable-preview", "--source", System.getProperty("java.specification.version"))
+            .outdir(classes.toString())
+            .files(tb.findJavaFiles(src))
+            .run()
+            .writeAll();
+
+        List<String> actualOutput = new JavaTask(tb)
+            .vmOptions("--enable-preview", "--class-path", classes.toString())
+            .className("Test")
+            .run()
+            .getOutputLines(Task.OutputKind.STDOUT);
+        List<String> expectedOutput = List.of(
+            "do_match_switch: 1, 1",
+            "do_match_switch: 0, 1",
+            "do_match_switch: 1, 0",
+            "do_match_switch: 0, 0",
+            "do_match_if: 1, 1",
+            "do_match_if_2: 1, 1",
+            "do_match_if: 0, 1",
+            "do_match_if_2: 0, 1",
+            "do_match_if: 1, 0",
+            "do_match_if_2: 1, 0",
+            "do_match_if: 0, 0",
+            "do_match_if_2: 0, 0"
         );
 
         if (!expectedOutput.equals(actualOutput)) {
