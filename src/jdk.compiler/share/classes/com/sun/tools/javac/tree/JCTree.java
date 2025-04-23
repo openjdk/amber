@@ -937,6 +937,8 @@ public abstract class JCTree implements Tree, Cloneable, DiagnosticPosition {
         public List<JCVariableDecl> bindings;
         /** match candidate parameter */
         public JCVariableDecl matchcandparam;
+        /** collected carrier arguments from the match call */
+        public  List<JCExpression> carrierArguments;
         /** exceptions thrown by this method */
         public List<JCExpression> thrown;
         /** statements in the method */

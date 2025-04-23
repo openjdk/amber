@@ -2661,6 +2661,14 @@ public class Lower extends TreeTranslator {
             tree.sym.flags_field  |= SYNTHETIC;
             tree.mods.flags |= SYNTHETIC;
 
+            // add carrier as the last parameter
+            JCVariableDecl carrier = make_at(tree.pos()).
+                    Param(names.fromString("carrierMH"), syms.methodHandleType, tree.sym);
+            carrier.mods.flags |= SYNTHETIC;
+            carrier.sym.flags_field |= SYNTHETIC;
+            tree.params = tree.params.prepend(carrier);
+            tree.sym.params = tree.sym.params.prepend(carrier.sym);
+
             // match-candidate parameter
             if (tree.sym.isInstancePattern() || tree.sym.isStaticPattern()) {
                 JCVariableDecl implicitThatParam = tree.getMatchCandidateParameter();
@@ -2691,6 +2699,7 @@ public class Lower extends TreeTranslator {
             if (tree.sym.isDeconstructor()) {
                 argtypes = argtypes.prepend(tree.sym.owner.type);
             }
+            argtypes = argtypes.append(syms.methodHandleType);
 
             if (tree.sym.isStaticPattern() || tree.sym.isDeconstructor()) {
                 tree.mods.flags |= STATIC;
@@ -2704,6 +2713,17 @@ public class Lower extends TreeTranslator {
                     syms.methodClass);
 
             m.erasure_field = mt;
+
+            // create the call carrier.invoke(<carrier arguments>) to initialize the carrier
+            // those argument are precalculated by the TransPatterns:visitMatch
+            JCMethodInvocation invokeMethodCall = makeCall(
+                    make.Ident(carrier),
+                    names.fromString("invoke"),
+                    tree.carrierArguments);
+
+            tree.body.stats = tree.body.stats.appendList(List.of(
+                    make.Return(invokeMethodCall),
+                    make.Throw(makeNewClass(syms.matchExceptionType, List.of(makeNull(), makeNull())))));
         }
 
         Type prevRestype = currentRestype;

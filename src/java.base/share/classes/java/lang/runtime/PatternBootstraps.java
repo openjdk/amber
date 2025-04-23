@@ -59,7 +59,7 @@ public class PatternBootstraps {
         static {
             try {
                 SYNTHETIC_PATTERN = LOOKUP.findStatic(PatternBootstraps.class, "syntheticPattern",
-                        MethodType.methodType(Object.class, Method[].class, MethodHandle.class, Object.class));
+                        MethodType.methodType(Object.class, Method[].class, MethodHandle.class, Object.class, MethodHandle.class));
             } catch (ReflectiveOperationException e) {
                 throw new ExceptionInInitializerError(e);
             }
@@ -107,7 +107,7 @@ public class PatternBootstraps {
                 Class<?> matchCandidateType = invocationType.parameterType(0);
                 try {
                     // Attempt 1: discover the deconstructor
-                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType));
+                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
                 } catch (Throwable t) {
                     // Attempt 2: synthesize the pattern declaration from the record components
                     if (!matchCandidateType.isRecord()) {
@@ -130,7 +130,7 @@ public class PatternBootstraps {
                 Class<?> receiverType = invocationType.parameterType(0);
                 Class<?> matchCandidateType = invocationType.parameterType(1);
                 try {
-                    target = lookup.findVirtual(receiverType, mangledName, MethodType.methodType(Object.class, matchCandidateType));
+                    target = lookup.findVirtual(receiverType, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
                 }
                 catch (Throwable t) {
                     throw new IllegalArgumentException("Unexpected instance pattern: " + mangledName + " (type: " + invocationType + ")");
@@ -139,7 +139,7 @@ public class PatternBootstraps {
             case StaticPattern -> {
                 Class<?> matchCandidateType = invocationType.parameterType(0);
                 try {
-                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType));
+                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
                 }
                 catch (Throwable t) {
                     throw new IllegalArgumentException("Unexpected static pattern: " + mangledName + " (type: " + invocationType + ")");
@@ -162,16 +162,12 @@ public class PatternBootstraps {
 
         Class<?>[] ctypes = Arrays.stream(components).map(c -> c.getType()).toArray(Class<?>[]::new);
 
-        Carriers.CarrierElements carrierElements = Carriers.CarrierFactory.of(ctypes);
-
-        MethodHandle initializingConstructor = carrierElements.initializingConstructor();
-
-        MethodHandle carrierCreator = initializingConstructor.asSpreader(Object[].class, ctypes.length);
+        MethodHandle spreaderInvoker = MethodHandles.spreadInvoker(MethodType.methodType(Object.class, ctypes), 0);
 
         return MethodHandles.insertArguments(StaticHolders.SYNTHETIC_PATTERN,
                 0,
                 accessors,
-                carrierCreator).asType(invocationType);
+                spreaderInvoker).asType(invocationType);
     }
 
     enum PatternUseSite {
@@ -181,11 +177,11 @@ public class PatternBootstraps {
     }
     static PatternUseSite detectPatternUseSite(MethodType invocationType,
                                                String mangledName) {
-        if (invocationType.parameterCount() == 1 && mangledName.startsWith(DINIT + ':')) {
+        if (invocationType.parameterCount() == 2 && mangledName.startsWith(DINIT + ':')) {
             return PatternUseSite.Deconstructor;
-        } else if (invocationType.parameterCount() == 1) {
-            return PatternUseSite.StaticPattern;
         } else if (invocationType.parameterCount() == 2) {
+            return PatternUseSite.StaticPattern;
+        } else if (invocationType.parameterCount() == 3) {
             return PatternUseSite.InstancePattern;
         } else if ((!invocationType.returnType().equals(Object.class))) {
             throw new IllegalArgumentException("Illegal return type: " + invocationType);
@@ -203,7 +199,7 @@ public class PatternBootstraps {
      * @return initialized carrier object
      * @throws Throwable throws if invocation of synthetic pattern fails
      */
-    private static Object syntheticPattern(Method[] accessors, MethodHandle carrierCreator, Object matchCandidateInstance) throws Throwable {
+    private static Object syntheticPattern(Method[] accessors, MethodHandle spreaderInvoker, Object matchCandidateInstance, MethodHandle carrierCreator) throws Throwable {
         Object[] extracted = Arrays.stream(accessors).map(accessor -> {
             try {
                 return accessor.invoke(matchCandidateInstance);
@@ -214,8 +210,8 @@ public class PatternBootstraps {
             }
         }).toArray();
 
-        Object carrier = carrierCreator.invoke(extracted);
+        Object initializedCarrier = spreaderInvoker.invoke(carrierCreator, extracted);
 
-        return carrier;
+        return initializedCarrier;
     }
 }

@@ -94,7 +94,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .run()
                     .getOutput(Task.OutputKind.DIRECT);
 
-            if (!javapOut.contains("public static java.lang.Object \\^dinit\\_:Test:Ljava\\|lang\\|String\\?:Ljava\\|lang\\|String\\?(test.Test)"))
+            if (!javapOut.contains("public static java.lang.Object \\^dinit\\_:Test:Ljava\\|lang\\|String\\?:Ljava\\|lang\\|String\\?(test.Test, java.lang.invoke.MethodHandle)"))
                 throw new AssertionError("Wrongly generated signature of pattern declaration:\n" + javapOut);
         }
     }
@@ -143,7 +143,7 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
                     .getOutput(Task.OutputKind.DIRECT);
 
             String[] outputs = {
-                    "Signature: #36                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
+                    "Signature: #32                          // (Ljava/util/Collection<Ljava/lang/Integer;>;Ljava/util/Collection<Ljava/lang/Integer;>;)V",
             };
 
             if (!Arrays.stream(outputs).allMatch(o -> javapOut.contains(o)))
@@ -201,10 +201,10 @@ public class PatternDeclarationsBytecodeTest extends TestRunner  {
             String o = """
                     RuntimeVisibleParameterAnnotations:
                             parameter 0:
-                              0: #35()
+                              0: #31()
                                 test.Test$BindingAnnotation
                             parameter 1:
-                              0: #35()
+                              0: #31()
                                 test.Test$BindingAnnotation
                     """;
 
