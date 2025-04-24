@@ -39,23 +39,21 @@ JAVADOC_MODULESOURCEPATH := $(call GetModuleSrcPath)
 CT_DATA_DESCRIPTION += $(TOPDIR)/src/jdk.compiler/share/data/symbols/symbols
 
 COMPILECREATESYMBOLS_ADD_EXPORTS := \
-    --add-exports java.base/jdk.internal=java.compiler.interim,jdk.compiler.interim \
-    --add-exports jdk.internal.opt/jdk.internal.opt=jdk.compiler.interim,jdk.javadoc.interim \
-    --add-exports jdk.compiler.interim/com.sun.tools.javac.api=ALL-UNNAMED \
-    --add-exports jdk.compiler.interim/com.sun.tools.javac.code=ALL-UNNAMED \
-    --add-exports jdk.compiler.interim/com.sun.tools.javac.util=ALL-UNNAMED \
-    --add-exports jdk.compiler.interim/com.sun.tools.javac.jvm=ALL-UNNAMED \
+    --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+    --add-exports jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED \
+    --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED \
+    --add-exports jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED \
     #
 
 $(eval $(call SetupJavaCompilation, COMPILE_CREATE_SYMBOLS, \
-    TARGET_RELEASE := $(TARGET_RELEASE_BOOTJDK), \
-    SRC := $(TOPDIR)/make/langtools/src/classes \
-        $(TOPDIR)/src/jdk.jdeps/share/classes, \
-    INCLUDES := build/tools/symbolgenerator com/sun/tools/classfile, \
+    SRC := $(TOPDIR)/make/langtools/src/classes, \
+    INCLUDES := build/tools/symbolgenerator, \
     BIN := $(BUILDTOOLS_OUTPUTDIR)/create_symbols_javadoc, \
     DISABLED_WARNINGS := options, \
     JAVAC_FLAGS := \
-        $(INTERIM_LANGTOOLS_ARGS) \
+        --module-path $(JDK_OUTPUTDIR)/modules \
+        --system none \
+        --add-modules jdk.compiler \
         $(COMPILECREATESYMBOLS_ADD_EXPORTS), \
 ))
 
@@ -67,7 +65,7 @@ ELEMENT_LISTS_DIR := $(JDK_JAVADOC_DIR)/$(ELEMENT_LISTS_PKG)
 $(JDK_JAVADOC_DIR)/_element_lists.marker: \
     $(COMPILE_CREATE_SYMBOLS) \
     $(wildcard $(TOPDIR)/src/jdk.compiler/share/data/symbols/*) \
-    $(MODULE_INFOS)
+    $(MODULE_INFOS) $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX)
 	$(call MakeTargetDir)
 	$(call LogInfo, Creating javadoc element lists)
 	$(RM) $(ELEMENT_LISTS_DIR)/element-list-{$(call CommaList, \
@@ -75,7 +73,7 @@ $(JDK_JAVADOC_DIR)/_element_lists.marker: \
 				 $(JDK_SOURCE_TARGET_VERSION)))}.txt
         # Generate element-list files for JDK 11 to current-1
 	$(call ExecuteWithLog, $@_historic, \
-	    $(JAVA_SMALL) $(INTERIM_LANGTOOLS_ARGS) \
+	    $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX) \
 	        $(COMPILECREATESYMBOLS_ADD_EXPORTS) \
 	        -classpath $(BUILDTOOLS_OUTPUTDIR)/create_symbols_javadoc \
 	        build.tools.symbolgenerator.CreateSymbols \
@@ -86,7 +84,7 @@ $(JDK_JAVADOC_DIR)/_element_lists.marker: \
 	)
         # Generate element-list file for the current JDK version
 	$(call ExecuteWithLog, $@_current, \
-	    $(JAVA_SMALL) $(INTERIM_LANGTOOLS_ARGS) \
+	    $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX) \
 	        $(COMPILECREATESYMBOLS_ADD_EXPORTS) \
 	        -classpath $(BUILDTOOLS_OUTPUTDIR)/create_symbols_javadoc \
 	        build.tools.symbolgenerator.JavadocElementList \
