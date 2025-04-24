@@ -2166,8 +2166,8 @@ public class CreateSymbols {
             case EnclosingMethodAttribute _ -> {
                 return false;
             }
-            case RuntimeVisibleParameterAnnotationsAttribute a -> ((MethodDescription) feature).runtimeParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
-            case RuntimeInvisibleParameterAnnotationsAttribute a -> ((MethodDescription) feature).classParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
+            case RuntimeVisibleParameterAnnotationsAttribute a -> ((ParameterableDescription) feature).runtimeParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
+            case RuntimeInvisibleParameterAnnotationsAttribute a -> ((ParameterableDescription) feature).classParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
             case ModuleAttribute a -> {
                 ModuleHeaderDescription header = (ModuleHeaderDescription) feature;
                 header.name = a.moduleName().name().stringValue();
@@ -2205,8 +2205,8 @@ public class CreateSymbols {
                     return rcd;
                 }).collect(Collectors.toList());
             }
-            case MethodParametersAttribute a -> ((MethodDescription) feature).methodParameters = a.parameters().stream()
-                    .map(mpi -> new MethodDescription.MethodParam(mpi.flagsMask(), mpi.name().map(Utf8Entry::stringValue).orElse(null)))
+            case MethodParametersAttribute a -> ((ParameterableDescription) feature).methodParameters = a.parameters().stream()
+                    .map(mpi -> new ParameterableDescription.MethodParam(mpi.flagsMask(), mpi.name().map(Utf8Entry::stringValue).orElse(null)))
                     .collect(Collectors.toList());
             case PermittedSubclassesAttribute a -> {
                 var chd = (ClassHeaderDescription) feature;
