@@ -2157,11 +2157,14 @@ public final class Class<T> implements java.io.Serializable,
     }
 
     private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
-        ArrayList<Deconstructor<?>> decs = new ArrayList<>();
         if (this.isPrimitive()) return new Deconstructor<?>[0];
-        try(InputStream is = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
-            byte[] bytes = is.readAllBytes();
+        try (var in = (getClassLoader() != null)
+                ? getClassLoader().getResourceAsStream(getResourcePath())
+                : ClassLoader.getSystemResourceAsStream(getResourcePath())) {
+            if (in == null) throw new RuntimeException("Resource not found: " + name);
+            byte[] bytes = in.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
+            ArrayList<Deconstructor<?>> decs = new ArrayList<>();
             for (MethodModel mm : cm.methods()) {
                 PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
                 if (pa != null) {
@@ -2182,8 +2185,8 @@ public final class Class<T> implements java.io.Serializable,
                         descriptorFilter = MethodTypeDesc.of(CD_void, paramDescs).descriptorString();
                     }
 
-                    if ((params.length == 0 || (params.length != 0 && pa.patternTypeSymbol().descriptorString().equals(descriptorFilter))) &&
-                        (which == Member.DECLARED || mm.flags().has(AccessFlag.PUBLIC))) {
+                    if ((params.length == 0 || pa.patternTypeSymbol().descriptorString().equals(descriptorFilter)) &&
+                            (which == Member.DECLARED || mm.flags().has(AccessFlag.PUBLIC))) {
                         // binding annotations
                         RuntimeVisibleAnnotationsAttribute rva = mm.findAttribute(Attributes.runtimeVisibleAnnotations()).orElse(null);
                         ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
@@ -2226,11 +2229,10 @@ public final class Class<T> implements java.io.Serializable,
                     }
                 }
             }
+            return decs.toArray(new Deconstructor<?>[decs.size()]);
         } catch (IOException | ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
-
-        return decs.toArray(new Deconstructor<?>[decs.size()]);
     }
 
     private String getResourcePath() {

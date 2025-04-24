@@ -3361,7 +3361,7 @@ return mh1;
                 return unreflect(
                     ownerType.getDeclaredMethod(
                         SharedSecrets.getJavaLangReflectAccess().getMangledName(d),
-                        ownerType
+                        ownerType, MethodHandle.class
                     )
                 );
             } catch (NoSuchMethodException | SecurityException ex) {

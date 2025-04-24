@@ -34,6 +34,7 @@ import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.scope.MemberPatternScope;
 
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.runtime.Carriers;
 import java.util.ArrayList;
@@ -401,18 +402,17 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
         String underlyingName = getMangledName();
 
         try {
-            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
+            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass(), MethodHandle.class);
             method.setAccessible(override);
-            return (Object[])Carriers.boxedComponentValueArray(
-                MethodType.methodType(
+            MethodType bindingMT = MethodType.methodType(
                     Object.class,
                     Arrays.stream(this.getPatternBindings())
-                          .map(PatternBinding::getType)
-                          .toArray(Class[]::new)
-                )
-            ).invoke(
-                method.invoke(matchCandidate, matchCandidate)
+                            .map(PatternBinding::getType)
+                            .toArray(Class[]::new)
             );
+            MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
+
+            return (Object[])Carriers.boxedComponentValueArray(bindingMT).invoke(method.invoke(matchCandidate, matchCandidate, initializingConstructor));
         } catch (Throwable e) {
             throw new MatchException(e.getMessage(), e);
         }
