@@ -1010,10 +1010,14 @@ public class JavacParser implements Parser {
                     e = syntaxError(token.pos, Errors.Expected(IDENTIFIER)); //TODO: also '<'
                 }
             } else {
-                boolean var = token.kind == IDENTIFIER && token.name() == names.var && allowVar;
+                boolean var = token.kind == IDENTIFIER && token.name() == names.var;
                 e = unannotatedType(allowVar, TYPE | NOLAMBDA);
                 if (var) {
-                    e = null;
+                    if (token.kind == LPAREN) {
+                        //error recovery
+                    } else {
+                        e = null;
+                    }
                 }
             }
             if (token.kind == LPAREN) {
