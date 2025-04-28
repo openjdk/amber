@@ -2227,7 +2227,7 @@ public class CreateSymbols {
                 method.patternDescription = pd;
                 break;
             }
-            
+
             default -> throw new IllegalArgumentException("Unhandled attribute: " + attr.attributeName()); // Do nothing
         }
 
