@@ -940,7 +940,7 @@ public class CreateSymbols {
         if (desc.patternDescription != null) {
             MethodTypeDesc methodType = MethodTypeDesc.ofDescriptor(desc.patternDescription.descriptor);
             List<Attribute<?>> result = new ArrayList<>();
-            result.addAll(parameterableAttributes(desc.patternDescription));
+            result.addAll(parameterableAttributes(desc.patternDescription).reversed());
             builder.with(PatternAttribute.of(desc.patternDescription.name, desc.patternDescription.flags, methodType, result));
         }
     }
