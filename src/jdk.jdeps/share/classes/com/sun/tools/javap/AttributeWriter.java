@@ -491,7 +491,7 @@ public class AttributeWriter extends BasicWriter {
                 println("pattern_type: " + attr.patternMethodType().stringValue());
 
                 if (options.showAllAttrs && attr.attributes().size() > 0) {
-                    write(attr.attributes());
+                    write(attr.attributes(), cffv);
                 }
                 indent(-1);
             }
