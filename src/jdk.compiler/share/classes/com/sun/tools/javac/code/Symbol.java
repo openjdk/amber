@@ -1194,7 +1194,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     }
 
     public enum PatternFlags {
-        DECONSTRUCTOR(0x3000),
+        DECONSTRUCTOR(0x2000),
         TOTAL(0x4000);
 
         public static int value(Set<PatternFlags> s) {

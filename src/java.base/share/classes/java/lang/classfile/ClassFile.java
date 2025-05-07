@@ -854,7 +854,7 @@ public sealed interface ClassFile
     int ACC_STATIC_PHASE = 0x40;
 
     /** The bit mask of {@link AccessFlag#DECONSTRUCTOR} access and property modifier. */
-    int ACC_DECONSTRUCTOR = 0x3000;
+    int ACC_DECONSTRUCTOR = 0x2000;
 
     /** The bit mask of {@link AccessFlag#TOTAL} access and property modifier. */
     int ACC_TOTAL = 0x4000;
