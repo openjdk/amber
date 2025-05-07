@@ -286,7 +286,7 @@ public enum AccessFlag {
 
     /**
      * The access flag {@code DECONSTRUCTOR} with a mask value of {@code
-     * 0x3000}.
+     * 0x2000}.
      */
     DECONSTRUCTOR(ACC_DECONSTRUCTOR, false, Location.SET_PATTERN,
             List.of(Map.entry(RELEASE_24, Location.EMPTY_SET))),
@@ -506,7 +506,7 @@ public enum AccessFlag {
          * Pattern location.
          */
         PATTERN(ACC_DECONSTRUCTOR | ACC_TOTAL,
-                List.of(Map.entry(RELEASE_23, 0))), // did not exist
+                List.of(Map.entry(RELEASE_24, 0))), // did not exist
 
         /**
          * Inner class location.
