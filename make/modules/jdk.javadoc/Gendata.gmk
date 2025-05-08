@@ -73,7 +73,7 @@ $(JDK_JAVADOC_DIR)/_element_lists.marker: \
 				 $(JDK_SOURCE_TARGET_VERSION)))}.txt
         # Generate element-list files for JDK 11 to current-1
 	$(call ExecuteWithLog, $@_historic, \
-	    $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX) \
+	    $(FIXPATH) $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX) \
 	        $(COMPILECREATESYMBOLS_ADD_EXPORTS) \
 	        -classpath $(BUILDTOOLS_OUTPUTDIR)/create_symbols_javadoc \
 	        build.tools.symbolgenerator.CreateSymbols \
@@ -84,7 +84,7 @@ $(JDK_JAVADOC_DIR)/_element_lists.marker: \
 	)
         # Generate element-list file for the current JDK version
 	$(call ExecuteWithLog, $@_current, \
-	    $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX) \
+	    $(FIXPATH) $(JDK_OUTPUTDIR)/bin/java$(EXECUTABLE_SUFFIX) \
 	        $(COMPILECREATESYMBOLS_ADD_EXPORTS) \
 	        -classpath $(BUILDTOOLS_OUTPUTDIR)/create_symbols_javadoc \
 	        build.tools.symbolgenerator.JavadocElementList \
