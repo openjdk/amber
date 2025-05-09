@@ -92,9 +92,11 @@ public class ListModuleDeps {
     public Object[][] jdkModules() {
         return new Object[][]{
             {"jdk.compiler", new String[]{
+                                "java.base/jdk.internal.javac",
                                 "java.base/jdk.internal.jmod",
                                 "java.base/jdk.internal.misc",
                                 "java.base/jdk.internal.module",
+                                "java.base/sun.invoke.util",
                                 "java.base/sun.reflect.annotation",
                                 "java.compiler",
                                 "jdk.internal.opt/jdk.internal.opt",
