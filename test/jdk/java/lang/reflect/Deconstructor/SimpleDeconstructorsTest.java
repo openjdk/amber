@@ -254,15 +254,15 @@ public class SimpleDeconstructorsTest {
         Class<?> class1 = Person1.class;
 
         Deconstructor<?> method1 = class1.getDeclaredDeconstructor(List.class);
-        Object[] bindings1 = method1.tryMatch(p);
+        Object[] extracted = method1.tryMatch(p);
         List<Character> expected = List.of('N', 'a', 'm', 'e');
         for (int i = 0; i < 4; i++) {
-            assertEquals(((List<Character>)bindings1[0]).get(i), expected.get(i));
+            assertEquals(((List<Character>)extracted[0]).get(i), expected.get(i));
         }
 
         Deconstructor<?> method2 = class1.getDeclaredDeconstructor(int.class);
-        Object[] bindings2 = method2.tryMatch(p);
-        assertEquals(42, bindings2[0]);
+        Object[] extracted2 = method2.tryMatch(p);
+        assertEquals(42, extracted2[0]);
     }
 
     public static void testDeconstructorElementsAnnotations() throws NoSuchPatternException {

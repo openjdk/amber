@@ -32,8 +32,6 @@ import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.scope.PatternMemberScope;
 
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodType;
-import java.lang.runtime.Carriers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
@@ -56,7 +54,6 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
     final Class<?>                          declaringClass;
     final Class<T>                          candidateType;
     final Class<?>[]                        parameterTypes;
-    final Class<?>[]                        exceptionTypes;
     final ArrayList<PatternBinding>         patternBindings;
 
     final int                               modifiers;
@@ -84,28 +81,24 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
     }
 
     /**
-     * TODO make private again
-     * Package-private member pattern used by ReflectAccess to enable
-     * instantiation of these objects in Java code from the java.lang
-     * package via jdk.internal.access.JavaLangReflectAccess.
+     * TODO make private again Package-private member pattern used by ReflectAccess to enable
+     * instantiation of these objects in Java code from the java.lang package via
+     * jdk.internal.access.JavaLangReflectAccess.
      *
-     * @param declaringClass x
-     * @param candidateType x
-     * @param parameterTypes x
-     * @param checkedExceptions x
-     * @param modifiers x
-     * @param patternFlags x
-     * @param patternBindings x
-     * @param signature x
-     * @param annotations x
+     * @param declaringClass       x
+     * @param candidateType        x
+     * @param parameterTypes       x
+     * @param modifiers            x
+     * @param patternFlags         x
+     * @param patternBindings      x
+     * @param signature            x
+     * @param annotations          x
      * @param parameterAnnotations x
-     *
      */
     public PatternMember(Class<?> declaringClass,
                          Class<T> candidateType,
                          Class<?>[] parameterTypes,
-                         Class<?>[] checkedExceptions,
-                         int modifiers,
+        int modifiers,
                          int patternFlags,
                          ArrayList<PatternBinding> patternBindings,
                          String signature,
@@ -114,7 +107,6 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         this.declaringClass = declaringClass;
         this.candidateType = candidateType;
         this.parameterTypes = parameterTypes;
-        this.exceptionTypes = checkedExceptions;
         this.modifiers = modifiers;
         this.patternFlags = patternFlags;
         this.patternBindings = patternBindings;
@@ -137,15 +129,6 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      * @return TODO
      */
     public Class<T> getCandidateType() { return candidateType; }
-
-    /**
-     * Returns the name of this constructor, as a string.  This is
-     * the binary name of the constructor's declaring class.
-     */
-    @Override
-    public String getName() {
-        return getDeclaringClass().getName();
-    }
 
     /**
      * {@inheritDoc}
@@ -204,8 +187,8 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      * {@inheritDoc}
      */
     @Override
-    public Class<?>[] getExceptionTypes() {
-        return exceptionTypes.length == 0 ? exceptionTypes : exceptionTypes.clone();
+    public final Class<?>[] getExceptionTypes() {
+        return new Class<?>[0];
     }
 
     /**
@@ -216,8 +199,8 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      * @since 1.5
      */
     @Override
-    public Type[] getGenericExceptionTypes() {
-        return super.getGenericExceptionTypes();
+    public final Type[] getGenericExceptionTypes() {
+        return new Type[0];
     }
 
     /**

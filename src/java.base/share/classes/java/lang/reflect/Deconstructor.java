@@ -43,13 +43,17 @@ public final class Deconstructor<T> extends PatternMember<T> {
         super(declaringClass,
                 declaringClass,
                 null,
-                null,
                 modifiers,
                 patternFlags,
                 patternBindings,
                 signature,
                 annotations,
                 null);
+    }
+
+    @Override
+    public String getName() {
+        return getDeclaringClass().getName();
     }
 
     @Override
@@ -70,11 +74,6 @@ public final class Deconstructor<T> extends PatternMember<T> {
     @Override
     public int getParameterCount() {
         return 0;
-    }
-
-    @Override
-    public Class<?>[] getExceptionTypes() {
-        return new Class<?>[0];
     }
 
     /**
