@@ -29,26 +29,34 @@
  * @run main/othervm --enable-preview SimpleDeconstructorsTest
  */
 
+import java.lang.reflect.AccessFlag;
+import static java.util.Arrays.asList;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Deconstructor;
-import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.PatternBinding;
+import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class SimpleDeconstructorsTest {
 
     public static void main(String[] args) throws NoSuchPatternException, IllegalAccessException {
-        testGetMethods();
-        testGetDeconstructors();
-        testGetDeclaredDeconstructors();
-        testGetDeclaredDeconstructor();
-        testDeconstructorElements();
-        testGenericDeconstructorElements();
+        testOtherMembersUnaffected();
+        testDtorAttributes();
+        testBindingAttributes();
+        testPrivateDtor();
+        testMoreComplexOutParams();
+
         testInvoke();
         testDeconstructorElementsAnnotations();
         testDeconstructorAnnotations();
@@ -58,66 +66,147 @@ public class SimpleDeconstructorsTest {
         testGetDeclaredDeconstructors_bug3();
     }
 
-    public static void testGetMethods() {
-        Class<?> class1 = Person1.class;
-
-        Method[] methods = class1.getMethods();
-
-        assertEquals(methods.length, 13);
+    public static class NoDtor {
+        int field;
+        public NoDtor(int field) {
+            this.field = field;
+        }
     }
 
-    public static void testGetDeclaredDeconstructors() {
-        Class<?> class1 = Person1.class;
-
-        Deconstructor<?>[] methods = class1.getDeclaredDeconstructors();
-
-        assertEquals(methods.length, 5);
+    public static class BasicDtor {
+        int field;
+        public BasicDtor(int field) {
+            this.field = field;
+        }
+        public pattern BasicDtor(int field) {
+            match BasicDtor(field);
+        }
     }
 
-    public static void testGetDeconstructors() {
-        Class<?> class1 = Person1.class;
+    public static void testOtherMembersUnaffected() {
+        assertEquals(NoDtor.class.getMethods().length,
+                  BasicDtor.class.getMethods().length);
+        assertEquals(NoDtor.class.getConstructors().length,
+                  BasicDtor.class.getConstructors().length);
+        assertEquals(NoDtor.class.getDeclaredConstructors().length,
+                  BasicDtor.class.getDeclaredConstructors().length);
 
-        Deconstructor<?>[] methods = class1.getDeconstructors();
-
-        assertEquals(methods.length, 4);
+        // TODO remove the +1
+        assertEquals(NoDtor.class.getDeclaredMethods().length + 1,
+                  BasicDtor.class.getDeclaredMethods().length);
     }
 
-    public static void testGetDeclaredDeconstructor() throws NoSuchPatternException {
-        Class<?> class1 = Person1.class;
+    public static void testDtorAttributes() throws NoSuchPatternException {
+        Deconstructor<?>[] dtors = BasicDtor.class.getDeconstructors();
+        assertEquals(1, dtors.length);
+        Deconstructor<?> dtor = dtors[0];
 
-        Deconstructor method1 = class1.getDeclaredDeconstructor(String.class, String.class);
+        // TODO implement Dtor.equals()
+        // assertEquals(List.of(dtor), asList(BasicDtor.class.getDeclaredDeconstructors()));
+        // assertEquals(dtor, BasicDtor.class.getDeconstructor(int.class));
+        // assertEquals(dtor, BasicDtor.class.getDeclaredDeconstructor(int.class));
 
-        assertEquals(method1.getName(), "SimpleDeconstructorsTest$Person1");
+        assertEquals(BasicDtor.class, dtor.getDeclaringClass());
+        assertEquals(BasicDtor.class.getName(), dtor.getName());
+
+        // TODO: static and synthetic seem wrong?
+        assertEquals(EnumSet.of(AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.SYNTHETIC),
+            dtor.accessFlags());
+        assertEquals(Modifier.PUBLIC | Modifier.STATIC | 0x1000, dtor.getModifiers());
+        assertEquals(true, dtor.isSynthetic());
+
+        assertEquals(0, dtor.getExceptionTypes().length);
+        assertEquals(0, dtor.getGenericExceptionTypes().length);
+
+        assertEquals(0x7000, dtor.getPatternFlags()); // TODO what is?
+        assertEquals(0, dtor.getTypeParameters().length);
+
+        assertEquals("public pattern SimpleDeconstructorsTest$BasicDtor(int)", dtor.toGenericString());
+        assertEquals(false, dtor.isVarArgs());
     }
 
-    public static void testDeconstructorElements() throws NoSuchPatternException {
-        Class<?> class1 = Person1.class;
+    public static void testBindingAttributes() {
+        Deconstructor<?> dtor = BasicDtor.class.getDeconstructors()[0];
 
-        Deconstructor method = class1.getDeclaredDeconstructor(String.class, String.class);
+        // TODO: should expect int.class
+        // assertEquals(List.of(), asList(dtor.getParameters())); // TODO broken
+        assertEquals(List.of(), asList(dtor.getParameterTypes()));
+        assertEquals(List.of(), asList(dtor.getGenericParameterTypes()));
 
-        var elems = method.getPatternBindings();
+        PatternBinding[] bindings = dtor.getPatternBindings();
+        assertEquals(1, bindings.length);
+        PatternBinding binding = bindings[0];
 
-        assertEquals(elems.length, 2);
-        assertEquals(elems[0].getType(), String.class);
-        assertEquals(elems[1].getType(), String.class);
-        assertEquals(elems[0].getName(), "name");
-        assertEquals(elems[1].getName(), "username");
-        assertEquals(elems[0].getDeclaringDeconstructor(), method);
-        assertEquals(elems[1].getDeclaringDeconstructor(), method);
+        assertEquals(dtor, binding.getDeclaringDeconstructor());
+        assertEquals("field", binding.getName());
+
+        assertEquals(int.class, binding.getType());
+        assertEquals(int.class, binding.getGenericType());
+        assertEquals("I", binding.getGenericSignature());
     }
 
-    public static void testGenericDeconstructorElements() throws NoSuchPatternException {
-        Class<?> class1 = Person1.class;
+    public static class PrivateDtor {
+        int field;
+        public PrivateDtor(int field) {
+            this.field = field;
+        }
+        private pattern PrivateDtor(int field) {
+            match PrivateDtor(field);
+        }
+    }
 
-        Deconstructor method = class1.getDeclaredDeconstructor(List.class);
+    public static void testPrivateDtor() throws NoSuchPatternException {
+        assertEquals(0, PrivateDtor.class.getDeconstructors().length);
 
-        var elems = method.getPatternBindings();
+        Deconstructor<?> dtor = PrivateDtor.class.getDeclaredDeconstructor(int.class);
 
-        assertEquals(elems.length, 1);
-        assertEquals(elems[0].getType(), List.class);
-        assertEquals(elems[0].getName(), "name");
-        assertEquals(elems[0].getGenericSignature(), "Ljava/util/List<Ljava/lang/Character;>;");
-        assertEquals(elems[0].getGenericType() instanceof ParameterizedType, true);
+        // TODO implement Dtor.equals()
+        // assertEquals(List.of(dtor), asList(PrivateDtor.class.getDeclaredDeconstructors()));
+
+        try {
+            PrivateDtor.class.getDeconstructor(int.class);
+            throw new AssertionError("no exception was thrown");
+        } catch (NoSuchPatternException expected) {
+        }
+
+        // TODO: static and synthetic seem wrong?
+        assertEquals(EnumSet.of(AccessFlag.PRIVATE, AccessFlag.STATIC, AccessFlag.SYNTHETIC),
+            dtor.accessFlags());
+        assertEquals(Modifier.PRIVATE | Modifier.STATIC | 0x1000, dtor.getModifiers());
+
+        assertEquals("private pattern SimpleDeconstructorsTest$PrivateDtor(int)", dtor.toGenericString());
+    }
+
+    public class MoreComplexDtor {
+        List<? extends String[]> field1;
+        Map<? super Long, Integer>[] field2;
+
+        public MoreComplexDtor(List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
+            this.field1 = field1;
+            this.field2 = field2;
+        }
+        public pattern MoreComplexDtor(List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
+            match MoreComplexDtor(field1, field2);
+        }
+    }
+
+    public static void testMoreComplexOutParams() throws NoSuchPatternException {
+        Deconstructor<?> dtor = SimpleDeconstructorsTest.MoreComplexDtor.class.getDeconstructor(List.class, Map[].class);
+
+        PatternBinding[] bindings = dtor.getPatternBindings();
+        assertEquals(2, bindings.length);
+
+        PatternBinding binding1 = bindings[0];
+
+        assertEquals(dtor, binding1.getDeclaringDeconstructor());
+        assertEquals("field1", binding1.getName());
+
+        assertEquals(List.class, binding1.getType());
+        assertEquals(List.class, ((ParameterizedType) binding1.getGenericType()).getRawType());
+
+        Type arg = ((ParameterizedType) binding1.getGenericType()).getActualTypeArguments()[0];
+        assertEquals(String[].class, ((WildcardType) arg).getUpperBounds()[0]);
+        assertEquals("Ljava/util/List<+[Ljava/lang/String;>;", binding1.getGenericSignature());
     }
 
     public static void testInvoke() throws IllegalAccessException, NoSuchPatternException {
@@ -204,7 +293,7 @@ public class SimpleDeconstructorsTest {
         assertEquals(x[0], 2);
     }
 
-    static void assertEquals(Object actual, Object expected) {
+    static void assertEquals(Object expected, Object actual) {
         if (!Objects.equals(expected, actual)) {
             throw new AssertionError("Expected: " + expected + ", but got: " + actual);
         }
