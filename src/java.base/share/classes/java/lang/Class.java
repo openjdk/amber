@@ -61,6 +61,7 @@ import java.lang.reflect.Member;
 import java.lang.constant.Constable;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.PatternBinding;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
@@ -2185,10 +2186,12 @@ public final class Class<T> implements java.io.Serializable,
                         ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
 
                         ArrayList<PatternBinding> deconstructorBindings = new ArrayList<>();
+                        ArrayList<Parameter> outParameters = new ArrayList<>();
                         Deconstructor<T> currentDeconstructor = new Deconstructor<T>(
                                 this,
                                 mm.flags().flagsMask(),
                                 pa.patternFlagsMask(),
+                                outParameters,
                                 deconstructorBindings,
                                 pa.patternTypeSymbol().descriptorString(),
                                 rva == null ? null : assembled_rva.array()
@@ -2207,6 +2210,11 @@ public final class Class<T> implements java.io.Serializable,
 
                         for (int i = 0; i < parameterList.size(); i++) {
                             Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.privateLookupIn(this, SharedSecrets.getJavaLangInvokeAccess().implLookup()));
+                            outParameters.add(new Parameter(
+                                    mp.parameters().get(i).name().map(Utf8Entry::stringValue).orElse("arg" + i),
+                                    0, // no modifiers
+                                    currentDeconstructor,
+                                    i));
                             deconstructorBindings.add(new PatternBinding(
                                     currentDeconstructor,
                                     mp.parameters().get(i).name().map(Utf8Entry::stringValue).orElse("arg" + i),

@@ -41,6 +41,7 @@ final class ReflectAccess implements JavaLangReflectAccess {
     public <T> Deconstructor<T> newDeconstructor(Class<T> declaringClass,
                                                  int modifiers,
                                                  int patternFlags,
+                                                 ArrayList<Parameter> outParameters,
                                                  ArrayList<PatternBinding> patternBindings,
                                                  String signature,
                                                  byte[] annotations)
@@ -48,6 +49,7 @@ final class ReflectAccess implements JavaLangReflectAccess {
         return new Deconstructor<>(declaringClass,
                 modifiers,
                 patternFlags,
+                outParameters,
                 patternBindings,
                 signature,
                 annotations);

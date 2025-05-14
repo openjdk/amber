@@ -53,7 +53,7 @@ import static java.lang.runtime.PatternBytecodeName.mangle;
 public abstract sealed class PatternMember<T> extends Executable permits Deconstructor {
     final Class<?>                          declaringClass;
     final Class<T>                          candidateType;
-    final Class<?>[]                        parameterTypes;
+    final ArrayList<Parameter>              outParameters;
     final ArrayList<PatternBinding>         patternBindings;
 
     final int                               modifiers;
@@ -87,9 +87,9 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      *
      * @param declaringClass       x
      * @param candidateType        x
-     * @param parameterTypes       x
      * @param modifiers            x
      * @param patternFlags         x
+     * @param outParameters        x
      * @param patternBindings      x
      * @param signature            x
      * @param annotations          x
@@ -97,18 +97,18 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      */
     public PatternMember(Class<?> declaringClass,
                          Class<T> candidateType,
-                         Class<?>[] parameterTypes,
-        int modifiers,
+                         int modifiers,
                          int patternFlags,
+                         ArrayList<Parameter> outParameters,
                          ArrayList<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations,
                          byte[] parameterAnnotations) {
         this.declaringClass = declaringClass;
         this.candidateType = candidateType;
-        this.parameterTypes = parameterTypes;
         this.modifiers = modifiers;
         this.patternFlags = patternFlags;
+        this.outParameters = outParameters;
         this.patternBindings = patternBindings;
         this.signature = signature;
         this.annotations = annotations;
@@ -150,11 +150,7 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
 
     @Override
     public Annotation[][] getParameterAnnotations() {
-        return sharedGetParameterAnnotations(parameterTypes, parameterAnnotations);
-    }
-
-    byte[] getRawParameterAnnotations() {
-        return parameterAnnotations;
+        return sharedGetParameterAnnotations(getParameterTypes(), parameterAnnotations);
     }
 
     /**
@@ -162,14 +158,14 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      */
     @Override
     public Class<?>[] getParameterTypes() {
-        return parameterTypes.length == 0 ? parameterTypes : parameterTypes.clone();
+        return outParameters.stream().map(p -> p.getType()).toArray(Class<?>[]::new);
     }
 
     /**
      * {@inheritDoc}
      * @since 1.8
      */
-    public int getParameterCount() { return parameterTypes.length; }
+    public int getParameterCount() { return outParameters.size(); }
 
     /**
      * {@inheritDoc}

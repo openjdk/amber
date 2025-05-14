@@ -27,24 +27,26 @@ public final class Deconstructor<T> extends PatternMember<T> {
      * instantiation of these objects in Java code from the java.lang
      * package via jdk.internal.access.JavaLangReflectAccess.
      *
-     * @param declaringClass x
-     * @param modifiers    x
-     * @param patternFlags x
-     * @param patternBindings    x
-     * @param signature    x
-     * @param annotations  x
+     * @param declaringClass  x
+     * @param modifiers       x
+     * @param patternFlags    x
+     * @param outParameters   x
+     * @param patternBindings x
+     * @param signature       x
+     * @param annotations     x
      */
     public Deconstructor(Class<T> declaringClass,
                          int modifiers,
                          int patternFlags,
+                         ArrayList<Parameter> outParameters,
                          ArrayList<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations) {
         super(declaringClass,
                 declaringClass,
-                null,
                 modifiers,
                 patternFlags,
+                outParameters,
                 patternBindings,
                 signature,
                 annotations,
@@ -57,23 +59,18 @@ public final class Deconstructor<T> extends PatternMember<T> {
     }
 
     @Override
+    public Parameter[] getParameters() {
+        return outParameters.toArray(Parameter[]::new);
+    }
+
+    @Override
     Class<?>[] getSharedParameterTypes() {
-        return new Class<?>[0];
+        return patternBindings.stream().map(p -> p.getType()).toArray(Class<?>[]::new);
     }
 
     @Override
     Class<?>[] getSharedExceptionTypes() {
         return new Class<?>[0];
-    }
-
-    @Override
-    public Class<?>[] getParameterTypes() {
-        return new Class<?>[0];
-    }
-
-    @Override
-    public int getParameterCount() {
-        return 0;
     }
 
     /**
@@ -120,6 +117,7 @@ public final class Deconstructor<T> extends PatternMember<T> {
                 this.candidateType,
                 this.modifiers,
                 this.patternFlags,
+                this.outParameters,
                 this.patternBindings,
                 this.signature,
                 this.annotations);

@@ -47,6 +47,7 @@ public final class Parameter implements AnnotatedElement {
     private final Executable executable;
     private final int index;
 
+    // TODO: remove public!
     /**
      * Package-private constructor for {@code Parameter}.
      *
@@ -60,7 +61,7 @@ public final class Parameter implements AnnotatedElement {
      * @param executable The executable which defines this parameter.
      * @param index The index of the parameter.
      */
-    Parameter(String name,
+    public Parameter(String name,
               int modifiers,
               Executable executable,
               int index) {
@@ -104,7 +105,8 @@ public final class Parameter implements AnnotatedElement {
      * to the class file.
      */
     public boolean isNamePresent() {
-        return executable.hasRealParameterData() && name != null;
+        return executable instanceof PatternMember
+            || (executable.hasRealParameterData() && name != null);
     }
 
     /**
