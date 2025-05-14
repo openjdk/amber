@@ -25,16 +25,16 @@
 
 package sun.reflect.generics.scope;
 
-import java.lang.reflect.MemberPattern;
+import java.lang.reflect.PatternMember;
 
 /**
  * This class represents the scope containing the type variables of
  * a member pattern.
  */
-public class MemberPatternScope extends AbstractScope<MemberPattern<?>> {
+public class MemberPatternScope extends AbstractScope<PatternMember<?>> {
 
     // constructor is private to enforce use of factory method
-    private MemberPatternScope(MemberPattern<?> c){
+    private MemberPatternScope(PatternMember<?> c){
         super(c);
     }
 
@@ -55,12 +55,12 @@ public class MemberPatternScope extends AbstractScope<MemberPattern<?>> {
     }
 
     /**
-     * Factory method. Takes a {@code MemberPattern} object and creates a
+     * Factory method. Takes a {@code PatternMember} object and creates a
      * scope for it.
      * @param c - A member pattern whose scope we want to obtain
      * @return The type-variable scope for the constructor m
      */
-    public static MemberPatternScope make(MemberPattern<?> c) {
+    public static MemberPatternScope make(PatternMember<?> c) {
         return new MemberPatternScope(c);
     }
 }
