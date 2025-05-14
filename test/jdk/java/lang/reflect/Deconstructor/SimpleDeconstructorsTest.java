@@ -36,6 +36,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Deconstructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
@@ -50,8 +51,11 @@ import java.util.stream.Collectors;
 
 public class SimpleDeconstructorsTest {
 
-    public static void main(String[] args) throws NoSuchPatternException, IllegalAccessException {
+    public static void main(String[] args) throws Exception {
+        testNoReflection();
         testOtherMembersUnaffected();
+        testCtorForComparison();
+
         testDtorAttributes();
         testBindingAttributes();
         testPrivateDtor();
@@ -66,13 +70,6 @@ public class SimpleDeconstructorsTest {
         testGetDeclaredDeconstructors_bug3();
     }
 
-    public static class NoDtor {
-        int field;
-        public NoDtor(int field) {
-            this.field = field;
-        }
-    }
-
     public static class BasicDtor {
         int field;
         public BasicDtor(int field) {
@@ -83,7 +80,23 @@ public class SimpleDeconstructorsTest {
         }
     }
 
+    // Just demonstrating the deconstructor in operation
+    public static void testNoReflection() {
+        assertEquals(true, new BasicDtor(5) instanceof BasicDtor(var i) && i == 5);
+        switch (new BasicDtor(42)) {
+            case BasicDtor(var i) -> assertEquals(42, i);
+            default -> throw new AssertionError();
+        }
+    }
+
     public static void testOtherMembersUnaffected() {
+        class NoDtor {
+            int field;
+            public NoDtor(int field) {
+                this.field = field;
+            }
+        }
+
         assertEquals(NoDtor.class.getMethods().length,
                   BasicDtor.class.getMethods().length);
         assertEquals(NoDtor.class.getConstructors().length,
@@ -91,9 +104,34 @@ public class SimpleDeconstructorsTest {
         assertEquals(NoDtor.class.getDeclaredConstructors().length,
                   BasicDtor.class.getDeclaredConstructors().length);
 
-        // TODO remove the +1
+        // TODO fix bug where an extra method called "BasicDtor:I" is showing through
         assertEquals(NoDtor.class.getDeclaredMethods().length + 1,
                   BasicDtor.class.getDeclaredMethods().length);
+    }
+
+    public static void testCtorForComparison() throws NoSuchMethodException {
+        Constructor<?>[] ctors = BasicDtor.class.getConstructors();
+        assertEquals(1, ctors.length);
+        Constructor<?> ctor = ctors[0];
+
+        assertEquals(List.of(ctor), asList(BasicDtor.class.getDeclaredConstructors()));
+        assertEquals(ctor, BasicDtor.class.getConstructor(int.class));
+        assertEquals(ctor, BasicDtor.class.getDeclaredConstructor(int.class));
+
+        assertEquals(BasicDtor.class, ctor.getDeclaringClass());
+        assertEquals(BasicDtor.class.getName(), ctor.getName());
+
+        assertEquals(EnumSet.of(AccessFlag.PUBLIC), ctor.accessFlags());
+        assertEquals(Modifier.PUBLIC, ctor.getModifiers());
+        assertEquals(false, ctor.isSynthetic());
+
+        assertEquals(0, ctor.getExceptionTypes().length);
+        assertEquals(0, ctor.getGenericExceptionTypes().length);
+
+        assertEquals(0, ctor.getTypeParameters().length);
+
+        assertEquals("public SimpleDeconstructorsTest$BasicDtor(int)", ctor.toGenericString());
+        assertEquals(false, ctor.isVarArgs());
     }
 
     public static void testDtorAttributes() throws NoSuchPatternException {
@@ -109,7 +147,7 @@ public class SimpleDeconstructorsTest {
         assertEquals(BasicDtor.class, dtor.getDeclaringClass());
         assertEquals(BasicDtor.class.getName(), dtor.getName());
 
-        // TODO: static and synthetic seem wrong?
+        // TODO: static and synthetic seem wrong
         assertEquals(EnumSet.of(AccessFlag.PUBLIC, AccessFlag.STATIC, AccessFlag.SYNTHETIC),
             dtor.accessFlags());
         assertEquals(Modifier.PUBLIC | Modifier.STATIC | 0x1000, dtor.getModifiers());
