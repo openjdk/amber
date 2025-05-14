@@ -386,42 +386,6 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         return patternFlags;
     }
 
-    /**
-     * Initiate pattern matching of this {@code PatternMember} on the designated {@code matchCandidate}.
-     *
-     * @param matchCandidate the match candidate to perform pattern matching over.
-     *
-     * @return an array object created as a result of pattern matching
-     *
-     * @throws    IllegalAccessException    if this {@code PatternMember} object
-     *              is enforcing Java language access control and the underlying
-     *              constructor is inaccessible.
-     * @throws    MatchException if the pattern matching provoked
-     *              by this {@code PatternMember} fails.
-     */
-    public Object[] invoke(Object matchCandidate)
-        throws IllegalAccessException, MatchException
-    {
-        String underlyingName = getMangledName();
-
-        try {
-            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass());
-            method.setAccessible(override);
-            return (Object[])Carriers.boxedComponentValueArray(
-                MethodType.methodType(
-                    Object.class,
-                    Arrays.stream(this.getPatternBindings())
-                          .map(PatternBinding::getType)
-                          .toArray(Class[]::new)
-                )
-            ).invoke(
-                method.invoke(matchCandidate, matchCandidate)
-            );
-        } catch (Throwable e) {
-            throw new MatchException(e.getMessage(), e);
-        }
-    }
-
     byte[] getRawAnnotations() {
         return annotations;
     }

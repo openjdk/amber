@@ -1,6 +1,9 @@
 package java.lang.reflect;
 
+import java.lang.invoke.MethodType;
+import java.lang.runtime.Carriers;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  * {@code Deconstructor} provides information about, and access to, a single
@@ -75,6 +78,37 @@ public final class Deconstructor<T> extends PatternMember<T> {
     }
 
     /**
+     * Initiate pattern matching of this {@code PatternMember} on the designated {@code matchCandidate}.
+     *
+     * @param candidate the match candidate to perform pattern matching over.
+     *
+     * @return an array object created as a result of pattern matching
+     *
+     * @throws    IllegalAccessException    if this {@code PatternMember} object
+     *              is enforcing Java language access control and the underlying
+     *              constructor is inaccessible.
+     * @throws    MatchException if the pattern matching provoked
+     *              by this {@code PatternMember} fails.
+     */
+    public Object[] tryMatch(Object candidate) throws IllegalAccessException, MatchException {
+        String underlyingName = getMangledName();
+
+        try {
+            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, candidate.getClass());
+            method.setAccessible(override);
+            MethodType methodType = MethodType.methodType(
+                Object.class,
+                Arrays.stream(getPatternBindings())
+                    .map(PatternBinding::getType)
+                    .toArray(Class[]::new)
+            );
+            return (Object[]) Carriers.boxedComponentValueArray(methodType).invoke(method.invoke(candidate, candidate));
+        } catch (Throwable e) {
+            throw new MatchException(e.getMessage(), e);
+        }
+    }
+
+    /**
      * Package-private routine (exposed to java.lang.Class via
      * ReflectAccess) which returns a copy of this Deconstructor. The copy's
      * "root" field points to this Deconstructor.
@@ -83,7 +117,8 @@ public final class Deconstructor<T> extends PatternMember<T> {
         if (this.root != null)
             throw new IllegalArgumentException("Can not copy a non-root PatternMember");
 
-        Deconstructor<T> res = new Deconstructor<>(this.candidateType,
+        Deconstructor<T> res = new Deconstructor<>(
+                this.candidateType,
                 this.modifiers,
                 this.patternFlags,
                 this.patternBindings,

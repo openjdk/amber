@@ -61,7 +61,7 @@ public class SimpleDeconstructorsTest {
         testPrivateDtor();
         testNontrivialOutParams();
 
-        testInvoke();
+        testTryMatch();
         testDeconstructorElementsAnnotations();
         testDeconstructorAnnotations();
         testGenericString();
@@ -215,15 +215,15 @@ public class SimpleDeconstructorsTest {
     }
 
     public class NontrivialDtor {
-        List<? extends String[]> field1;
-        Map<? super Long, Integer>[] field2;
+        List<? extends int[]> field1;
+        Map<? super Long, String>[] field2;
 
-        public NontrivialDtor(List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
+        public NontrivialDtor(List<? extends int[]> field1, Map<? super Long, String>[] field2) {
             this.field1 = field1;
             this.field2 = field2;
         }
         public pattern NontrivialDtor(
-            List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
+            List<? extends int[]> field1, Map<? super Long, String>[] field2) {
             match NontrivialDtor(field1, field2);
         }
     }
@@ -244,31 +244,31 @@ public class SimpleDeconstructorsTest {
         assertEquals(List.class, ((ParameterizedType) binding1.getGenericType()).getRawType());
 
         Type arg = ((ParameterizedType) binding1.getGenericType()).getActualTypeArguments()[0];
-        assertEquals(String[].class, ((WildcardType) arg).getUpperBounds()[0]);
-        assertEquals("Ljava/util/List<+[Ljava/lang/String;>;", binding1.getGenericSignature());
+        assertEquals(int[].class, ((WildcardType) arg).getUpperBounds()[0]);
+        assertEquals("Ljava/util/List<+[I>;", binding1.getGenericSignature());
     }
 
-    public static void testInvoke() throws IllegalAccessException, NoSuchPatternException {
+    public static void testTryMatch() throws IllegalAccessException, NoSuchPatternException {
         Person1 p = new Person1("Name", "Surname", false);
 
         Class<?> class1 = Person1.class;
 
-        Deconstructor method1 = class1.getDeclaredDeconstructor(List.class);
-        Object[] bindings1 = method1.invoke(p);
+        Deconstructor<?> method1 = class1.getDeclaredDeconstructor(List.class);
+        Object[] bindings1 = method1.tryMatch(p);
         List<Character> expected = List.of('N', 'a', 'm', 'e');
         for (int i = 0; i < 4; i++) {
             assertEquals(((List<Character>)bindings1[0]).get(i), expected.get(i));
         }
 
-        Deconstructor method2 = class1.getDeclaredDeconstructor(int.class);
-        Object[] bindings2 = method2.invoke(p);
-        assertEquals(((int)bindings2[0]), 42);
+        Deconstructor<?> method2 = class1.getDeclaredDeconstructor(int.class);
+        Object[] bindings2 = method2.tryMatch(p);
+        assertEquals(42, bindings2[0]);
     }
 
     public static void testDeconstructorElementsAnnotations() throws NoSuchPatternException {
         Class<?> class1 = Person1.class;
 
-        Deconstructor method = class1.getDeclaredDeconstructor(String.class, String.class);
+        Deconstructor<?> method = class1.getDeclaredDeconstructor(String.class, String.class);
 
         var elems = method.getPatternBindings();
 
@@ -280,7 +280,7 @@ public class SimpleDeconstructorsTest {
     public static void testDeconstructorAnnotations() throws NoSuchPatternException {
         Class<?> class1 = Person1.class;
 
-        Deconstructor method = class1.getDeclaredDeconstructor(String.class, String.class);
+        Deconstructor<?> method = class1.getDeclaredDeconstructor(String.class, String.class);
 
         Person1.DeconstructorAnnotation da = method.getDeclaredAnnotation(Person1.DeconstructorAnnotation.class);
 
@@ -288,8 +288,8 @@ public class SimpleDeconstructorsTest {
     }
 
     public static void testGenericString() throws NoSuchPatternException{
-        Class<?> class1 = Person1.class;
-        Deconstructor method = null;
+        Class<Person1> class1 = Person1.class;
+        Deconstructor<Person1> method = null;
 
         method = class1.getDeclaredDeconstructor(String.class, String.class);
         assertEquals(method.toGenericString(), "public pattern SimpleDeconstructorsTest$Person1(java.lang.String,java.lang.String)");
@@ -328,7 +328,7 @@ public class SimpleDeconstructorsTest {
         var b = new Bug(2);
         Deconstructor<?> declaredDeconstructor = Bug.class.getDeclaredDeconstructors()[0];
         declaredDeconstructor.setAccessible(true);
-        var x = declaredDeconstructor.invoke(b);
+        var x = declaredDeconstructor.tryMatch(b);
         assertEquals(x[0], 2);
     }
 
