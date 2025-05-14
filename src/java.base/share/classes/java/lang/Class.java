@@ -2081,7 +2081,7 @@ public final class Class<T> implements java.io.Serializable,
      * @see #getDeclaredDeconstructors()
      * @since 23
      */
-    public Deconstructor<?>[] getDeconstructors() throws SecurityException {
+    public Deconstructor<T>[] getDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.PUBLIC);
     }
 
@@ -2106,7 +2106,7 @@ public final class Class<T> implements java.io.Serializable,
      * @see #getDeclaredDeconstructor(Class<?>[])
      * @since 23
      */
-    public Deconstructor<?> getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+    public Deconstructor<T> getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
         var ret = getDeclaredDeconstructors0(bindingTypes, Member.PUBLIC);
 
         if (ret.length == 0) {
@@ -2147,13 +2147,17 @@ public final class Class<T> implements java.io.Serializable,
      * @since 23
      * @see #getDeconstructors()
      */
-    public Deconstructor<?>[] getDeclaredDeconstructors() throws SecurityException {
+    public Deconstructor<T>[] getDeclaredDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.DECLARED);
     }
 
-    private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
+    private Deconstructor<T>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
         ArrayList<Deconstructor<?>> decs = new ArrayList<>();
-        if (this.isPrimitive()) return new Deconstructor<?>[0];
+        if (this.isPrimitive()) {
+            @SuppressWarnings("unchecked")
+            var result = (Deconstructor<T>[]) new Deconstructor<?>[0];
+            return result;
+        }
         try(InputStream is = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
             byte[] bytes = is.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
@@ -2225,7 +2229,9 @@ public final class Class<T> implements java.io.Serializable,
             throw new RuntimeException(e);
         }
 
-        return decs.toArray(new Deconstructor<?>[decs.size()]);
+        @SuppressWarnings("unchecked")
+        var result = (Deconstructor<T>[]) decs.toArray(new Deconstructor<?>[decs.size()]);
+        return result;
     }
 
     private String getResourcePath() {
@@ -2273,10 +2279,10 @@ public final class Class<T> implements java.io.Serializable,
      *
      *          </ul>
      *
-     * @see #getDeconstructor(Class<?>[])
+     * @see #getDeconstructor(Class<T>[])
      * @since 1.1
      */
-    public Deconstructor<?> getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+    public Deconstructor<T> getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
         var ret = getDeclaredDeconstructors0(bindingTypes, Member.DECLARED);
 
         if (ret.length == 0) {

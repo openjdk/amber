@@ -59,7 +59,7 @@ public class SimpleDeconstructorsTest {
         testDtorAttributes();
         testBindingAttributes();
         testPrivateDtor();
-        testMoreComplexOutParams();
+        testNontrivialOutParams();
 
         testInvoke();
         testDeconstructorElementsAnnotations();
@@ -110,13 +110,11 @@ public class SimpleDeconstructorsTest {
     }
 
     public static void testCtorForComparison() throws NoSuchMethodException {
-        Constructor<?>[] ctors = BasicDtor.class.getConstructors();
-        assertEquals(1, ctors.length);
-        Constructor<?> ctor = ctors[0];
-
-        assertEquals(List.of(ctor), asList(BasicDtor.class.getDeclaredConstructors()));
-        assertEquals(ctor, BasicDtor.class.getConstructor(int.class));
+        Constructor<BasicDtor> ctor = BasicDtor.class.getConstructor(int.class);
         assertEquals(ctor, BasicDtor.class.getDeclaredConstructor(int.class));
+
+        assertEquals(List.of(ctor), asList(BasicDtor.class.getConstructors()));
+        assertEquals(List.of(ctor), asList(BasicDtor.class.getDeclaredConstructors()));
 
         assertEquals(BasicDtor.class, ctor.getDeclaringClass());
         assertEquals(BasicDtor.class.getName(), ctor.getName());
@@ -135,9 +133,9 @@ public class SimpleDeconstructorsTest {
     }
 
     public static void testDtorAttributes() throws NoSuchPatternException {
-        Deconstructor<?>[] dtors = BasicDtor.class.getDeconstructors();
+        Deconstructor<BasicDtor>[] dtors = BasicDtor.class.getDeconstructors();
         assertEquals(1, dtors.length);
-        Deconstructor<?> dtor = dtors[0];
+        Deconstructor<BasicDtor> dtor = dtors[0];
 
         // TODO implement Dtor.equals()
         // assertEquals(List.of(dtor), asList(BasicDtor.class.getDeclaredDeconstructors()));
@@ -164,7 +162,7 @@ public class SimpleDeconstructorsTest {
     }
 
     public static void testBindingAttributes() {
-        Deconstructor<?> dtor = BasicDtor.class.getDeconstructors()[0];
+        Deconstructor<BasicDtor> dtor = BasicDtor.class.getDeconstructors()[0];
 
         // TODO: should expect int.class
         // assertEquals(List.of(), asList(dtor.getParameters())); // TODO broken
@@ -196,7 +194,7 @@ public class SimpleDeconstructorsTest {
     public static void testPrivateDtor() throws NoSuchPatternException {
         assertEquals(0, PrivateDtor.class.getDeconstructors().length);
 
-        Deconstructor<?> dtor = PrivateDtor.class.getDeclaredDeconstructor(int.class);
+        Deconstructor<PrivateDtor> dtor = PrivateDtor.class.getDeclaredDeconstructor(int.class);
 
         // TODO implement Dtor.equals()
         // assertEquals(List.of(dtor), asList(PrivateDtor.class.getDeclaredDeconstructors()));
@@ -215,21 +213,23 @@ public class SimpleDeconstructorsTest {
         assertEquals("private pattern SimpleDeconstructorsTest$PrivateDtor(int)", dtor.toGenericString());
     }
 
-    public class MoreComplexDtor {
+    public class NontrivialDtor {
         List<? extends String[]> field1;
         Map<? super Long, Integer>[] field2;
 
-        public MoreComplexDtor(List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
+        public NontrivialDtor(List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
             this.field1 = field1;
             this.field2 = field2;
         }
-        public pattern MoreComplexDtor(List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
-            match MoreComplexDtor(field1, field2);
+        public pattern NontrivialDtor(
+            List<? extends String[]> field1, Map<? super Long, Integer>[] field2) {
+            match NontrivialDtor(field1, field2);
         }
     }
 
-    public static void testMoreComplexOutParams() throws NoSuchPatternException {
-        Deconstructor<?> dtor = SimpleDeconstructorsTest.MoreComplexDtor.class.getDeconstructor(List.class, Map[].class);
+    public static void testNontrivialOutParams() throws NoSuchPatternException {
+        Deconstructor<NontrivialDtor> dtor =
+            NontrivialDtor.class.getDeconstructor(List.class, Map[].class);
 
         PatternBinding[] bindings = dtor.getPatternBindings();
         assertEquals(2, bindings.length);
