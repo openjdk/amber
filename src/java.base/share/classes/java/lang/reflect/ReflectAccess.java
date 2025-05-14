@@ -101,7 +101,7 @@ final class ReflectAccess implements JavaLangReflectAccess {
     }
 
     @Override
-    public String getMangledName(MemberPattern<?> d) {
+    public String getMangledName(PatternMember<?> d) {
         return d.getMangledName();
     }
 }

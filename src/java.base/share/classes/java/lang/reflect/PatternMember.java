@@ -25,13 +25,11 @@
 
 package java.lang.reflect;
 
-import jdk.internal.reflect.CallerSensitive;
-import jdk.internal.reflect.Reflection;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.repository.GenericDeclRepository;
-import sun.reflect.generics.scope.MemberPatternScope;
+import sun.reflect.generics.scope.PatternMemberScope;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodType;
@@ -44,7 +42,7 @@ import java.util.stream.Collectors;
 import static java.lang.runtime.PatternBytecodeName.mangle;
 
 /**
- * {@code MemberPattern} provides information about, and access to, a single
+ * {@code PatternMember} provides information about, and access to, a single
  * member pattern for a class.
  *
  * @param <T> the class in which the member pattern is declared
@@ -54,7 +52,7 @@ import static java.lang.runtime.PatternBytecodeName.mangle;
  *
  * @since 24
  */
-public abstract sealed class MemberPattern<T> extends Executable permits Deconstructor {
+public abstract sealed class PatternMember<T> extends Executable permits Deconstructor {
     final Class<?>                          declaringClass;
     final Class<T>                          candidateType;
     final Class<?>[]                        parameterTypes;
@@ -75,13 +73,13 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     // Accessor for factory
     private GenericsFactory getFactory() {
         // create scope and factory
-        return CoreReflectionFactory.make(this, MemberPatternScope.make(this));
+        return CoreReflectionFactory.make(this, PatternMemberScope.make(this));
     }
 
-    MemberPattern<T> root;
+    PatternMember<T> root;
 
     @Override
-    MemberPattern<T> getRoot() {
+    PatternMember<T> getRoot() {
         return root;
     }
 
@@ -103,7 +101,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
      * @param parameterAnnotations x
      *
      */
-    public MemberPattern(Class<?> declaringClass,
+    public PatternMember(Class<?> declaringClass,
                          Class<T> candidateType,
                          Class<?>[] parameterTypes,
                          Class<?>[] checkedExceptions,
@@ -160,7 +158,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
 
     /**
      * {@inheritDoc}
-     * @jls X.X.X MemberPattern Modifiers
+     * @jls X.X.X PatternMember Modifiers
      */
     @Override
     public boolean isSynthetic() {
@@ -225,7 +223,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     /**
      * Returns an array of arrays of {@code Annotation}s that
      * represent the annotations on the bindings, in
-     * declaration order, of the {@code MemberPattern} represented by
+     * declaration order, of the {@code PatternMember} represented by
      * this object.
      *
      * @return an array of arrays that represent the annotations on
@@ -248,24 +246,24 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
      */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public TypeVariable<MemberPattern<T>>[] getTypeParameters() {
+    public TypeVariable<PatternMember<T>>[] getTypeParameters() {
       if (getSignature() != null) {
-        return (TypeVariable<MemberPattern<T>>[])getGenericInfo().getTypeParameters();
+        return (TypeVariable<PatternMember<T>>[])getGenericInfo().getTypeParameters();
       } else
-          return (TypeVariable<MemberPattern<T>>[])GenericDeclRepository.EMPTY_TYPE_VARS;
+          return (TypeVariable<PatternMember<T>>[])GenericDeclRepository.EMPTY_TYPE_VARS;
     }
 
 
 
     /**
-     * Returns a string describing this {@code MemberPattern},
+     * Returns a string describing this {@code PatternMember},
      * including type parameters.  The string is formatted as the
      * constructor access modifiers, if any, followed by an
      * angle-bracketed comma separated list of the constructor's type
      * parameters, if any, including  informative bounds of the
      * type parameters, if any, followed by the fully-qualified name of the
      * declaring class, followed by a parenthesized, comma-separated
-     * list of the {@code MemberPattern}'s generic formal parameter types.
+     * list of the {@code PatternMember}'s generic formal parameter types.
      *
      * If this constructor was declared to take a variable number of
      * arguments, instead of denoting the last parameter as
@@ -286,7 +284,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
      * {@code private}.  Only one of these may appear, or none if the
      * constructor has default (package) access.
      *
-     * @return a string describing this {@code MemberPattern},
+     * @return a string describing this {@code PatternMember},
      * include type parameters
      *
      * @since 1.5
@@ -371,7 +369,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     }
 
     /**
-     * Returns the pattern bindings of {@code MemberPattern}.
+     * Returns the pattern bindings of {@code PatternMember}.
      *
      * @return pattern bindings
      */
@@ -380,7 +378,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     }
 
     /**
-     * Returns the pattern flags of {@code MemberPattern}.
+     * Returns the pattern flags of {@code PatternMember}.
      *
      * @return pattern bindings
      */
@@ -389,17 +387,17 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     }
 
     /**
-     * Initiate pattern matching of this {@code MemberPattern} on the designated {@code matchCandidate}.
+     * Initiate pattern matching of this {@code PatternMember} on the designated {@code matchCandidate}.
      *
      * @param matchCandidate the match candidate to perform pattern matching over.
      *
      * @return an array object created as a result of pattern matching
      *
-     * @throws    IllegalAccessException    if this {@code MemberPattern} object
+     * @throws    IllegalAccessException    if this {@code PatternMember} object
      *              is enforcing Java language access control and the underlying
      *              constructor is inaccessible.
      * @throws    MatchException if the pattern matching provoked
-     *              by this {@code MemberPattern} fails.
+     *              by this {@code PatternMember} fails.
      */
     public Object[] invoke(Object matchCandidate)
         throws IllegalAccessException, MatchException

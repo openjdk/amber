@@ -17,7 +17,7 @@ import java.util.ArrayList;
  *
  * @since 24
  */
-public final class Deconstructor<T> extends MemberPattern<T> {
+public final class Deconstructor<T> extends PatternMember<T> {
     /**
      * TODO make private again
      * Package-private member pattern used by ReflectAccess to enable
@@ -81,7 +81,7 @@ public final class Deconstructor<T> extends MemberPattern<T> {
      */
     Deconstructor<T> copy() {
         if (this.root != null)
-            throw new IllegalArgumentException("Can not copy a non-root MemberPattern");
+            throw new IllegalArgumentException("Can not copy a non-root PatternMember");
 
         Deconstructor<T> res = new Deconstructor<>(this.candidateType,
                 this.modifiers,
