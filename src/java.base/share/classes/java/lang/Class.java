@@ -2188,10 +2188,10 @@ public final class Class<T> implements java.io.Serializable,
                         ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
 
                         ArrayList<PatternBinding> deconstructorBindings = new ArrayList<>();
-                        Deconstructor<?> currentDeconstructor = new Deconstructor<T>(this,
+                        Deconstructor<T> currentDeconstructor = new Deconstructor<T>(
+                                this,
                                 mm.flags().flagsMask(),
                                 pa.patternFlagsMask(),
-                                0,
                                 deconstructorBindings,
                                 pa.patternTypeSymbol().descriptorString(),
                                 rva == null ? null : assembled_rva.array()

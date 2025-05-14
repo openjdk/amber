@@ -27,7 +27,6 @@ public final class Deconstructor<T> extends MemberPattern<T> {
      * @param declaringClass x
      * @param modifiers    x
      * @param patternFlags x
-     * @param slot         x
      * @param patternBindings    x
      * @param signature    x
      * @param annotations  x
@@ -35,16 +34,15 @@ public final class Deconstructor<T> extends MemberPattern<T> {
     public Deconstructor(Class<T> declaringClass,
                          int modifiers,
                          int patternFlags,
-                         int slot,
                          ArrayList<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations) {
         super(declaringClass,
+                declaringClass,
                 null,
                 null,
                 modifiers,
                 patternFlags,
-                slot,
                 patternBindings,
                 signature,
                 annotations,
@@ -85,10 +83,9 @@ public final class Deconstructor<T> extends MemberPattern<T> {
         if (this.root != null)
             throw new IllegalArgumentException("Can not copy a non-root MemberPattern");
 
-        Deconstructor<T> res = new Deconstructor<>(this.clazz,
+        Deconstructor<T> res = new Deconstructor<>(this.candidateType,
                 this.modifiers,
                 this.patternFlags,
-                this.slot,
                 this.patternBindings,
                 this.signature,
                 this.annotations);

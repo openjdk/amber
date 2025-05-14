@@ -55,8 +55,8 @@ import static java.lang.runtime.PatternBytecodeName.mangle;
  * @since 24
  */
 public abstract sealed class MemberPattern<T> extends Executable permits Deconstructor {
-    final Class<T>                          clazz;
-    final int                               slot;
+    final Class<?>                          declaringClass;
+    final Class<T>                          candidateType;
     final Class<?>[]                        parameterTypes;
     final Class<?>[]                        exceptionTypes;
     final ArrayList<PatternBinding>         patternBindings;
@@ -92,33 +92,33 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
      * package via jdk.internal.access.JavaLangReflectAccess.
      *
      * @param declaringClass x
+     * @param candidateType x
      * @param parameterTypes x
      * @param checkedExceptions x
      * @param modifiers x
      * @param patternFlags x
-     * @param slot x
      * @param patternBindings x
      * @param signature x
      * @param annotations x
      * @param parameterAnnotations x
      *
      */
-    public MemberPattern(Class<T> declaringClass,
+    public MemberPattern(Class<?> declaringClass,
+                         Class<T> candidateType,
                          Class<?>[] parameterTypes,
                          Class<?>[] checkedExceptions,
                          int modifiers,
                          int patternFlags,
-                         int slot,
                          ArrayList<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations,
                          byte[] parameterAnnotations) {
-        this.clazz = declaringClass;
+        this.declaringClass = declaringClass;
+        this.candidateType = candidateType;
         this.parameterTypes = parameterTypes;
         this.exceptionTypes = checkedExceptions;
         this.modifiers = modifiers;
         this.patternFlags = patternFlags;
-        this.slot = slot;
         this.patternBindings = patternBindings;
         this.signature = signature;
         this.annotations = annotations;
@@ -130,9 +130,15 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
      * declares the constructor represented by this object.
      */
     @Override
-    public Class<T> getDeclaringClass() {
-        return clazz;
+    public Class<?> getDeclaringClass() {
+        return declaringClass;
     }
+
+    /**
+     * TODO
+     * @return TODO
+     */
+    public Class<T> getCandidateType() { return candidateType; }
 
     /**
      * Returns the name of this constructor, as a string.  This is

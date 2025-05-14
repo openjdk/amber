@@ -143,6 +143,7 @@ public class SimpleDeconstructorsTest {
         // assertEquals(dtor, BasicDtor.class.getDeclaredDeconstructor(int.class));
 
         assertEquals(BasicDtor.class, dtor.getDeclaringClass());
+        assertEquals(BasicDtor.class, dtor.getCandidateType());
         assertEquals(BasicDtor.class.getName(), dtor.getName());
 
         // TODO: static and synthetic seem wrong
