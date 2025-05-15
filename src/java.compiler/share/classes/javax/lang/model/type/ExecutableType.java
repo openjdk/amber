@@ -103,6 +103,18 @@ public interface ExecutableType extends TypeMirror {
     TypeMirror getReceiverType();
 
     /**
+     * Returns the match candidate type of this executable,
+     * or {@link javax.lang.model.type.NoType NoType} with
+     * kind {@link javax.lang.model.type.TypeKind#NONE NONE}
+     * if the executable has no receiver type.
+     *
+     * @return the match candidate type of this executable representing a pattern declaration
+     * @since 25
+     *
+     */
+    TypeMirror getMatchCandidateType();
+
+    /**
      * Returns the exceptions and other throwables listed in this
      * executable's {@code throws} clause.
      *

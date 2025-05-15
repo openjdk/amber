@@ -1074,7 +1074,13 @@ public class ClassReader {
                                 .map(rc -> types.erasure(rc))
                                 .collect(List.collector());
 
-                        PatternType patternType = new PatternType(mtype.getParameterTypes(), erasedBindingTypes, syms.voidType, syms.methodClass);
+                        Type matchCandidateType = sym.type.getMatchCandidateType();
+                        PatternType patternType = new PatternType(
+                                mtype.getParameterTypes(),
+                                erasedBindingTypes,
+                                syms.voidType,
+                                matchCandidateType,
+                                syms.methodClass);
 
                         sym.type = patternType;
                         //TODO: no thrown types for PatternType
@@ -1220,11 +1226,6 @@ public class ClassReader {
                             ModuleSymbol rsym = poolReader.getModule(nextChar());
                             Set<RequiresFlag> flags = readRequiresFlags(nextChar());
                             if (rsym == syms.java_base && majorVersion >= V54.major) {
-                                if (flags.contains(RequiresFlag.TRANSITIVE) &&
-                                    (majorVersion != Version.MAX().major || !previewClassFile) &&
-                                    !preview.participatesInPreview(syms, msym)) {
-                                    throw badClassFile("bad.requires.flag", RequiresFlag.TRANSITIVE);
-                                }
                                 if (flags.contains(RequiresFlag.STATIC_PHASE)) {
                                     throw badClassFile("bad.requires.flag", RequiresFlag.STATIC_PHASE);
                                 }
@@ -1388,7 +1389,16 @@ public class ClassReader {
                         parameterAccessFlags = null;
 
                         MethodSymbol msym = (MethodSymbol) sym;
-                        msym.type = new PatternType(patternType.getParameterTypes(), null, syms.voidType, syms.methodClass);
+
+                        // todo: refactor/improve
+                        List<Type> erasedBindingTypes = patternType.getParameterTypes()
+                                .stream()
+                                .map(rc -> types.erasure(rc))
+                                .collect(List.collector());
+
+                        // up until here msym.type contains a type as a methodtype of the physical method
+                        Type matchcandidatetype = msym.type.getParameterTypes().head;
+                        msym.type = new PatternType(patternType.getParameterTypes(), erasedBindingTypes, syms.voidType, matchcandidatetype, syms.methodClass);
 
                         readMemberAttrs(sym);
 

@@ -256,11 +256,15 @@ public final class Class<T> implements java.io.Serializable,
      * This constructor is not used and prevents the default constructor being
      * generated.
      */
-    private Class(ClassLoader loader, Class<?> arrayComponentType) {
+    private Class(ClassLoader loader, Class<?> arrayComponentType, char mods, ProtectionDomain pd, boolean isPrim) {
         // Initialize final field for classLoader.  The initialization value of non-null
         // prevents future JIT optimizations from assuming this final field is null.
+        // The following assignments are done directly by the VM without calling this constructor.
         classLoader = loader;
         componentType = arrayComponentType;
+        modifiers = mods;
+        protectionDomain = pd;
+        primitive = isPrim;
     }
 
     /**
@@ -808,8 +812,9 @@ public final class Class<T> implements java.io.Serializable,
      * @return  {@code true} if this {@code Class} object represents an interface;
      *          {@code false} otherwise.
      */
-    @IntrinsicCandidate
-    public native boolean isInterface();
+    public boolean isInterface() {
+        return Modifier.isInterface(modifiers);
+    }
 
 
     /**
@@ -819,8 +824,9 @@ public final class Class<T> implements java.io.Serializable,
      *          {@code false} otherwise.
      * @since   1.1
      */
-    @IntrinsicCandidate
-    public native boolean isArray();
+    public boolean isArray() {
+        return componentType != null;
+    }
 
 
     /**
@@ -861,8 +867,9 @@ public final class Class<T> implements java.io.Serializable,
      * @since 1.1
      * @jls 15.8.2 Class Literals
      */
-    @IntrinsicCandidate
-    public native boolean isPrimitive();
+    public boolean isPrimitive() {
+        return primitive;
+    }
 
     /**
      * Returns true if this {@code Class} object represents an annotation
@@ -1020,6 +1027,8 @@ public final class Class<T> implements java.io.Serializable,
 
     private transient Object classData; // Set by VM
     private transient Object[] signers; // Read by VM, mutable
+    private final transient char modifiers;  // Set by the VM
+    private final transient boolean primitive;  // Set by the VM if the Class is a primitive type.
 
     // package-private
     Object getClassData() {
@@ -1301,15 +1310,12 @@ public final class Class<T> implements java.io.Serializable,
      * @since 1.1
      */
     public Class<?> getComponentType() {
-        // Only return for array types. Storage may be reused for Class for instance types.
-        if (isArray()) {
-            return componentType;
-        } else {
-            return null;
-        }
+        return componentType;
     }
 
-    private final Class<?> componentType;
+    // The componentType field's null value is the sole indication that the class
+    // is an array - see isArray().
+    private transient final Class<?> componentType;
 
     /*
      * Returns the {@code Class} representing the element type of an array class.
@@ -1364,8 +1370,7 @@ public final class Class<T> implements java.io.Serializable,
      * @jls 9.1.1 Interface Modifiers
      * @jvms 4.1 The {@code ClassFile} Structure
      */
-    @IntrinsicCandidate
-    public native int getModifiers();
+    public int getModifiers() { return modifiers; }
 
     /**
      * {@return an unmodifiable set of the {@linkplain AccessFlag access
@@ -1399,10 +1404,8 @@ public final class Class<T> implements java.io.Serializable,
                         isAnonymousClass() || isArray()) ?
             AccessFlag.Location.INNER_CLASS :
             AccessFlag.Location.CLASS;
-        return AccessFlag.maskToAccessFlags((location == AccessFlag.Location.CLASS) ?
-                                            getClassAccessFlagsRaw() :
-                                            getModifiers(),
-                                            location);
+        return getReflectionFactory().parseAccessFlags((location == AccessFlag.Location.CLASS) ?
+                        getClassAccessFlagsRaw() : getModifiers(), location, this);
     }
 
     /**
@@ -2149,16 +2152,20 @@ public final class Class<T> implements java.io.Serializable,
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.DECLARED);
     }
 
-    private Deconstructor<T>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
+    private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
         ArrayList<Deconstructor<?>> decs = new ArrayList<>();
         if (this.isPrimitive()) {
             @SuppressWarnings("unchecked")
             var result = (Deconstructor<T>[]) new Deconstructor<?>[0];
             return result;
         }
-        try(InputStream is = ClassLoader.getSystemResourceAsStream(getResourcePath())) {
-            byte[] bytes = is.readAllBytes();
+        try (var in = (getClassLoader() != null)
+                ? getClassLoader().getResourceAsStream(getResourcePath())
+                : ClassLoader.getSystemResourceAsStream(getResourcePath())) {
+            if (in == null) throw new RuntimeException("Resource not found: " + name);
+            byte[] bytes = in.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
+            ArrayList<Deconstructor<?>> decs = new ArrayList<>();
             for (MethodModel mm : cm.methods()) {
                 PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
                 if (pa != null) {
@@ -2179,8 +2186,8 @@ public final class Class<T> implements java.io.Serializable,
                         descriptorFilter = MethodTypeDesc.of(CD_void, paramDescs).descriptorString();
                     }
 
-                    if ((params.length == 0 || (params.length != 0 && pa.patternTypeSymbol().descriptorString().equals(descriptorFilter))) &&
-                        (which == Member.DECLARED || mm.flags().has(AccessFlag.PUBLIC))) {
+                    if ((params.length == 0 || pa.patternTypeSymbol().descriptorString().equals(descriptorFilter)) &&
+                            (which == Member.DECLARED || mm.flags().has(AccessFlag.PUBLIC))) {
                         // binding annotations
                         RuntimeVisibleAnnotationsAttribute rva = mm.findAttribute(Attributes.runtimeVisibleAnnotations()).orElse(null);
                         ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
@@ -2230,13 +2237,12 @@ public final class Class<T> implements java.io.Serializable,
                     }
                 }
             }
+            @SuppressWarnings("unchecked")
+            var result = (Deconstructor<T>[])decs.toArray(new Deconstructor<?>[decs.size()]);
+            return result;
         } catch (IOException | ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
-
-        @SuppressWarnings("unchecked")
-        var result = (Deconstructor<T>[]) decs.toArray(new Deconstructor<?>[decs.size()]);
-        return result;
     }
 
     private String getResourcePath() {
@@ -2970,17 +2976,7 @@ public final class Class<T> implements java.io.Serializable,
         return true;
     }
 
-    /**
-     * Returns the {@code ProtectionDomain} of this class.
-     *
-     * @return the ProtectionDomain of this class
-     *
-     * @see java.security.ProtectionDomain
-     * @since 1.2
-     */
-    public ProtectionDomain getProtectionDomain() {
-        return protectionDomain();
-    }
+    private transient final ProtectionDomain protectionDomain;
 
     /** Holder for the protection domain returned when the internal domain is null */
     private static class Holder {
@@ -2992,20 +2988,21 @@ public final class Class<T> implements java.io.Serializable,
         }
     }
 
-    // package-private
-    ProtectionDomain protectionDomain() {
-        ProtectionDomain pd = getProtectionDomain0();
-        if (pd == null) {
+    /**
+     * Returns the {@code ProtectionDomain} of this class.
+     *
+     * @return the ProtectionDomain of this class
+     *
+     * @see java.security.ProtectionDomain
+     * @since 1.2
+     */
+    public ProtectionDomain getProtectionDomain() {
+        if (protectionDomain == null) {
             return Holder.allPermDomain;
         } else {
-            return pd;
+            return protectionDomain;
         }
     }
-
-    /**
-     * Returns the ProtectionDomain of this class.
-     */
-    private native ProtectionDomain getProtectionDomain0();
 
     /*
      * Returns the Class object for the named primitive type. Type parameter T
@@ -4407,7 +4404,7 @@ public final class Class<T> implements java.io.Serializable,
      * type is returned.  If the class is a primitive type then the latest class
      * file major version is returned and zero is returned for the minor version.
      */
-    private int getClassFileVersion() {
+    int getClassFileVersion() {
         Class<?> c = isArray() ? elementType() : this;
         return c.getClassFileVersion0();
     }

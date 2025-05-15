@@ -611,6 +611,7 @@ public class Pretty extends JCTree.Visitor {
     }
 
     public void visitMethodDef(JCMethodDecl tree) {
+        boolean isPattern = (tree.mods.flags & PATTERN) != 0;
         try {
             // when producing source output, omit anonymous constructors
             if (tree.name == tree.name.table.names.init &&
@@ -623,7 +624,7 @@ public class Pretty extends JCTree.Visitor {
             if (tree.name == tree.name.table.names.init) {
                 print(enclClassName != null ? enclClassName : tree.name);
             } else {
-                if  ((tree.mods.flags & PATTERN) != 0) {
+                if  (isPattern) {
                     print("pattern");
                 } else {
                     printExpr(tree.restype);
@@ -638,7 +639,12 @@ public class Pretty extends JCTree.Visitor {
                     print(", ");
                 }
             }
-            printExprs(tree.params);
+            if (isPattern) {
+                printExprs(tree.bindings);
+            }
+            else {
+                printExprs(tree.params);
+            }
             print(')');
             if (tree.thrown.nonEmpty()) {
                 print(" throws ");
@@ -1161,7 +1167,15 @@ public class Pretty extends JCTree.Visitor {
             print(tree.clazz);
             print('(');
             printExprs(tree.args);
-            print(')');
+            print(");");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitMatchFail(JCMatchFail tree) {
+        try {
+            print("match-fail();");
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

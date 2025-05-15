@@ -59,6 +59,8 @@ public class Names {
     public final Name _class;
     public final Name _super;
     public final Name _this;
+    public final Name _that;
+
     public final Name var;
     public final Name exports;
     public final Name opens;
@@ -111,6 +113,7 @@ public class Names {
     public final Name values;
     public final Name readResolve;
     public final Name readObject;
+    public final Name dinit;
 
     // class names
     public final Name java_io_Serializable;
@@ -257,6 +260,8 @@ public class Names {
         _class = fromString("class");
         _super = fromString("super");
         _this = fromString("this");
+        _that = fromString("that");
+
         var = fromString("var");
         exports = fromString("exports");
         opens = fromString("opens");
@@ -310,6 +315,7 @@ public class Names {
         readResolve = fromString("readResolve");
         readObject = fromString("readObject");
         dollarThis = fromString("$this");
+        dinit = fromString("<dinit>");
 
         // class names
         java_io_Serializable = fromString("java.io.Serializable");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2024, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2017, 2025, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -31,8 +31,6 @@ import com.sun.tools.javac.code.BoundKind;
 import com.sun.tools.javac.code.Flags;
 import com.sun.tools.javac.code.Kinds;
 import com.sun.tools.javac.code.Kinds.Kind;
-
-import static com.sun.tools.javac.code.TypeTag.*;
 
 import com.sun.tools.javac.code.Preview;
 import com.sun.tools.javac.code.Source;
@@ -410,13 +408,31 @@ public class TransPatterns extends TreeTranslator {
         Assert.check(recordPattern.patternDeclaration != null);
 
         if (allowPatternDeclarations) {
+            // Generate:
+            //     1. calculate the returnType MethodType as Constant_MethodType_info
+            //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)
+            //     3. generate invoke call to pass the bindings (e.g, return carrier.invoke(x, y);)
+            MethodSymbol factoryMethodSym =
+                    rs.resolveInternalMethod(recordPattern.pos(),
+                            env,
+                            syms.carriersType,
+                            names.fromString("initializingConstructor"),
+                            List.of(syms.methodTypeType),
+                            List.nil());
+            DynamicVarSymbol factoryMethodDynamicVar =
+                    (DynamicVarSymbol) invokeMethodWrapper(
+                            names.fromString("carrier"),
+                            recordPattern.pos(),
+                            factoryMethodSym.asHandle(),
+                            new MethodType(recordPattern.patternDeclaration.type.getBindingTypes(), syms.objectType, List.nil(), syms.methodClass));
+
             mSymbol = new BindingSymbol(Flags.SYNTHETIC,
                     names.fromString(target.syntheticNameChar() + "m" + target.syntheticNameChar() + variableIndex++), syms.objectType,
                     currentMethodSym);
             JCVariableDecl mVar = make.VarDef(mSymbol, null);
 
             firstLevelChecks = make.TypeTest(
-                    generatePatternCall(recordPattern, tempBind),
+                    generatePatternCall(recordPattern, tempBind, factoryMethodDynamicVar),
                     make.BindingPattern(mVar).setType(mSymbol.type)).setType(syms.booleanType);
 
             // Resolve Carriers.component(methodType, index) for subsequent constant dynamic call results
@@ -534,7 +550,7 @@ public class TransPatterns extends TreeTranslator {
         return new UnrolledRecordPattern((JCBindingPattern) make.BindingPattern(recordBindingVar).setType(recordBinding.type), guard);
     }
 
-    private JCMethodInvocation generatePatternCall(JCRecordPattern recordPattern, BindingSymbol tempBind) {
+    private JCMethodInvocation generatePatternCall(JCRecordPattern recordPattern, BindingSymbol matchCandidate, DynamicVarSymbol factoryMethodDynamicVar) {
         List<Type> staticArgTypes = List.of(syms.methodHandleLookupType,
                 syms.stringType,
                 syms.methodTypeType,
@@ -544,8 +560,24 @@ public class TransPatterns extends TreeTranslator {
                 recordPattern.pos(), env, syms.patternBootstrapsType,
                 names.invokePattern, staticArgTypes, List.nil());
 
+        List<JCExpression> invocationParams;
+        List<Type> invocationParamTypes;
+
+        // deconstructors, instance patterns and static patterns
+        if (recordPattern.deconstructor instanceof JCFieldAccess acc && !TreeInfo.isStaticSelector(acc.selected, names)) {
+                                           /*receiver                , match candidate              carrier method handle */
+            invocationParamTypes = List.of(acc.selected.type         , recordPattern.type,          factoryMethodDynamicVar.type);
+            invocationParams     = List.of(acc.selected              , make.Ident(matchCandidate),  make.Ident(factoryMethodDynamicVar));
+        } else if (!recordPattern.patternDeclaration.isStatic() && !recordPattern.patternDeclaration.isDeconstructor()) {
+            invocationParamTypes = List.of(recordPattern.type        , recordPattern.type,          factoryMethodDynamicVar.type);
+            invocationParams     = List.of(make.Ident(matchCandidate), make.Ident(matchCandidate),  make.Ident(factoryMethodDynamicVar));
+        }
+        else {
+            invocationParamTypes = List.of(recordPattern.type, factoryMethodDynamicVar.type);
+            invocationParams     = List.of(make.Ident(matchCandidate), make.Ident(factoryMethodDynamicVar) );
+        }
         MethodType indyType = new MethodType(
-                List.of(recordPattern.type),
+                invocationParamTypes,
                 syms.objectType,
                 List.nil(),
                 syms.methodClass
@@ -567,7 +599,7 @@ public class TransPatterns extends TreeTranslator {
         qualifier.type = syms.objectType;
         return make.Apply(List.nil(),
                         qualifier,
-                        List.of(make.Ident(tempBind)))
+                        invocationParams)
                 .setType(syms.objectType);
     }
 
@@ -990,7 +1022,6 @@ public class TransPatterns extends TreeTranslator {
      * <pre>{@code
      *     binding1 = arg1;
      *     binding2 = arg2;
-     *     return carrier.invoke(binding1, binding2);
      * }</pre>
      *
      */
@@ -1003,27 +1034,10 @@ public class TransPatterns extends TreeTranslator {
 
         ListBuffer<JCStatement> stats = new ListBuffer<>();
 
-        // Generate:
-        //     1. calculate the returnType MethodType as Constant_MethodType_info
-        //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)
-        //     3. generate invoke call to pass the bindings (e.g, return carrier.invoke(x, y);)
-        MethodSymbol factoryMethodSym =
-                rs.resolveInternalMethod(tree.pos(),
-                        env,
-                        syms.carriersType,
-                        names.fromString("initializingConstructor"),
-                        List.of(syms.methodTypeType),
-                        List.nil());
-
-        DynamicVarSymbol factoryMethodDynamicVar =
-                (DynamicVarSymbol) invokeMethodWrapper(
-                        names.fromString("carrier"),
-                        tree.pos(),
-                        factoryMethodSym.asHandle(),
-                        new MethodType(tree.meth.type.getBindingTypes(), syms.objectType, List.nil(), syms.methodClass));
-
+        // force the evaluation of each parameter to match
         // Generate:
         //      parameter1 = arg1;
+        //      ...
         while (matchArguments.nonEmpty() && bindings.nonEmpty() && bindingTypes.nonEmpty()) {
             JCExpressionStatement stat =
                     make.Exec(make.Assign(make.Ident(bindings.head),
@@ -1037,12 +1051,10 @@ public class TransPatterns extends TreeTranslator {
             matchArguments = matchArguments.tail;
         }
 
-        JCIdent factoryMethodCall = make.Ident(factoryMethodDynamicVar);
+        // the same parameters must be passed to the carrier.invoke(<carrier arguments>)
+        // that is emitted in Lower:visitMethodDef
+        tree.meth.carrierArguments = invokeMethodParam;
 
-        JCMethodInvocation invokeMethodCall =
-                makeApply(factoryMethodCall, names.fromString("invoke"), invokeMethodParam);
-
-        stats = stats.append(make.Return(invokeMethodCall));
         result = make.at(tree.pos).Block(0, stats.toList());
     }
 
@@ -1293,7 +1305,12 @@ public class TransPatterns extends TreeTranslator {
     private LoadableConstant toLoadableConstant(JCCaseLabel l, Type selector) {
         if (l.hasTag(Tag.PATTERNCASELABEL)) {
             Type principalType = principalType(((JCPatternCaseLabel) l).pat);
-            if (((JCPatternCaseLabel) l).pat.type.isReference()) {
+
+            if (target.switchBootstrapOnlyAllowsReferenceTypesAsCaseLabels()) {
+                principalType = types.boxedTypeOrType(principalType);
+            }
+
+            if (principalType.isReference()) {
                 if (types.isSubtype(selector, principalType)) {
                     return (LoadableConstant) selector;
                 } else {
@@ -1440,10 +1457,6 @@ public class TransPatterns extends TreeTranslator {
             currentMethodSym = tree.sym;
             variableIndex = 0;
             deconstructorCalls = null;
-            if (tree.sym.isPattern()) {
-                tree.body.stats = tree.body.stats.append(
-                    make.Throw(makeNewClass(syms.matchExceptionType, List.of(makeNull(), makeNull()))));
-            }
             super.visitMethodDef(tree);
             preparePatternMatchingCatchIfNeeded(tree.body);
         } finally {

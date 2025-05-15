@@ -677,6 +677,7 @@ public class DPrinter {
             printTree("restype", tree.restype);
             printList("typarams", tree.typarams);
             printTree("recvparam", tree.recvparam);
+            printTree("matchcandparam", tree.matchcandparam);
             printList("params", tree.params);
             printList("thrown", tree.thrown);
             printTree("defaultValue", tree.defaultValue);

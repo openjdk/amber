@@ -124,4 +124,9 @@ public final class Deconstructor<T> extends PatternMember<T> {
         res.root = this;
         return res;
     }
+
+    private static final String DINIT = "\\^dinit\\_";
+    String getMangledName() {
+        return DINIT + ":" + super.getMangledName();
+    }
 }

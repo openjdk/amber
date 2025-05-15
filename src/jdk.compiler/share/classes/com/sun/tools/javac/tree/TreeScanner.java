@@ -130,6 +130,7 @@ public class TreeScanner extends Visitor {
         scan(tree.restype);
         scan(tree.typarams);
         scan(tree.recvparam);
+        scan(tree.matchcandparam);
         scan(tree.params);
         scan(tree.bindings);
         scan(tree.thrown);

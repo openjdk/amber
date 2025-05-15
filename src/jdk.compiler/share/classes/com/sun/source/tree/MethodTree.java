@@ -98,6 +98,15 @@ public interface MethodTree extends Tree {
     VariableTree getReceiverParameter();
 
     /**
+     * Return an explicit match candidate parameter ("that" parameter),
+     * or {@code null} if none.
+     *
+     * @return an explicit match candidate parameter ("that" parameter)
+     * @since 25
+     */
+    VariableTree getMatchCandidateParameter();
+
+    /**
      * Returns the exceptions listed as being thrown by this method.
      * @return the exceptions
      */

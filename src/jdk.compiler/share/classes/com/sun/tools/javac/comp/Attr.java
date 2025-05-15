@@ -862,10 +862,7 @@ public class Attr extends JCTree.Visitor {
                                       Env<AttrContext> enclosingEnv,
                                       JCVariableDecl variable,
                                       Type type) {
-
-        DiagnosticPosition prevLintPos
-                = deferredLintHandler.setPos(variable.pos());
-
+        deferredLintHandler.push(variable);
         final JavaFileObject prevSource = log.useSource(env.toplevel.sourcefile);
         try {
             doQueueScanTreeAndTypeAnnotateForVarInit(variable, enclosingEnv);
@@ -881,7 +878,7 @@ public class Attr extends JCTree.Visitor {
             }
         } finally {
             log.useSource(prevSource);
-            deferredLintHandler.setPos(prevLintPos);
+            deferredLintHandler.pop();
         }
     }
 
@@ -1010,7 +1007,7 @@ public class Attr extends JCTree.Visitor {
         Assert.check(!env.info.ctorPrologue);
         MethodSymbol prevMethod = chk.setMethod(m);
         try {
-            deferredLintHandler.flush(tree.pos(), lint);
+            deferredLintHandler.flush(tree, lint);
             chk.checkDeprecatedAnnotation(tree.pos(), m);
 
 
@@ -1046,6 +1043,10 @@ public class Attr extends JCTree.Visitor {
                         tree.params.head.pos() :
                         tree.recvparam.pos(),
                         Errors.IntfAnnotationMembersCantHaveParams);
+
+            if (tree.sym.isPattern()) {
+                attribStat(tree.matchcandparam, localEnv);
+            }
 
             // Attribute all value parameters.
             for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
@@ -1208,6 +1209,7 @@ public class Attr extends JCTree.Visitor {
             }
 
             if (m.isDeconstructor()) {
+                //TODO: for instance/named patterns
                 m.patternFlags.add(PatternFlags.DECONSTRUCTOR);
                 if ((tree.mods.flags & Flags.PARTIAL) == 0) {
                     m.patternFlags.add(PatternFlags.TOTAL);
@@ -1357,7 +1359,7 @@ public class Attr extends JCTree.Visitor {
 
         try {
             v.getConstValue(); // ensure compile-time constant initializer is evaluated
-            deferredLintHandler.flush(tree.pos(), lint);
+            deferredLintHandler.flush(tree, lint);
             chk.checkDeprecatedAnnotation(tree.pos(), v);
 
             if (tree.init != null) {
@@ -1401,7 +1403,7 @@ public class Attr extends JCTree.Visitor {
             env.info.scope.owner.kind != MTH && env.info.scope.owner.kind != VAR) {
             tree.mods.flags |= Flags.FIELD_INIT_TYPE_ANNOTATIONS_QUEUED;
             // Field initializer expression need to be entered.
-            annotate.queueScanTreeAndTypeAnnotate(tree.init, env, tree.sym, tree.pos());
+            annotate.queueScanTreeAndTypeAnnotate(tree.init, env, tree.sym, tree);
             annotate.flush();
         }
     }
@@ -2099,7 +2101,7 @@ public class Attr extends JCTree.Visitor {
             types.asSuper(resource, syms.autoCloseableType.tsym) != null &&
             !types.isSameType(resource, syms.autoCloseableType)) { // Don't emit warning for AutoCloseable itself
             Symbol close = syms.noSymbol;
-            Log.DiagnosticHandler discardHandler = new Log.DiscardDiagnosticHandler(log);
+            Log.DiagnosticHandler discardHandler = log.new DiscardDiagnosticHandler();
             try {
                 close = rs.resolveQualifiedMethod(pos,
                         env,
@@ -2472,7 +2474,7 @@ public class Attr extends JCTree.Visitor {
 
     @Override
     public void visitMatchFail(JCMatchFail tree) {
-        if ((env.enclMethod.sym.flags_field & Flags.PARTIAL) == 0) {
+        if (env.enclMethod.sym.isTotalPattern()) {
             log.error(tree.pos(), Errors.UnmarkedPartialDeconstructor);
         }
         result = null;
@@ -2611,7 +2613,6 @@ public class Attr extends JCTree.Visitor {
                 attribExpr(tree.expr, env, env.info.yieldResult.pt);
             }
         } else if (!env.info.isLambda &&
-                !env.info.isNewClass &&
                 env.enclMethod != null &&
                 TreeInfo.isCompactConstructor(env.enclMethod)) {
             log.error(env.enclMethod,
@@ -2901,12 +2902,12 @@ public class Attr extends JCTree.Visitor {
         Type clazztype;
 
         try {
-            env.info.isNewClass = true;
+            env.info.isAnonymousNewClass = tree.def != null;
             clazztype = TreeInfo.isEnumInit(env.tree) ?
                 attribIdentAsEnumType(env, (JCIdent)clazz) :
                 attribType(clazz, env);
         } finally {
-            env.info.isNewClass = false;
+            env.info.isAnonymousNewClass = false;
         }
 
         clazztype = chk.checkDiamond(tree, clazztype);
@@ -3463,6 +3464,10 @@ public class Attr extends JCTree.Visitor {
                                 // do nothing
                             }
                         }
+                        if (bound.tsym != syms.objectType.tsym && (!bound.isInterface() || (bound.tsym.flags() & ANNOTATION) != 0)) {
+                            // bound must be j.l.Object or an interface, but not an annotation
+                            reportIntersectionError(that, "not.an.intf.component", bound);
+                        }
                         bound = types.removeWildcards(bound);
                         components.add(bound);
                     }
@@ -3484,6 +3489,11 @@ public class Attr extends JCTree.Visitor {
                 currentTarget = types.createErrorType(pt());
             }
             return new TargetInfo(currentTarget, lambdaType);
+        }
+
+        private void reportIntersectionError(DiagnosticPosition pos, String key, Object... args) {
+             resultInfo.checkContext.report(pos,
+                 diags.fragment(Fragments.BadIntersectionTargetForFunctionalExpr(diags.fragment(key, args))));
         }
 
         void preFlow(JCLambda tree) {
@@ -4333,9 +4343,9 @@ public class Attr extends JCTree.Visitor {
             setSyntheticVariableType(tree.var, type == Type.noType ? syms.errType
                                                                    : type);
         }
-        annotate.annotateLater(tree.var.mods.annotations, env, v, tree.pos());
+        annotate.annotateLater(tree.var.mods.annotations, env, v, tree.var);
         if (!tree.var.isImplicitlyTyped()) {
-            annotate.queueScanTreeAndTypeAnnotate(tree.var.vartype, env, v, tree.var.pos());
+            annotate.queueScanTreeAndTypeAnnotate(tree.var.vartype, env, v, tree.var);
         }
         annotate.flush();
         result = tree.type;
@@ -4349,23 +4359,43 @@ public class Attr extends JCTree.Visitor {
     @Override
     public void visitRecordPattern(JCRecordPattern tree) {
         Type site;
+        Type uncapturedSite;
+        Name deconstructorName;
 
         if (tree.deconstructor == null) {
             log.error(tree.pos(), Errors.DeconstructionPatternVarNotAllowed);
             tree.record = syms.errSymbol;
-            site = tree.type = types.createErrorType(tree.record.type);
+            uncapturedSite = site = tree.type = types.createErrorType(tree.record.type);
+            deconstructorName = names.empty;
         } else {
-            Type type = attribType(tree.deconstructor, env);
-            if (type.isRaw() && type.tsym.getTypeParameters().nonEmpty()) {
-                Type inferred = infer.instantiatePatternType(resultInfo.pt, type.tsym);
-                if (inferred == null) {
-                    log.error(tree.pos(), Errors.PatternTypeCannotInfer);
-                } else {
-                    type = inferred;
+            //TODO: if there's a deconstructor and instance pattern with the same name, which one prevails?
+            if (deferredAttr.attribSpeculative(tree.deconstructor, env, new ResultInfo(KindSelector.TYP, Type.noType)).type.hasTag(TypeTag.CLASS)) {
+                Type type = attribType(tree.deconstructor, env);
+                if (type.isRaw() && type.tsym.getTypeParameters().nonEmpty()) {
+                    Type inferred = infer.instantiatePatternType(resultInfo.pt, type.tsym);
+                    if (inferred == null) {
+                        log.error(tree.pos(), Errors.PatternTypeCannotInfer);
+                    } else {
+                        type = inferred;
+                    }
                 }
+                uncapturedSite = type;
+                site = types.capture(type);
+                deconstructorName = TreeInfo.name(tree.deconstructor);
+            } else if (tree.deconstructor instanceof JCFieldAccess acc) {
+                Type type = attribTree(acc.selected, env, new ResultInfo(KindSelector.VAL_TYP, Type.noType));
+                site = type; //TODO: capture?
+                uncapturedSite = type;
+                deconstructorName = acc.name;
+            } else if (tree.deconstructor instanceof JCIdent ident) {
+                Type type = pt();
+                site = type; //TODO: capture?
+                uncapturedSite = type;
+                deconstructorName = ident.name;
+            } else {
+                //TODO: error recovery
+                throw Assert.error("Not handled.");
             }
-            tree.type = tree.deconstructor.type = type;
-            site = types.capture(tree.type);
         }
 
         List<Type> nestedPatternsTargetTypes = null;
@@ -4373,7 +4403,7 @@ public class Attr extends JCTree.Visitor {
         if (site.tsym.kind == Kind.TYP) {
             int nestedPatternCount = tree.nested.size();
 
-            List<MethodSymbol> candidates = candidatesWithArity(site, nestedPatternCount);
+            List<MethodSymbol> candidates = candidatesWithArity(site, uncapturedSite, deconstructorName, nestedPatternCount);
 
             if (candidates.size() >= 1) {
                 List<Type> notionalTypes = calculateNotionalTypes(tree);
@@ -4426,6 +4456,12 @@ public class Attr extends JCTree.Visitor {
             }
         } finally {
             localEnv.info.scope.leave();
+        }
+        //TODO: are these types sensible?
+        if (tree.patternDeclaration != null) { // TODO: improve error recovery
+            tree.type = tree.deconstructor.type = tree.patternDeclaration.type.getMatchCandidateType();
+        } else if (tree.deconstructor != null) {
+            tree.type = tree.deconstructor.type = uncapturedSite;;
         }
         chk.validate(tree.deconstructor, env, true);
         result = tree.type;
@@ -4648,9 +4684,9 @@ public class Attr extends JCTree.Visitor {
      * @param nestedPatternCount the number of nested patterns
      * @return                   a list of MethodSymbols
      */
-    private List<MethodSymbol> candidatesWithArity(Type site, int nestedPatternCount) {
+    private List<MethodSymbol> candidatesWithArity(Type site, Type uncaptured, Name deconstructorName, int nestedPatternCount) {
         var matchersIt = site.tsym.members()
-                .getSymbols(sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
+                .getSymbolsByName(deconstructorName, sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
                 .iterator();
 
         List<MethodSymbol> patternDeclarations = Stream.generate(() -> null)
@@ -4667,18 +4703,18 @@ public class Attr extends JCTree.Visitor {
                         .map(rc -> types.memberType(site, rc))
                         .collect(List.collector());
 
+                // todo: refactor/improve
                 List<Type> erasedComponents = ((ClassSymbol) record.type.tsym).getRecordComponents()
                         .stream()
                         .map(rc -> types.erasure(rc.type))
                         .collect(List.collector());
+                PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, uncaptured, syms.methodClass);
 
-                PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, syms.methodClass);
+                MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
 
-                MethodSymbol synthetized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
-
-                synthetized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
-                synthetized.patternFlags.add(PatternFlags.TOTAL);
-                patternDeclarations = patternDeclarations.prepend(synthetized);
+                synthesized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                synthesized.patternFlags.add(PatternFlags.TOTAL);
+                patternDeclarations = patternDeclarations.prepend(synthesized);
             }
         }
 
@@ -5627,7 +5663,7 @@ public class Attr extends JCTree.Visitor {
         Type underlyingType = attribType(tree.underlyingType, env);
         Type annotatedType = underlyingType.preannotatedType();
 
-        if (!env.info.isNewClass)
+        if (!env.info.isAnonymousNewClass)
             annotate.annotateTypeSecondStage(tree, tree.annotations, annotatedType);
         result = tree.type = annotatedType;
     }
@@ -5717,7 +5753,7 @@ public class Attr extends JCTree.Visitor {
         JavaFileObject prev = log.useSource(env.toplevel.sourcefile);
 
         try {
-            deferredLintHandler.flush(env.tree.pos(), lint);
+            deferredLintHandler.flush(env.tree, lint);
             attrib.accept(env);
         } finally {
             log.useSource(prev);
@@ -5946,7 +5982,7 @@ public class Attr extends JCTree.Visitor {
         chk.checkDeprecatedAnnotation(tree, msym);
 
         try {
-            deferredLintHandler.flush(tree.pos(), lint);
+            deferredLintHandler.flush(tree, lint);
         } finally {
             chk.setLint(prevLint);
         }

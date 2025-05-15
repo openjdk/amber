@@ -366,7 +366,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
                                   t.getThrownTypes(),
                                   t.tsym);
         } else if ((flags() & PATTERN) != 0) {
-            return new MethodType(List.of(owner.erasure(types)), types.syms.objectType, List.nil(), t.tsym);
+            MethodSymbol thisAsMethod = (MethodSymbol) this;
+            List<Type> parameterTypes = thisAsMethod.getParameters().map(p -> types.erasure(p.type));
+
+            return new MethodType(parameterTypes, types.syms.objectType, List.nil(), t.tsym);
         } else {
             return t;
         }
@@ -478,6 +481,23 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
      */
     public boolean isDeconstructor() {
         return isPattern() && name == owner.name;
+    }
+
+    /** Is this symbol an instance pattern?
+     */
+    public boolean isInstancePattern() {
+        return isPattern() && !isStaticPattern() && !isDeconstructor();
+    }
+
+    /** Is this symbol a static pattern?
+     */
+    public boolean isStaticPattern() {
+        return isPattern() && isStatic();
+    }
+
+    public boolean isTotalPattern() {
+        //TODO: some non-deconstructor patterns can also be total, to be implemented.
+        return isDeconstructor() && (flags() & PARTIAL) == 0;
     }
 
     public boolean isDynamic() {
@@ -1174,7 +1194,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     }
 
     public enum PatternFlags {
-        DECONSTRUCTOR(0x3000),
+        DECONSTRUCTOR(0x2000),
         TOTAL(0x4000);
 
         public static int value(Set<PatternFlags> s) {
@@ -1387,8 +1407,8 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
             int index = Collections.binarySearch(permitted, element, java.util.Comparator.comparing(PermittedClassWithPos::pos));
             if (index < 0) {
                 index = -index - 1;
+                permitted.add(index, element);
             }
-            permitted.add(index, element);
         }
 
         public boolean isPermittedSubclass(Symbol csym) {
@@ -2091,22 +2111,18 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
 
         private Name mangledBytecodePatternName(Types types) {
             List<Type> bindingTypes = ((PatternType) this.type).erasedBindingTypes;
-
-            if (bindingTypes == null) {
-                bindingTypes = ((PatternType) this.type).getBindingTypes();
-            }
-
-            List<String> parts = bindingTypes.map(type -> {
+            List<String> bindingTypesStringParts = bindingTypes.map(type -> {
                 var g = new UnSharedSignatureGenerator(types);
                 g.assembleSig(type);
                 String mangled = name.table.names.fromString(BytecodeName.toBytecodeName(g.toName(name.table.names).toString())).toString();
                 mangled = mangled.toString().replaceFirst("\\\\=", "");
                 return mangled;
             });
+            String bindingTypesString = String.join(":", bindingTypesStringParts);
 
-            String postFix = String.join(":", parts);
+            String patternNameString = isDeconstructor() ? BytecodeName.toBytecodeName(name.table.names.dinit.toString()) + ":" + owner.name.toString() : name.toString();
 
-            return name.table.names.fromString(owner.name.toString() + ":" + postFix);
+            return name.table.names.fromString(patternNameString + ":" + bindingTypesString);
         }
 
         static class UnSharedSignatureGenerator extends Types.SignatureGenerator {
