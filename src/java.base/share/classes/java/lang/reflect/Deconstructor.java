@@ -1,5 +1,6 @@
 package java.lang.reflect;
 
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.runtime.Carriers;
 import java.util.ArrayList;
@@ -90,17 +91,19 @@ public final class Deconstructor<T> extends PatternMember<T> {
         String underlyingName = getMangledName();
 
         try {
-            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, candidate.getClass());
+            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, candidate.getClass(), MethodHandle.class);
             method.setAccessible(override);
-            MethodType methodType = MethodType.methodType(
+            MethodType bindingMT = MethodType.methodType(
                 Object.class,
-                Arrays.stream(getPatternBindings())
+                Arrays.stream(this.getPatternBindings())
                     .map(PatternBinding::getType)
                     .toArray(Class[]::new)
             );
-            return (Object[]) Carriers.boxedComponentValueArray(methodType).invoke(method.invoke(candidate, candidate));
+            MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
+
+            return (Object[])Carriers.boxedComponentValueArray(bindingMT).invoke(method.invoke(candidate, candidate, initializingConstructor));
         } catch (Throwable e) {
-            throw new MatchException(e.getMessage(), e);
+          throw new MatchException(e.getMessage(), e);
         }
     }
 

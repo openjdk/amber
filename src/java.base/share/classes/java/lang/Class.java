@@ -2152,8 +2152,7 @@ public final class Class<T> implements java.io.Serializable,
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.DECLARED);
     }
 
-    private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
-        ArrayList<Deconstructor<?>> decs = new ArrayList<>();
+    private Deconstructor<T>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
         if (this.isPrimitive()) {
             @SuppressWarnings("unchecked")
             var result = (Deconstructor<T>[]) new Deconstructor<?>[0];
@@ -2165,7 +2164,7 @@ public final class Class<T> implements java.io.Serializable,
             if (in == null) throw new RuntimeException("Resource not found: " + name);
             byte[] bytes = in.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
-            ArrayList<Deconstructor<?>> decs = new ArrayList<>();
+            ArrayList<Deconstructor<T>> decs = new ArrayList<>();
             for (MethodModel mm : cm.methods()) {
                 PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
                 if (pa != null) {

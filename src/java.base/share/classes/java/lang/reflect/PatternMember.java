@@ -32,9 +32,6 @@ import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.scope.PatternMemberScope;
 
 import java.lang.annotation.Annotation;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodType;
-import java.lang.runtime.Carriers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
@@ -366,41 +363,6 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      */
     public int getPatternFlags() {
         return patternFlags;
-    }
-
-    /**
-     * Initiate pattern matching of this {@code MemberPattern} on the designated {@code matchCandidate}.
-     *
-     * @param matchCandidate the match candidate to perform pattern matching over.
-     *
-     * @return an array object created as a result of pattern matching
-     *
-     * @throws    IllegalAccessException    if this {@code MemberPattern} object
-     *              is enforcing Java language access control and the underlying
-     *              constructor is inaccessible.
-     * @throws    MatchException if the pattern matching provoked
-     *              by this {@code MemberPattern} fails.
-     */
-    public Object[] invoke(Object matchCandidate)
-        throws IllegalAccessException, MatchException
-    {
-        String underlyingName = getMangledName();
-
-        try {
-            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass(), MethodHandle.class);
-            method.setAccessible(override);
-            MethodType bindingMT = MethodType.methodType(
-                    Object.class,
-                    Arrays.stream(this.getPatternBindings())
-                            .map(PatternBinding::getType)
-                            .toArray(Class[]::new)
-            );
-            MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
-
-            return (Object[])Carriers.boxedComponentValueArray(bindingMT).invoke(method.invoke(matchCandidate, matchCandidate, initializingConstructor));
-        } catch (Throwable e) {
-            throw new MatchException(e.getMessage(), e);
-        }
     }
 
     byte[] getRawAnnotations() {

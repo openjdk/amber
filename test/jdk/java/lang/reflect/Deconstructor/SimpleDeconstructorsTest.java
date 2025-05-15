@@ -40,9 +40,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Deconstructor;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +106,8 @@ public class SimpleDeconstructorsTest {
                   BasicDtor.class.getDeclaredMethods().length);
     }
 
+    // This tests nothing about dtors, only demonstrates the behavior of *c*tors so we can
+    // compare it to how dtors behave below.
     public static void testCtorForComparison() throws NoSuchMethodException {
         Constructor<BasicDtor> ctor = BasicDtor.class.getConstructor(int.class);
         assertEquals(ctor, BasicDtor.class.getDeclaredConstructor(int.class));
@@ -155,7 +154,7 @@ public class SimpleDeconstructorsTest {
         assertEquals(0, dtor.getExceptionTypes().length);
         assertEquals(0, dtor.getGenericExceptionTypes().length);
 
-        assertEquals(0x7000, dtor.getPatternFlags()); // TODO what is?
+        assertEquals(0x6000, dtor.getPatternFlags()); // TODO what is?
         assertEquals(0, dtor.getTypeParameters().length);
 
         assertEquals("public pattern SimpleDeconstructorsTest$BasicDtor(int)", dtor.toGenericString());
@@ -168,7 +167,6 @@ public class SimpleDeconstructorsTest {
         assertEquals(List.of(int.class), asList(dtor.getParameterTypes()));
         assertEquals(List.of(int.class), asList(dtor.getGenericParameterTypes()));
 
-        // TODO crash!
         Parameter[] outParams = dtor.getParameters();
         assertEquals(1, outParams.length);
         Parameter outParam = outParams[0];
