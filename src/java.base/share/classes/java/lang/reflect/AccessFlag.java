@@ -118,8 +118,8 @@ public enum AccessFlag {
      * <code>{@value "0x%04x" Modifier#PUBLIC}</code>.
      */
     PUBLIC(Modifier.PUBLIC, true,
-           Location.SET_CLASS_FIELD_METHOD_INNER_CLASS,
-           List.of(Map.entry(RELEASE_0, Location.SET_CLASS_FIELD_METHOD))),
+            Location.SET_CLASS_FIELD_METHOD_INNER_CLASS,
+            List.of(Map.entry(RELEASE_0, Location.SET_CLASS_FIELD_METHOD))),
 
     /**
      * The access flag {@code ACC_PRIVATE}, corresponding to the
@@ -135,7 +135,7 @@ public enum AccessFlag {
      * value of <code>{@value "0x%04x" Modifier#PROTECTED}</code>.
      */
     PROTECTED(Modifier.PROTECTED, true, Location.SET_FIELD_METHOD_INNER_CLASS,
-              List.of(Map.entry(RELEASE_0, Location.SET_FIELD_METHOD))),
+            List.of(Map.entry(RELEASE_0, Location.SET_FIELD_METHOD))),
 
     /**
      * The access flag {@code ACC_STATIC}, corresponding to the source
@@ -143,7 +143,7 @@ public enum AccessFlag {
      * <code>{@value "0x%04x" Modifier#STATIC}</code>.
      */
     STATIC(Modifier.STATIC, true, Location.SET_FIELD_METHOD_INNER_CLASS,
-           List.of(Map.entry(RELEASE_0, Location.SET_FIELD_METHOD))),
+            List.of(Map.entry(RELEASE_0, Location.SET_FIELD_METHOD))),
 
     /**
      * The access flag {@code ACC_FINAL}, corresponding to the source
@@ -151,9 +151,9 @@ public enum AccessFlag {
      * value of <code>{@value "0x%04x" Modifier#FINAL}</code>.
      */
     FINAL(Modifier.FINAL, true,
-          Location.SET_FINAL_8,
-          List.of(Map.entry(RELEASE_7, Location.SET_CLASS_FIELD_METHOD_INNER_CLASS),
-                  Map.entry(RELEASE_0, Location.SET_CLASS_FIELD_METHOD))),
+            Location.SET_FINAL_8,
+            List.of(Map.entry(RELEASE_7, Location.SET_CLASS_FIELD_METHOD_INNER_CLASS),
+                    Map.entry(RELEASE_0, Location.SET_CLASS_FIELD_METHOD))),
 
     /**
      * The access flag {@code ACC_SUPER} with a mask value of {@code
@@ -171,7 +171,7 @@ public enum AccessFlag {
      * @see java.lang.module.ModuleDescriptor#isOpen
      */
     OPEN(0x0000_0020, false, Location.SET_MODULE,
-         List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
 
     /**
      * The module requires flag {@code ACC_TRANSITIVE} with a mask
@@ -179,7 +179,7 @@ public enum AccessFlag {
      * @see java.lang.module.ModuleDescriptor.Requires.Modifier#TRANSITIVE
      */
     TRANSITIVE(0x0000_0020, false, Location.SET_MODULE_REQUIRES,
-               List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_SYNCHRONIZED}, corresponding to the
@@ -194,7 +194,7 @@ public enum AccessFlag {
      * @see java.lang.module.ModuleDescriptor.Requires.Modifier#STATIC
      */
     STATIC_PHASE(0x0000_0040, false, Location.SET_MODULE_REQUIRES,
-                 List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_VOLATILE}, corresponding to the
@@ -209,7 +209,7 @@ public enum AccessFlag {
      * @see Method#isBridge()
      */
     BRIDGE(Modifier.BRIDGE, false, Location.SET_METHOD,
-           List.of(Map.entry(RELEASE_4, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_4, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_TRANSIENT}, corresponding to the
@@ -239,7 +239,7 @@ public enum AccessFlag {
      * @see Class#isInterface()
      */
     INTERFACE(Modifier.INTERFACE, false, Location.SET_CLASS_INNER_CLASS,
-              List.of(Map.entry(RELEASE_0, Location.SET_CLASS))),
+            List.of(Map.entry(RELEASE_0, Location.SET_CLASS))),
 
     /**
      * The access flag {@code ACC_ABSTRACT}, corresponding to the
@@ -247,8 +247,8 @@ public enum AccessFlag {
      * value of <code>{@value "0x%04x" Modifier#ABSTRACT}</code>.
      */
     ABSTRACT(Modifier.ABSTRACT, true,
-             Location.SET_CLASS_METHOD_INNER_CLASS,
-             List.of(Map.entry(RELEASE_0, Location.SET_CLASS_METHOD))),
+            Location.SET_CLASS_METHOD_INNER_CLASS,
+            List.of(Map.entry(RELEASE_0, Location.SET_CLASS_METHOD))),
 
     /**
      * The access flag {@code ACC_STRICT}, corresponding to the source
@@ -261,8 +261,8 @@ public enum AccessFlag {
      * corresponding to Java SE 1.2 through 16.
      */
     STRICT(Modifier.STRICT, true, Location.EMPTY_SET,
-           List.of(Map.entry(RELEASE_16, Location.SET_METHOD),
-                   Map.entry(RELEASE_1, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_16, Location.SET_METHOD),
+                    Map.entry(RELEASE_1, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_SYNTHETIC} with a mask value of
@@ -272,9 +272,9 @@ public enum AccessFlag {
      * @see java.lang.module.ModuleDescriptor.Modifier#SYNTHETIC
      */
     SYNTHETIC(Modifier.SYNTHETIC, false, Location.SET_SYNTHETIC_9,
-              List.of(Map.entry(RELEASE_8, Location.SET_SYNTHETIC_8),
-                      Map.entry(RELEASE_7, Location.SET_SYNTHETIC_5),
-                      Map.entry(RELEASE_4, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_8, Location.SET_SYNTHETIC_8),
+                    Map.entry(RELEASE_7, Location.SET_SYNTHETIC_5),
+                    Map.entry(RELEASE_4, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_ANNOTATION} with a mask value of
@@ -282,7 +282,21 @@ public enum AccessFlag {
      * @see Class#isAnnotation()
      */
     ANNOTATION(Modifier.ANNOTATION, false, Location.SET_CLASS_INNER_CLASS,
-               List.of(Map.entry(RELEASE_4, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_4, Location.EMPTY_SET))),
+
+    /**
+     * The access flag {@code DECONSTRUCTOR} with a mask value of {@code
+     * 0x2000}.
+     */
+    DECONSTRUCTOR(ACC_DECONSTRUCTOR, false, Location.SET_PATTERN,
+            List.of(Map.entry(RELEASE_24, Location.EMPTY_SET))),
+
+    /**
+     * The access flag {@code TOTAL} with a mask value of {@code
+     * 0x4000}.
+     */
+    TOTAL(ACC_TOTAL, false, Location.SET_PATTERN,
+            List.of(Map.entry(RELEASE_24, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_ENUM} with a mask value of
@@ -290,22 +304,22 @@ public enum AccessFlag {
      * @see Class#isEnum()
      */
     ENUM(Modifier.ENUM, false, Location.SET_CLASS_FIELD_INNER_CLASS,
-         List.of(Map.entry(RELEASE_4, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_4, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_MANDATED} with a mask value of
      * <code>{@value "0x%04x" Modifier#MANDATED}</code>.
      */
     MANDATED(Modifier.MANDATED, false, Location.SET_MANDATED_9,
-             List.of(Map.entry(RELEASE_8, Location.SET_METHOD_PARAM),
-                     Map.entry(RELEASE_7, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_8, Location.SET_METHOD_PARAM),
+                    Map.entry(RELEASE_7, Location.EMPTY_SET))),
 
     /**
      * The access flag {@code ACC_MODULE} with a mask value of {@code
      * 0x8000}.
      */
     MODULE(0x0000_8000, false, Location.SET_CLASS,
-           List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
+            List.of(Map.entry(RELEASE_8, Location.EMPTY_SET))),
     ;
 
     // May want to override toString for a different enum constant ->
@@ -434,16 +448,16 @@ public enum AccessFlag {
          * @jvms 4.1 The {@code ClassFile} Structure
          */
         CLASS(ACC_PUBLIC | ACC_FINAL | ACC_SUPER |
-              ACC_INTERFACE | ACC_ABSTRACT |
-              ACC_SYNTHETIC | ACC_ANNOTATION |
-              ACC_ENUM | ACC_MODULE,
-              List.of(Map.entry(RELEASE_8, // no module
+                ACC_INTERFACE | ACC_ABSTRACT |
+                ACC_SYNTHETIC | ACC_ANNOTATION |
+                ACC_ENUM | ACC_MODULE,
+                List.of(Map.entry(RELEASE_8, // no module
                                 ACC_PUBLIC | ACC_FINAL | ACC_SUPER |
-                                ACC_INTERFACE | ACC_ABSTRACT |
-                                ACC_SYNTHETIC | ACC_ANNOTATION | ACC_ENUM),
-                      Map.entry(RELEASE_4, // no synthetic, annotation, enum
+                                        ACC_INTERFACE | ACC_ABSTRACT |
+                                        ACC_SYNTHETIC | ACC_ANNOTATION | ACC_ENUM),
+                        Map.entry(RELEASE_4, // no synthetic, annotation, enum
                                 ACC_PUBLIC | ACC_FINAL | ACC_SUPER |
-                                ACC_INTERFACE | ACC_ABSTRACT))),
+                                        ACC_INTERFACE | ACC_ABSTRACT))),
 
         /**
          * Field location.
@@ -454,10 +468,10 @@ public enum AccessFlag {
          * @jvms 4.5 Fields
          */
         FIELD(ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-              ACC_STATIC | ACC_FINAL | ACC_VOLATILE |
-              ACC_TRANSIENT | ACC_SYNTHETIC | ACC_ENUM,
-              List.of(Map.entry(RELEASE_4, // no synthetic, enum
-                                ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
+                ACC_STATIC | ACC_FINAL | ACC_VOLATILE |
+                ACC_TRANSIENT | ACC_SYNTHETIC | ACC_ENUM,
+                List.of(Map.entry(RELEASE_4, // no synthetic, enum
+                        ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
                                 ACC_STATIC | ACC_FINAL | ACC_VOLATILE |
                                 ACC_TRANSIENT))),
 
@@ -471,22 +485,28 @@ public enum AccessFlag {
          * @jvms 4.6 Methods
          */
         METHOD(ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-               ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
-               ACC_BRIDGE | ACC_VARARGS | ACC_NATIVE |
-               ACC_ABSTRACT | ACC_SYNTHETIC,
-               List.of(Map.entry(RELEASE_16, // had strict
-                                 ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-                                 ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
-                                 ACC_BRIDGE | ACC_VARARGS | ACC_NATIVE |
-                                 ACC_ABSTRACT | ACC_STRICT | ACC_SYNTHETIC),
-                       Map.entry(RELEASE_4, // no bridge, varargs, synthetic
-                                 ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-                                 ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
-                                 ACC_NATIVE | ACC_ABSTRACT | ACC_STRICT),
-                       Map.entry(RELEASE_1, // no strict
-                                 ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-                                 ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
-                                 ACC_NATIVE | ACC_ABSTRACT))),
+                ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
+                ACC_BRIDGE | ACC_VARARGS | ACC_NATIVE |
+                ACC_ABSTRACT | ACC_SYNTHETIC,
+                List.of(Map.entry(RELEASE_16, // had strict
+                                ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
+                                        ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
+                                        ACC_BRIDGE | ACC_VARARGS | ACC_NATIVE |
+                                        ACC_ABSTRACT | ACC_STRICT | ACC_SYNTHETIC),
+                        Map.entry(RELEASE_4, // no bridge, varargs, synthetic
+                                ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
+                                        ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
+                                        ACC_NATIVE | ACC_ABSTRACT | ACC_STRICT),
+                        Map.entry(RELEASE_1, // no strict
+                                ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
+                                        ACC_STATIC | ACC_FINAL | ACC_SYNCHRONIZED |
+                                        ACC_NATIVE | ACC_ABSTRACT))),
+
+        /**
+         * Pattern location.
+         */
+        PATTERN(ACC_DECONSTRUCTOR | ACC_TOTAL,
+                List.of(Map.entry(RELEASE_24, 0))), // did not exist
 
         /**
          * Inner class location.
@@ -498,13 +518,13 @@ public enum AccessFlag {
          * @jvms 4.7.6 The {@code InnerClasses} Attribute
          */
         INNER_CLASS(ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-                    ACC_STATIC | ACC_FINAL | ACC_INTERFACE | ACC_ABSTRACT |
-                    ACC_SYNTHETIC | ACC_ANNOTATION | ACC_ENUM,
-                    List.of(Map.entry(RELEASE_4, // no synthetic, annotation, enum
-                            ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
-                            ACC_STATIC | ACC_FINAL | ACC_INTERFACE |
-                            ACC_ABSTRACT),
-                            Map.entry(RELEASE_0, 0))), // did not exist
+                ACC_STATIC | ACC_FINAL | ACC_INTERFACE | ACC_ABSTRACT |
+                ACC_SYNTHETIC | ACC_ANNOTATION | ACC_ENUM,
+                List.of(Map.entry(RELEASE_4, // no synthetic, annotation, enum
+                                ACC_PUBLIC | ACC_PRIVATE | ACC_PROTECTED |
+                                        ACC_STATIC | ACC_FINAL | ACC_INTERFACE |
+                                        ACC_ABSTRACT),
+                        Map.entry(RELEASE_0, 0))), // did not exist
 
         /**
          * Method parameter location.
@@ -515,7 +535,7 @@ public enum AccessFlag {
          * @jvms 4.7.24 The {@code MethodParameters} Attribute
          */
         METHOD_PARAMETER(ACC_FINAL | ACC_SYNTHETIC | ACC_MANDATED,
-                         List.of(Map.entry(RELEASE_7, 0))),  // did not exist
+                List.of(Map.entry(RELEASE_7, 0))),  // did not exist
 
         /**
          * Module location.
@@ -525,7 +545,7 @@ public enum AccessFlag {
          * @jvms 4.7.25 The {@code Module} Attribute
          */
         MODULE(ACC_OPEN | ACC_SYNTHETIC | ACC_MANDATED,
-               List.of(Map.entry(RELEASE_8, 0))),  // did not exist
+                List.of(Map.entry(RELEASE_8, 0))),  // did not exist
 
         /**
          * Module requires location.
@@ -535,7 +555,7 @@ public enum AccessFlag {
          * @jvms 4.7.25 The {@code Module} Attribute
          */
         MODULE_REQUIRES(ACC_TRANSITIVE | ACC_STATIC_PHASE | ACC_SYNTHETIC | ACC_MANDATED,
-                        List.of(Map.entry(RELEASE_8, 0))),  // did not exist
+                List.of(Map.entry(RELEASE_8, 0))),  // did not exist
 
         /**
          * Module exports location.
@@ -545,7 +565,7 @@ public enum AccessFlag {
          * @jvms 4.7.25 The {@code Module} Attribute
          */
         MODULE_EXPORTS(ACC_SYNTHETIC | ACC_MANDATED,
-                       List.of(Map.entry(RELEASE_8, 0))),  // did not exist
+                List.of(Map.entry(RELEASE_8, 0))),  // did not exist
 
         /**
          * Module opens location.
@@ -555,57 +575,59 @@ public enum AccessFlag {
          * @jvms 4.7.25 The {@code Module} Attribute
          */
         MODULE_OPENS(ACC_SYNTHETIC | ACC_MANDATED,
-                     List.of(Map.entry(RELEASE_8, 0))),  // did not exist
+                List.of(Map.entry(RELEASE_8, 0))),  // did not exist
         ;
 
         // Repeated sets of locations used by AccessFlag constants
         private static final Set<Location> EMPTY_SET = Set.of();
         private static final Set<Location> SET_MODULE = Set.of(MODULE);
         private static final Set<Location> SET_CLASS_METHOD_INNER_CLASS =
-            Set.of(CLASS, METHOD, INNER_CLASS);
+                Set.of(CLASS, METHOD, INNER_CLASS);
         private static final Set<Location> SET_CLASS_FIELD_METHOD =
-            Set.of(CLASS, FIELD, METHOD);
+                Set.of(CLASS, FIELD, METHOD);
         private static final Set<Location> SET_CLASS_FIELD_INNER_CLASS =
-            Set.of(CLASS, FIELD, INNER_CLASS);
+                Set.of(CLASS, FIELD, INNER_CLASS);
         private static final Set<Location> SET_CLASS_FIELD_METHOD_INNER_CLASS =
-            Set.of(CLASS, FIELD, METHOD, INNER_CLASS);
+                Set.of(CLASS, FIELD, METHOD, INNER_CLASS);
         private static final Set<Location> SET_CLASS_METHOD =
-            Set.of(CLASS, METHOD);
+                Set.of(CLASS, METHOD);
         private static final Set<Location> SET_FIELD_METHOD =
-            Set.of(FIELD, METHOD);
+                Set.of(FIELD, METHOD);
         private static final Set<Location> SET_FIELD_METHOD_INNER_CLASS =
-            Set.of(FIELD, METHOD, INNER_CLASS);
+                Set.of(FIELD, METHOD, INNER_CLASS);
+        private static final Set<Location> SET_PATTERN = Set.of(PATTERN);
+
         private static final Set<Location> SET_METHOD = Set.of(METHOD);
         private static final Set<Location> SET_METHOD_PARAM = Set.of(METHOD_PARAMETER);
         private static final Set<Location> SET_FIELD = Set.of(FIELD);
         private static final Set<Location> SET_CLASS = Set.of(CLASS);
         private static final Set<Location> SET_CLASS_INNER_CLASS =
-            Set.of(CLASS, INNER_CLASS);
+                Set.of(CLASS, INNER_CLASS);
         private static final Set<Location> SET_MODULE_REQUIRES =
-            Set.of(MODULE_REQUIRES);
+                Set.of(MODULE_REQUIRES);
         private static final Set<Location> SET_FINAL_8 =
-            Set.of(CLASS, FIELD, METHOD,
-                   INNER_CLASS,     /* added in 1.1 */
-                   METHOD_PARAMETER); /* added in 8 */
+                Set.of(CLASS, FIELD, METHOD,
+                        INNER_CLASS,     /* added in 1.1 */
+                        METHOD_PARAMETER); /* added in 8 */
         private static final Set<Location> SET_SYNTHETIC_5 =
-              Set.of(CLASS, FIELD, METHOD,
-                     INNER_CLASS);
+                Set.of(CLASS, FIELD, METHOD,
+                        INNER_CLASS);
         private static final Set<Location> SET_SYNTHETIC_8 =
-              Set.of(CLASS, FIELD, METHOD,
-                     INNER_CLASS, METHOD_PARAMETER);
+                Set.of(CLASS, FIELD, METHOD,
+                        INNER_CLASS, METHOD_PARAMETER);
         private static final Set<Location> SET_SYNTHETIC_9 =
-              // Added as an access flag in 5.0
-              Set.of(CLASS, FIELD, METHOD,
-                     INNER_CLASS,
-                     METHOD_PARAMETER, // Added in 8
-                     // Module-related items added in 9
-                     MODULE, MODULE_REQUIRES,
-                     MODULE_EXPORTS, MODULE_OPENS);
+                // Added as an access flag in 5.0
+                Set.of(CLASS, FIELD, METHOD,
+                        INNER_CLASS,
+                        METHOD_PARAMETER, // Added in 8
+                        // Module-related items added in 9
+                        MODULE, MODULE_REQUIRES,
+                        MODULE_EXPORTS, MODULE_OPENS);
         private static final Set<Location> SET_MANDATED_9 =
-            Set.of(METHOD_PARAMETER, // From 8
-                   // Starting in 9
-                   MODULE, MODULE_REQUIRES,
-                   MODULE_EXPORTS, MODULE_OPENS);
+                Set.of(METHOD_PARAMETER, // From 8
+                        // Starting in 9
+                        MODULE, MODULE_REQUIRES,
+                        MODULE_EXPORTS, MODULE_OPENS);
 
         private final int flagsMask;
         private final List<Map.Entry<ClassFileFormatVersion, Integer>> historicalFlagsMasks;
@@ -719,6 +741,7 @@ public enum AccessFlag {
             case CLASS -> CLASS_FLAGS;
             case FIELD -> FIELD_FLAGS;
             case METHOD -> METHOD_FLAGS;
+            case PATTERN -> PATTERN_FLAGS;
             case INNER_CLASS -> INNER_CLASS_FLAGS;
             case METHOD_PARAMETER -> METHOD_PARAMETER_FLAGS;
             case MODULE -> MODULE_FLAGS;
@@ -732,6 +755,7 @@ public enum AccessFlag {
             CLASS_FLAGS = createDefinition(PUBLIC, FINAL, SUPER, INTERFACE, ABSTRACT, SYNTHETIC, ANNOTATION, ENUM, MODULE),
             FIELD_FLAGS = createDefinition(PUBLIC, PRIVATE, PROTECTED, STATIC, FINAL, VOLATILE, TRANSIENT, SYNTHETIC, ENUM),
             METHOD_FLAGS = createDefinition(PUBLIC, PRIVATE, PROTECTED, STATIC, FINAL, SYNCHRONIZED, BRIDGE, VARARGS, NATIVE, ABSTRACT, STRICT, SYNTHETIC),
+            PATTERN_FLAGS = createDefinition(DECONSTRUCTOR, TOTAL),
             INNER_CLASS_FLAGS = createDefinition(PUBLIC, PRIVATE, PROTECTED, STATIC, FINAL, INTERFACE, ABSTRACT, SYNTHETIC, ANNOTATION, ENUM),
             METHOD_PARAMETER_FLAGS = createDefinition(FINAL, SYNTHETIC, MANDATED),
             MODULE_FLAGS = createDefinition(OPEN, SYNTHETIC, MANDATED),

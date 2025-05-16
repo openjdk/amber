@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import javax.lang.model.element.ElementKind;
+import javax.lang.model.element.ElementVisitor;
 import javax.tools.JavaFileObject;
 
 import com.sun.source.tree.CaseTree;
@@ -74,6 +75,7 @@ import com.sun.tools.javac.util.List;
 import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Flags.ANNOTATION;
 import static com.sun.tools.javac.code.Flags.BLOCK;
+import static com.sun.tools.javac.code.Flags.PATTERN;
 import static com.sun.tools.javac.code.Kinds.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 import static com.sun.tools.javac.code.TypeTag.*;
@@ -173,6 +175,8 @@ public class Attr extends JCTree.Visitor {
                              Feature.PATTERN_SWITCH.allowedInSource(source);
         allowUnconditionalPatternsInstanceOf =
                              Feature.UNCONDITIONAL_PATTERN_IN_INSTANCEOF.allowedInSource(source);
+        allowPatternDeclarations = preview.isEnabled() && Feature.PATTERN_DECLARATIONS.allowedInSource(source);
+
         sourceName = source.name;
         useBeforeDeclarationWarning = options.isSet("useBeforeDeclarationWarning");
 
@@ -201,6 +205,10 @@ public class Attr extends JCTree.Visitor {
     /** Are unconditional patterns in instanceof allowed
      */
     private final boolean allowUnconditionalPatternsInstanceOf;
+
+    /** Are pattern declarations allowed
+     */
+    private final boolean allowPatternDeclarations;
 
     /**
      * Switch: warn about use of variable before declaration?
@@ -1036,9 +1044,26 @@ public class Attr extends JCTree.Visitor {
                         tree.recvparam.pos(),
                         Errors.IntfAnnotationMembersCantHaveParams);
 
+            if (tree.sym.isPattern()) {
+                attribStat(tree.matchcandparam, localEnv);
+            }
+
             // Attribute all value parameters.
             for (List<JCVariableDecl> l = tree.params; l.nonEmpty(); l = l.tail) {
                 attribStat(l.head, localEnv);
+            }
+
+            // Attribute all bindings.
+            // the bindings have no meaning in the body of the deconstructor,
+            // so enter them in a temporary scope:
+            Env<AttrContext> bindingEnv =
+                    env.dup(tree, localEnv.info.dup(localEnv.info.scope.dup()));
+            try {
+                for (List<JCVariableDecl> l = tree.bindings; l != null && l.nonEmpty(); l = l.tail) {
+                    attribStat(l.head, bindingEnv);
+                }
+            } finally {
+                bindingEnv.info.scope.leave();
             }
 
             chk.checkVarargsMethodDecl(localEnv, tree);
@@ -1151,6 +1176,44 @@ public class Attr extends JCTree.Visitor {
                         }
                     }
                 }
+
+                if (tree.sym.isDeconstructor()) {
+                    boolean isImplicitCanonicalDeconstructor = true;
+                    List<? extends RecordComponent> recordComponents = env.enclClass.sym.getRecordComponents();
+                    List<Type> recordFieldTypes = TreeInfo.recordFields(env.enclClass).map(vd -> vd.sym.type);
+
+                    if (recordComponents.size() == tree.bindings.size()) {
+                        for (JCVariableDecl param : tree.bindings) {
+                            boolean paramIsVarArgs = (param.sym.flags_field & VARARGS) != 0;
+                            if (!types.isSameType(param.type, recordFieldTypes.head) ||
+                                    (recordComponents.head.isVarargs() != paramIsVarArgs)) {
+                                isImplicitCanonicalDeconstructor = false;
+                                break;
+                            }
+                            recordComponents = recordComponents.tail;
+                            recordFieldTypes = recordFieldTypes.tail;
+                        }
+                    } else {
+                        isImplicitCanonicalDeconstructor = false;
+                    }
+                    if (isImplicitCanonicalDeconstructor) {
+                        log.error(tree, Errors.InvalidCanonicalDeconstructorInRecord(
+                                env.enclClass.sym.name));
+                    }
+                }
+            }
+
+            //TODO: should these checks/flag setting be done in MemberEnter?
+            if (m.isPattern() && tree.thrown.nonEmpty()) {
+                log.error(tree.pos(), Errors.PatternDeclarationCantThrowException);
+            }
+
+            if (m.isDeconstructor()) {
+                //TODO: for instance/named patterns
+                m.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                if ((tree.mods.flags & Flags.PARTIAL) == 0) {
+                    m.patternFlags.add(PatternFlags.TOTAL);
+                }
             }
 
             // annotation method checks
@@ -1186,7 +1249,7 @@ public class Attr extends JCTree.Visitor {
                 if (isDefaultMethod || (tree.sym.flags() & (ABSTRACT | NATIVE)) == 0)
                     log.error(tree.pos(), Errors.MissingMethBodyOrDeclAbstract);
             } else {
-                if ((tree.sym.flags() & (ABSTRACT|DEFAULT|PRIVATE)) == ABSTRACT) {
+                if ((tree.sym.flags() & (ABSTRACT|DEFAULT|PRIVATE)) == ABSTRACT && !m.isPattern()) {
                     if ((owner.flags() & INTERFACE) != 0) {
                         log.error(tree.body.pos(), Errors.IntfMethCantHaveBody);
                     } else {
@@ -2383,6 +2446,57 @@ public class Attr extends JCTree.Visitor {
         result = null;
     }
 
+    public void visitMatch(JCMatch tree) {
+        Env<AttrContext> localEnv = env.dup(tree, env.info.dup());
+        tree.meth = localEnv.enclMethod;
+
+        List<Type> bindingTypes = tree.meth.sym.type.getBindingTypes();
+        List<JCExpression>   args = tree.args;
+
+        if (!tree.meth.sym.isPattern()) {
+            log.error(tree.pos(), Errors.MatchOutsidePatternDeclaration);
+            return;
+        }
+
+        if (bindingTypes.size() != args.size()) {
+            log.error(tree.pos(), Errors.MatchNotMatchingPatternDeclarationSignature);
+        }
+
+        while (bindingTypes.nonEmpty() && args.nonEmpty()) {
+            attribExpr(args.head, localEnv, bindingTypes.head);
+
+            bindingTypes = bindingTypes.tail;
+            args = args.tail;
+        }
+
+        if (tree.clazz != null && tree.clazz != tree.meth.name) {
+            log.error(tree.pos(), Errors.MatchPatternNameWrong);
+        }
+
+        result = null;
+    }
+
+    @Override
+    public void visitMatchFail(JCMatchFail tree) {
+        if (env.enclMethod.sym.isTotalPattern()) {
+            log.error(tree.pos(), Errors.UnmarkedPartialDeconstructor);
+        }
+        result = null;
+    }
+
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        attribExpr(tree.expr, env);
+        attribExpr(tree.pattern, env);
+
+        matchBindings.bindingsWhenTrue.forEach(env.info.scope::enter);
+        matchBindings.bindingsWhenTrue.forEach(BindingSymbol::preserveBinding);
+
+        Type clazztype = tree.pattern.type;
+        checkCastablePattern(tree.expr.pos(), tree.expr.type, clazztype);
+
+        result = null;
+    }
+
     public void visitContinue(JCContinue tree) {
         tree.target = findJumpTarget(tree.pos(), tree.getTag(), tree.label, env);
         result = null;
@@ -2490,9 +2604,12 @@ public class Attr extends JCTree.Visitor {
         }
 
     public void visitReturn(JCReturn tree) {
-        // Check that there is an enclosing method which is
-        // nested within than the enclosing class.
-        if (env.info.returnResult == null) {
+        // Check that there is an enclosing method (not a pattern declaration)
+        // which is nested within than the enclosing class.
+        if (env.enclMethod != null && env.info.returnResult != null && env.enclMethod.sym.isPattern()) {
+            log.error(tree.pos(), Errors.RetOutsideMeth);
+        }
+        else if (env.info.returnResult == null) {
             log.error(tree.pos(), Errors.RetOutsideMeth);
         } else if (env.info.yieldResult != null) {
             log.error(tree.pos(), Errors.ReturnOutsideSwitchExpression);
@@ -2524,7 +2641,11 @@ public class Attr extends JCTree.Visitor {
 
     public void visitThrow(JCThrow tree) {
         Type owntype = attribExpr(tree.expr, env, Type.noType);
-        chk.checkType(tree, owntype, syms.throwableType);
+        if (env.info.returnResult != null && env.enclMethod !=null && env.enclMethod.sym.isPattern()) {
+            log.error(tree.pos(), Errors.PatternDeclarationNoThrows);
+        } else {
+            chk.checkType(tree, owntype, syms.throwableType);
+        }
         result = null;
     }
 
@@ -4242,43 +4363,90 @@ public class Attr extends JCTree.Visitor {
     @Override
     public void visitRecordPattern(JCRecordPattern tree) {
         Type site;
+        Type uncapturedSite;
+        Name deconstructorName;
 
         if (tree.deconstructor == null) {
             log.error(tree.pos(), Errors.DeconstructionPatternVarNotAllowed);
             tree.record = syms.errSymbol;
-            site = tree.type = types.createErrorType(tree.record.type);
+            uncapturedSite = site = tree.type = types.createErrorType(tree.record.type);
+            deconstructorName = names.empty;
         } else {
-            Type type = attribType(tree.deconstructor, env);
-            if (type.isRaw() && type.tsym.getTypeParameters().nonEmpty()) {
-                Type inferred = infer.instantiatePatternType(resultInfo.pt, type.tsym);
-                if (inferred == null) {
-                    log.error(tree.pos(), Errors.PatternTypeCannotInfer);
-                } else {
-                    type = inferred;
+            //TODO: if there's a deconstructor and instance pattern with the same name, which one prevails?
+            if (deferredAttr.attribSpeculative(tree.deconstructor, env, new ResultInfo(KindSelector.TYP, Type.noType)).type.hasTag(TypeTag.CLASS)) {
+                Type type = attribType(tree.deconstructor, env);
+                if (type.isRaw() && type.tsym.getTypeParameters().nonEmpty()) {
+                    Type inferred = infer.instantiatePatternType(resultInfo.pt, type.tsym);
+                    if (inferred == null) {
+                        log.error(tree.pos(), Errors.PatternTypeCannotInfer);
+                    } else {
+                        type = inferred;
+                    }
                 }
+                uncapturedSite = type;
+                site = types.capture(type);
+                deconstructorName = TreeInfo.name(tree.deconstructor);
+            } else if (tree.deconstructor instanceof JCFieldAccess acc) {
+                Type type = attribTree(acc.selected, env, new ResultInfo(KindSelector.VAL_TYP, Type.noType));
+                site = type; //TODO: capture?
+                uncapturedSite = type;
+                deconstructorName = acc.name;
+            } else if (tree.deconstructor instanceof JCIdent ident) {
+                Type type = pt();
+                site = type; //TODO: capture?
+                uncapturedSite = type;
+                deconstructorName = ident.name;
+            } else {
+                //TODO: error recovery
+                throw Assert.error("Not handled.");
             }
-            tree.type = tree.deconstructor.type = type;
-            site = types.capture(tree.type);
         }
 
-        List<Type> expectedRecordTypes;
-        if (site.tsym.kind == Kind.TYP && ((ClassSymbol) site.tsym).isRecord()) {
-            ClassSymbol record = (ClassSymbol) site.tsym;
-            expectedRecordTypes = record.getRecordComponents()
-                                        .stream()
-                                        .map(rc -> types.memberType(site, rc))
-                                        .map(t -> types.upward(t, types.captures(t)).baseType())
-                                        .collect(List.collector());
-            tree.record = record;
-        } else {
-            log.error(tree.pos(), Errors.DeconstructionPatternOnlyRecords(site.tsym));
-            expectedRecordTypes = Stream.generate(() -> types.createErrorType(tree.type))
+        List<Type> nestedPatternsTargetTypes = null;
+
+        if (site.tsym.kind == Kind.TYP) {
+            int nestedPatternCount = tree.nested.size();
+
+            List<MethodSymbol> candidates = candidatesWithArity(site, uncapturedSite, deconstructorName, nestedPatternCount);
+
+            if (candidates.size() >= 1) {
+                List<Type> notionalTypes = calculateNotionalTypes(tree);
+                Symbol resolved =
+                        selectBestPatternDeclarationInScope(tree.pos(), site, candidates, notionalTypes);
+
+                if (resolved != null && resolved.kind != AMBIGUOUS) {
+                    nestedPatternsTargetTypes = types.memberType(site, resolved).getBindingTypes();
+                    tree.patternDeclaration = (MethodSymbol) resolved;
+                } else if (resolved != null && resolved.kind == AMBIGUOUS){
+                    log.error(tree.pos(), Errors.MatcherOverloadingAmbiguity(site.tsym));
+                } else {
+                    if (site.tsym instanceof ClassSymbol cs && cs.isRecord() || !allowPatternDeclarations) {
+                        log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
+                    } else {
+                        log.error(tree.pos(), Errors.NoCompatibleMatcherFound(site.tsym));
+                    }
+                }
+            } else {
+                if (site.tsym instanceof ClassSymbol cs && cs.isRecord() || !allowPatternDeclarations) {
+                    log.error(tree.pos(), Errors.CantApplyDeconstructionPattern(site.tsym));
+                } else {
+                    log.error(tree.pos(),
+                            Errors.NoCompatibleMatcherFoundArity(site.tsym, String.valueOf(nestedPatternCount)));
+                }
+            }
+        }
+
+        if (nestedPatternsTargetTypes == null) {
+            nestedPatternsTargetTypes = Stream.generate(() -> types.createErrorType(tree.type))
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
             tree.record = syms.errSymbol;
+        } else {
+            tree.fullComponentTypes = nestedPatternsTargetTypes;
         }
+
         ListBuffer<BindingSymbol> outBindings = new ListBuffer<>();
-        List<Type> recordTypes = expectedRecordTypes;
+        List<Type> recordTypes = nestedPatternsTargetTypes;
         List<JCPattern> nestedPatterns = tree.nested;
         Env<AttrContext> localEnv = env.dup(tree, env.info.dup(env.info.scope.dup()));
         try {
@@ -4290,23 +4458,271 @@ public class Attr extends JCTree.Visitor {
                 nestedPatterns = nestedPatterns.tail;
                 recordTypes = recordTypes.tail;
             }
-            if (recordTypes.nonEmpty() || nestedPatterns.nonEmpty()) {
-                while (nestedPatterns.nonEmpty()) {
-                    attribExpr(nestedPatterns.head, localEnv, Type.noType);
-                    nestedPatterns = nestedPatterns.tail;
-                }
-                List<Type> nestedTypes =
-                        tree.nested.stream().map(p -> p.type).collect(List.collector());
-                log.error(tree.pos(),
-                          Errors.IncorrectNumberOfNestedPatterns(expectedRecordTypes,
-                                                                 nestedTypes));
-            }
         } finally {
             localEnv.info.scope.leave();
+        }
+        //TODO: are these types sensible?
+        if (tree.patternDeclaration != null) { // TODO: improve error recovery
+            tree.type = tree.deconstructor.type = tree.patternDeclaration.type.getMatchCandidateType();
+        } else if (tree.deconstructor != null) {
+            tree.type = tree.deconstructor.type = uncapturedSite;;
         }
         chk.validate(tree.deconstructor, env, true);
         result = tree.type;
         matchBindings = new MatchBindings(outBindings.toList(), List.nil());
+    }
+
+    private List<Type> calculateNotionalTypes(JCRecordPattern tree) {
+        ListBuffer<Type> notionalTypesBuffer = new ListBuffer<>();
+        for (JCPattern pattern : tree.nested) {
+            Type patternType = switch (pattern) {
+                case JCAnyPattern _ -> Type.noType;
+                case JCBindingPattern jcBindingPattern when jcBindingPattern.var.isImplicitlyTyped() -> Type.noType;
+                case JCBindingPattern jcBindingPattern -> attribType(jcBindingPattern.var.vartype, env);
+                case JCRecordPattern jcRecordPattern when jcRecordPattern.deconstructor == null -> Type.noType;
+                case JCRecordPattern jcRecordPattern -> attribType(jcRecordPattern.deconstructor, env);
+            };
+            notionalTypesBuffer.append(patternType);
+        }
+        List<Type> notionalTypes = notionalTypesBuffer.toList();
+        return notionalTypes;
+    }
+
+    enum PatternResolutionPhase {
+        LEAST_SPECIFIC_UNCONDITIONAL,
+        MOST_SPECIFIC_CONDITIONAL,
+        ALL
+    }
+    final List<PatternResolutionPhase> patternResolutionPhases = List.of(
+            PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL,
+            PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL,
+            PatternResolutionPhase.ALL);
+
+    private Symbol selectBestPatternDeclarationInScope(DiagnosticPosition pos,
+                                                       Type site,
+                                                       List<MethodSymbol> patternDeclarations,
+                                                       List<Type> notionalTypes) {
+        Symbol bestSoFar = null;
+        for (PatternResolutionPhase phase : patternResolutionPhases) {
+            bestSoFar = null;
+            for (int n = 0; n < patternDeclarations.size(); n++) {
+                List<Type> candidateBindingTypes = getBindingTypes(site, patternDeclarations.get(n));
+                if (phase.equals(PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL) &&
+                        evaluateConditionality(candidateBindingTypes, notionalTypes) == ConditionalityResult.ALL_UNCONDITIONAL) {
+                    if (bestSoFar == null) {
+                        bestSoFar = patternDeclarations.get(n);
+                    } else {
+                        bestSoFar = findSpecific(site, patternDeclarations.get(n), bestSoFar, PatternResolutionPhase.LEAST_SPECIFIC_UNCONDITIONAL);
+                    }
+                } else if (phase.equals(PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL) &&
+                        isApplicable(candidateBindingTypes, notionalTypes) &&
+                        evaluateConditionality(candidateBindingTypes, notionalTypes) == ConditionalityResult.ALL_CONDITIONAL) {
+                    if (bestSoFar == null) {
+                        bestSoFar = patternDeclarations.get(n);
+                    } else {
+                        bestSoFar = findSpecific(site, patternDeclarations.get(n), bestSoFar, PatternResolutionPhase.MOST_SPECIFIC_CONDITIONAL);
+                    }
+                } else if (phase.equals(PatternResolutionPhase.ALL) &&
+                           isApplicable(candidateBindingTypes, notionalTypes)) {
+                    bestSoFar = bestSoFar == null ?
+                            patternDeclarations.get(n) :
+                            new DeconstructorResolutionError(bestSoFar, patternDeclarations.get(n));
+                }
+            }
+
+            if (bestSoFar != null && bestSoFar.kind != AMBIGUOUS) {
+                return bestSoFar;
+            }
+        }
+
+        return bestSoFar;
+    }
+
+    class DeconstructorResolutionError extends Symbol {
+        List<Symbol> ambiguousSyms = List.nil();
+
+        DeconstructorResolutionError(Symbol sym1, Symbol sym2) {
+            super(AMBIGUOUS, 0, null, null, null);
+            ambiguousSyms = flatten(sym2).appendList(flatten(sym1));
+        }
+
+        private List<Symbol> flatten(Symbol sym) {
+            if (sym.kind == AMBIGUOUS) {
+                return ((DeconstructorResolutionError)sym.baseSymbol()).ambiguousSyms;
+            } else {
+                return List.of(sym);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "current conflicts: " + ambiguousSyms.toString();
+        }
+
+        DeconstructorResolutionError addAmbiguousSymbol(Symbol s) {
+            ambiguousSyms = ambiguousSyms.prepend(s);
+            return this;
+        }
+
+        @Override @DefinedBy(Api.LANGUAGE_MODEL)
+        public <R, P> R accept(ElementVisitor<R, P> v, P p) {
+            throw new AssertionError();
+        }
+
+        @Override
+        public boolean exists() {
+            return false;
+        }
+
+        @Override
+        public boolean isStatic() {
+            return false;
+        }
+
+        protected Symbol access(Name name, TypeSymbol location) {
+            return types.createErrorType(name, location, syms.errSymbol.type).tsym;
+        }
+    }
+
+    /** Return the most/least specific of the two patterns,
+     *  given that both are accessible and applicable.
+     *
+     * @param site   The original type from where the selection takes place.
+     * @param s1     A new candidate for specificity determination (most or least, according to the phase).
+     * @param s2     The previous specific candidate.
+     * @param phase  The phase we are in: most specific unconditional, least specific conditional, any.
+     * @return the symbol of the most/least specific
+     */
+    private Symbol findSpecific(Type site, Symbol s1, Symbol s2, PatternResolutionPhase phase) {
+        if (s2 instanceof DeconstructorResolutionError amb) {
+            List<Type> bindingTypesCandidate = getBindingTypes(site, (MethodSymbol) s1);
+
+            boolean s1BetterThanAllAmbiguous = true;
+            for (var ambiguousSym : amb.ambiguousSyms) {
+                List<Type> bindingTypesAmbiguousSym = getBindingTypes(site, (MethodSymbol) ambiguousSym);
+                s1BetterThanAllAmbiguous &= evaluateConditionality(bindingTypesCandidate, bindingTypesAmbiguousSym) == ConditionalityResult.ALL_UNCONDITIONAL;
+            }
+
+            if (s1BetterThanAllAmbiguous) {
+                return s1;
+            } else {
+                return amb.addAmbiguousSymbol(s1);
+            }
+        } else {
+            List<Type> bindingTypesCandidate = getBindingTypes(site, (MethodSymbol) s1);
+            List<Type> bindingTypesBestSoFar = getBindingTypes(site, (MethodSymbol) s2);
+
+            boolean bestSoFarToCandidate = evaluateConditionality(bindingTypesBestSoFar, bindingTypesCandidate) == ConditionalityResult.ALL_UNCONDITIONAL;
+            boolean candidateToBestSoFar = evaluateConditionality(bindingTypesCandidate, bindingTypesBestSoFar) == ConditionalityResult.ALL_UNCONDITIONAL;
+
+            if (!bestSoFarToCandidate && !candidateToBestSoFar) {
+                return new DeconstructorResolutionError(s1, s2);
+            }
+
+            Symbol symbol = switch (phase) {
+                case LEAST_SPECIFIC_UNCONDITIONAL -> bestSoFarToCandidate ? s1 : s2;
+                case MOST_SPECIFIC_CONDITIONAL -> candidateToBestSoFar ? s1 : s2;
+                default -> new DeconstructorResolutionError(s1, s2);
+            };
+
+            return symbol;
+        }
+    }
+
+    enum ConditionalityResult {
+        ALL_UNCONDITIONAL,
+        ALL_CONDITIONAL,
+        MIXED
+    }
+    private ConditionalityResult evaluateConditionality(List<Type> patternDeclarationBindingTypes, List<Type> notionalType) {
+        ConditionalityResult ret = null;
+
+        while (patternDeclarationBindingTypes.nonEmpty() && notionalType.nonEmpty()) {
+            Type currentPatternDeclarationBindingType = patternDeclarationBindingTypes.head;
+            Type currentNotionalType = notionalType.head;
+
+            if (currentNotionalType != Type.noType) {
+                boolean current = types.isUnconditionallyExact(currentPatternDeclarationBindingType, currentNotionalType);
+                if (current) {
+                    if (ret == null) ret = ConditionalityResult.ALL_UNCONDITIONAL;
+                    else if (ret == ConditionalityResult.ALL_CONDITIONAL) ret = ConditionalityResult.MIXED;
+                } else {
+                    if (ret == null) ret = ConditionalityResult.ALL_CONDITIONAL;
+                    else if (ret == ConditionalityResult.ALL_UNCONDITIONAL) ret = ConditionalityResult.MIXED;
+                }
+            }
+
+            patternDeclarationBindingTypes = patternDeclarationBindingTypes.tail;
+            notionalType = notionalType.tail;
+        }
+
+        return ret == null ? ConditionalityResult.ALL_UNCONDITIONAL: ret;
+    }
+
+    private List<Type> getBindingTypes(Type site, MethodSymbol matcher) {
+        List<Type> patternDeclarationBindingTypes = matcher.bindings()
+                .stream()
+                .map(rc -> types.memberType(site, rc))
+                .map(t -> types.upward(t, types.captures(t)).baseType())
+                .collect(List.collector());
+        return patternDeclarationBindingTypes;
+    }
+
+    private boolean isApplicable(List<Type> patternDeclarationBindingType, List<Type> notionalType) {
+        boolean applicable = true;
+
+        for (int i = 0; applicable && i < notionalType.size(); i++) {
+            if (notionalType.get(i) != Type.noType) {
+                applicable &= types.isCastable(patternDeclarationBindingType.get(i), notionalType.get(i));
+            }
+        }
+        return applicable;
+    }
+
+    /**
+     * Determine the set of pattern declarations for a particular arity.
+     * If the enclosing type is a record, then the implicit pattern declaration based
+     * on the component types is also added on the set (if the arity matches).
+     *
+     * @param site               the type to perform the search
+     * @param nestedPatternCount the number of nested patterns
+     * @return                   a list of MethodSymbols
+     */
+    private List<MethodSymbol> candidatesWithArity(Type site, Type uncaptured, Name deconstructorName, int nestedPatternCount) {
+        var matchersIt = site.tsym.members()
+                .getSymbolsByName(deconstructorName, sym -> sym.isPattern() && sym.type.getBindingTypes().size() == nestedPatternCount)
+                .iterator();
+
+        List<MethodSymbol> patternDeclarations = Stream.generate(() -> null)
+                .takeWhile(x -> matchersIt.hasNext())
+                .map(n -> (MethodSymbol) matchersIt.next())
+                .collect(List.collector());
+
+        if (((ClassSymbol) site.tsym).isRecord()) {
+            ClassSymbol record = (ClassSymbol) site.tsym;
+
+            if (record.getRecordComponents().size() == nestedPatternCount) {
+                List<Type> recordComponents = ((ClassSymbol) record.type.tsym).getRecordComponents()
+                        .stream()
+                        .map(rc -> types.memberType(site, rc))
+                        .collect(List.collector());
+
+                // todo: refactor/improve
+                List<Type> erasedComponents = ((ClassSymbol) record.type.tsym).getRecordComponents()
+                        .stream()
+                        .map(rc -> types.erasure(rc.type))
+                        .collect(List.collector());
+                PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, uncaptured, syms.methodClass);
+
+                MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
+
+                synthesized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                synthesized.patternFlags.add(PatternFlags.TOTAL);
+                patternDeclarations = patternDeclarations.prepend(synthesized);
+            }
+        }
+
+        return patternDeclarations;
     }
 
     public void visitIndexed(JCArrayAccess tree) {

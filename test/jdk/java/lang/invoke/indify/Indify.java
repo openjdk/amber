@@ -1355,6 +1355,7 @@ public class Indify {
             case CONSTANT_InterfaceMethod:
             case CONSTANT_NameAndType:
             case CONSTANT_InvokeDynamic:
+            case CONSTANT_Dynamic:
                 // read an ordered pair
                 arg = new Short[] { in.readShort(), in.readShort() };
                 break;
@@ -1628,6 +1629,7 @@ public class Indify {
         CONSTANT_NameAndType       = 12,
         CONSTANT_MethodHandle      = 15,  // JSR 292
         CONSTANT_MethodType        = 16,  // JSR 292
+        CONSTANT_Dynamic           = 17,
         CONSTANT_InvokeDynamic     = 18;  // JSR 292
     private static final byte
         REF_getField               = 1,
