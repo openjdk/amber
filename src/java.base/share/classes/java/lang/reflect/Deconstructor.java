@@ -5,21 +5,14 @@ import java.lang.invoke.MethodType;
 import java.lang.runtime.Carriers;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
- * {@code Deconstructor} provides information about, and access to, a single
- * deconstructor for a class.
+ * The reflection view of a single deconstructor, providing relevant information and enabling
+ * execution with {@link #tryMatch(Object)}.
  *
- * @param <T> the class in which the deconstructor is declared
- *
- * @see Member
- * @see Class
- * @see Class#getDeconstructors()
- * @see Class#getDeconstructor(Class[])
- * @see Class#getDeclaredDeconstructors()
- * @see Class#getDeclaredDeconstructor(Class[])
- *
- * @since 24
+ * @param <T> the class declaring this deconstructor; also the deconstructor's match candidate type
+ * @since 26
  */
 public final class Deconstructor<T> extends PatternMember<T> {
     /**
@@ -39,8 +32,8 @@ public final class Deconstructor<T> extends PatternMember<T> {
     public Deconstructor(Class<T> declaringClass,
                          int modifiers,
                          int patternFlags,
-                         ArrayList<Parameter> outParameters,
-                         ArrayList<PatternBinding> patternBindings,
+                         List<Parameter> outParameters,
+                         List<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations) {
         super(declaringClass,
@@ -60,11 +53,6 @@ public final class Deconstructor<T> extends PatternMember<T> {
     }
 
     @Override
-    public Parameter[] getParameters() {
-        return outParameters.toArray(Parameter[]::new);
-    }
-
-    @Override
     Class<?>[] getSharedParameterTypes() {
         return patternBindings.stream().map(p -> p.getType()).toArray(Class<?>[]::new);
     }
@@ -75,19 +63,23 @@ public final class Deconstructor<T> extends PatternMember<T> {
     }
 
     /**
-     * Initiate pattern matching of this {@code PatternMember} on the designated {@code matchCandidate}.
+     * Reflectively invoke this pattern member to determine whether {@code candidate} is a match,
+     * and if so, extract values.
      *
      * @param candidate the match candidate to perform pattern matching over.
      *
-     * @return an array object created as a result of pattern matching
-     *
+     * @return if the pattern matches, an array containing the extracted values; if not,
+     *              {@code null} is returned instead. If this deconstructor belongs to an inner
+     *              class, the first element of the returned array is the owning (outer) instance.
+     * @throws    IllegalArgumentException  if {@code candidate} is not of this deconstructor's
+     *              accepted match candidate type.
      * @throws    IllegalAccessException    if this {@code PatternMember} object
      *              is enforcing Java language access control and the underlying
      *              constructor is inaccessible.
      * @throws    MatchException if the pattern matching provoked
      *              by this {@code PatternMember} fails.
      */
-    public Object[] tryMatch(Object candidate) throws IllegalAccessException, MatchException {
+    public Object[] tryMatch(T candidate) throws IllegalAccessException, MatchException {
         String underlyingName = getMangledName();
 
         try {

@@ -247,16 +247,16 @@ public class SimpleDeconstructorsTest {
     public static void testTryMatch() throws IllegalAccessException, NoSuchPatternException {
         Person1 p = new Person1("Name", "Surname", false);
 
-        Class<?> class1 = Person1.class;
+        Class<Person1> class1 = Person1.class;
 
-        Deconstructor<?> method1 = class1.getDeclaredDeconstructor(List.class);
+        Deconstructor<Person1> method1 = class1.getDeclaredDeconstructor(List.class);
         Object[] extracted = method1.tryMatch(p);
         List<Character> expected = List.of('N', 'a', 'm', 'e');
         for (int i = 0; i < 4; i++) {
             assertEquals(((List<Character>)extracted[0]).get(i), expected.get(i));
         }
 
-        Deconstructor<?> method2 = class1.getDeclaredDeconstructor(int.class);
+        Deconstructor<Person1> method2 = class1.getDeclaredDeconstructor(int.class);
         Object[] extracted2 = method2.tryMatch(p);
         assertEquals(42, extracted2[0]);
     }
@@ -322,7 +322,7 @@ public class SimpleDeconstructorsTest {
 
     public static void testGetDeclaredDeconstructors_bug3() throws IllegalAccessException {
         var b = new Bug(2);
-        Deconstructor<?> declaredDeconstructor = Bug.class.getDeclaredDeconstructors()[0];
+        Deconstructor<Bug> declaredDeconstructor = Bug.class.getDeclaredDeconstructors()[0];
         declaredDeconstructor.setAccessible(true);
         var x = declaredDeconstructor.tryMatch(b);
         assertEquals(x[0], 2);

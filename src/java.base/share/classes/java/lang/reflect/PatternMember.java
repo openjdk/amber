@@ -25,6 +25,7 @@
 
 package java.lang.reflect;
 
+import java.util.List;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ExecutableRepository;
@@ -32,7 +33,6 @@ import sun.reflect.generics.repository.GenericDeclRepository;
 import sun.reflect.generics.scope.PatternMemberScope;
 
 import java.lang.annotation.Annotation;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
@@ -40,21 +40,22 @@ import java.util.stream.Collectors;
 import static java.lang.runtime.PatternBytecodeName.mangle;
 
 /**
- * {@code PatternMember} provides information about, and access to, a single
- * member pattern for a class.
+ * The reflection view of a single deconstructor or pattern method. These both accept a <b>match
+ * candidate</b>, determine whether a match is found, and if so, produce <b>extracted values</b>.
  *
- * @param <T> the class in which the member pattern is declared
+ * <p>Like other {@link Executable}s (methods and constructors), it includes parameters. However,
+ * it uses these parameters in a different way: here they are <b>out-parameters</b>, conveying
+ * extracted values outward to the client.
  *
- * @see Executable
- * @see Class
+ * @param <T> the type of match candidate this pattern member accepts
  *
- * @since 24
+ * @since 26
  */
 public abstract sealed class PatternMember<T> extends Executable permits Deconstructor {
     final Class<?>                          declaringClass;
     final Class<T>                          candidateType;
-    final ArrayList<Parameter>              outParameters;
-    final ArrayList<PatternBinding>         patternBindings;
+    final List<Parameter>                   outParameters;
+    final List<PatternBinding>              patternBindings;
 
     final int                               modifiers;
     final int                               patternFlags;
@@ -81,7 +82,8 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
     }
 
     /**
-     * TODO make private again Package-private member pattern used by ReflectAccess to enable
+     * TODO make private again
+     * Package-private member pattern used by ReflectAccess to enable
      * instantiation of these objects in Java code from the java.lang package via
      * jdk.internal.access.JavaLangReflectAccess.
      *
@@ -99,8 +101,8 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
                          Class<T> candidateType,
                          int modifiers,
                          int patternFlags,
-                         ArrayList<Parameter> outParameters,
-                         ArrayList<PatternBinding> patternBindings,
+                         List<Parameter> outParameters,
+                         List<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations,
                          byte[] parameterAnnotations) {
@@ -115,37 +117,36 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         this.parameterAnnotations = parameterAnnotations;
     }
 
-    /**
-     * Returns the {@code Class} object representing the class that
-     * declares the constructor represented by this object.
-     */
     @Override
     public Class<?> getDeclaringClass() {
         return declaringClass;
     }
 
     /**
-     * TODO
-     * @return TODO
+     * Returns the (erased) type of match candidates accepted by this pattern member. In the case
+     * of a deconstructor it is the same as the declaring class.
+     *
+     * @return type of match candidate
      */
     public Class<T> getCandidateType() { return candidateType; }
 
-    /**
-     * {@inheritDoc}
-     * @jls 8.8.3 Constructor Modifiers
-     */
     @Override
     public int getModifiers() {
         return modifiers;
     }
 
-    /**
-     * {@inheritDoc}
-     * @jls X.X.X PatternMember Modifiers
-     */
     @Override
     public boolean isSynthetic() {
         return Modifier.isSynthetic(getModifiers());
+    }
+
+    // Skip the usual way that executables find their Parameters
+    // at least for now, we just had them passed in instead
+    // Note that if this is a deconstructor of an inner member class the first eleemnt of the
+    // returned array represents the owner/outer instance.
+    @Override
+    public Parameter[] getParameters() {
+        return outParameters.toArray(Parameter[]::new);
     }
 
     @Override
@@ -153,47 +154,26 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         return sharedGetParameterAnnotations(getParameterTypes(), parameterAnnotations);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Class<?>[] getParameterTypes() {
         return outParameters.stream().map(p -> p.getType()).toArray(Class<?>[]::new);
     }
 
-    /**
-     * {@inheritDoc}
-     * @since 1.8
-     */
+    @Override
     public int getParameterCount() { return outParameters.size(); }
 
-    /**
-     * {@inheritDoc}
-     * @throws GenericSignatureFormatError {@inheritDoc}
-     * @throws TypeNotPresentException {@inheritDoc}
-     * @throws MalformedParameterizedTypeException {@inheritDoc}
-     * @since 1.5
-     */
+    // Probably not technically necessary to override
     @Override
     public Type[] getGenericParameterTypes() {
         return super.getGenericParameterTypes();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public final Class<?>[] getExceptionTypes() {
         return new Class<?>[0];
     }
 
-    /**
-     * {@inheritDoc}
-     * @throws GenericSignatureFormatError {@inheritDoc}
-     * @throws TypeNotPresentException {@inheritDoc}
-     * @throws MalformedParameterizedTypeException {@inheritDoc}
-     * @since 1.5
-     */
+    // Probably not technically necessary to override
     @Override
     public final Type[] getGenericExceptionTypes() {
         return new Type[0];
@@ -218,58 +198,15 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     * @throws GenericSignatureFormatError {@inheritDoc}
-     * @since 1.5
-     */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
     public TypeVariable<PatternMember<T>>[] getTypeParameters() {
-      if (getSignature() != null) {
-        return (TypeVariable<PatternMember<T>>[])getGenericInfo().getTypeParameters();
-      } else
-          return (TypeVariable<PatternMember<T>>[])GenericDeclRepository.EMPTY_TYPE_VARS;
+        if (getSignature() != null) {
+            return (TypeVariable<PatternMember<T>>[])getGenericInfo().getTypeParameters();
+        } else
+            return (TypeVariable<PatternMember<T>>[])GenericDeclRepository.EMPTY_TYPE_VARS;
     }
 
-
-
-    /**
-     * Returns a string describing this {@code PatternMember},
-     * including type parameters.  The string is formatted as the
-     * constructor access modifiers, if any, followed by an
-     * angle-bracketed comma separated list of the constructor's type
-     * parameters, if any, including  informative bounds of the
-     * type parameters, if any, followed by the fully-qualified name of the
-     * declaring class, followed by a parenthesized, comma-separated
-     * list of the {@code PatternMember}'s generic formal parameter types.
-     *
-     * If this constructor was declared to take a variable number of
-     * arguments, instead of denoting the last parameter as
-     * "<code><i>Type</i>[]</code>", it is denoted as
-     * "<code><i>Type</i>...</code>".
-     *
-     * A space is used to separate access modifiers from one another
-     * and from the type parameters or class name.  If there are no
-     * type parameters, the type parameter list is elided; if the type
-     * parameter list is present, a space separates the list from the
-     * class name.  If the constructor is declared to throw
-     * exceptions, the parameter list is followed by a space, followed
-     * by the word "{@code throws}" followed by a
-     * comma-separated list of the generic thrown exception types.
-     *
-     * <p>The only possible modifiers for constructors are the access
-     * modifiers {@code public}, {@code protected} or
-     * {@code private}.  Only one of these may appear, or none if the
-     * constructor has default (package) access.
-     *
-     * @return a string describing this {@code PatternMember},
-     * include type parameters
-     *
-     * @since 1.5
-     * @jls 8.8.3 Constructor Modifiers
-     * @jls 8.9.2 Enum Body Declarations
-     */
     @Override
     public String toGenericString() {
         return sharedToGenericString(Modifier.constructorModifiers(), false);
@@ -311,7 +248,6 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
     void specificToGenericStringHeader(StringBuilder sb) {
         specificToStringHeader(sb);
     }
-
 
     String sharedToGenericString(int modifierMask, boolean isDefault) {
         try {
@@ -369,21 +305,11 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         return annotations;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @throws NullPointerException  {@inheritDoc}
-     * @since 1.5
-     */
     @Override
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         return super.getAnnotation(annotationClass);
     }
 
-    /**
-     * {@inheritDoc}
-     * @since 1.5
-     */
     @Override
     public Annotation[] getDeclaredAnnotations()  {
         return super.getDeclaredAnnotations();
