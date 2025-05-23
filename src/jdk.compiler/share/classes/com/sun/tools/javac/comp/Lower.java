@@ -1149,7 +1149,7 @@ public class Lower extends TreeTranslator {
                 boolean baseReq =
                     base == null &&
                     sym.owner != syms.predefClass &&
-                    !sym.isMemberOf(currentClass, types);
+                    !sym.isMemberOf(currentClass, types) && !(sym instanceof DynamicVarSymbol);
 
                 if (accReq || baseReq) {
                     make.at(tree.pos);
@@ -2656,6 +2656,76 @@ public class Lower extends TreeTranslator {
                 syms.methodClass);
         }
 
+        if (tree.sym.isPattern()) {
+            MethodSymbol m = tree.sym;
+            tree.sym.flags_field  |= SYNTHETIC;
+            tree.mods.flags |= SYNTHETIC;
+
+            // add carrier as the last parameter
+            JCVariableDecl carrier = make_at(tree.pos()).
+                    Param(names.fromString("carrierMH"), syms.methodHandleType, tree.sym);
+            carrier.mods.flags |= SYNTHETIC;
+            carrier.sym.flags_field |= SYNTHETIC;
+            tree.params = tree.params.prepend(carrier);
+            tree.sym.params = tree.sym.params.prepend(carrier.sym);
+
+            // match-candidate parameter
+            if (tree.sym.isInstancePattern() || tree.sym.isStaticPattern()) {
+                JCVariableDecl implicitThatParam = tree.getMatchCandidateParameter();
+                implicitThatParam.mods.flags |= SYNTHETIC;
+                implicitThatParam.sym.flags_field |= SYNTHETIC;
+                tree.params = tree.params.prepend(implicitThatParam);
+                m.params = m.params.prepend(implicitThatParam.sym);
+            }
+
+            // this parameter
+            if (tree.sym.isDeconstructor()) {
+                JCVariableDecl implicitThisParam = make_at(tree.pos()).
+                        Param(names._this, tree.sym.owner.type, tree.sym);
+                implicitThisParam.mods.flags |= SYNTHETIC;
+                implicitThisParam.sym.flags_field |= SYNTHETIC;
+
+                tree.params = tree.params.prepend(implicitThisParam);
+                tree.sym.params = tree.sym.params.prepend(implicitThisParam.sym);
+            }
+
+            Type olderasure = m.erasure(types);
+
+            //create an external type for the pattern:
+            List<Type> argtypes = olderasure.getParameterTypes();
+            if (tree.sym.isInstancePattern() || tree.sym.isStaticPattern()) {
+                argtypes = argtypes.prepend(tree.matchcandparam.type);
+            }
+            if (tree.sym.isDeconstructor()) {
+                argtypes = argtypes.prepend(tree.sym.owner.type);
+            }
+            argtypes = argtypes.append(syms.methodHandleType);
+
+            if (tree.sym.isStaticPattern() || tree.sym.isDeconstructor()) {
+                tree.mods.flags |= STATIC;
+                tree.sym.flags_field |= STATIC;
+            }
+
+            var mt = new MethodType(
+                    argtypes,
+                    olderasure.getReturnType(),
+                    olderasure.getThrownTypes(),
+                    syms.methodClass);
+
+            m.erasure_field = mt;
+
+            // create the call carrier.invoke(<carrier arguments>) to initialize the carrier
+            // those argument are precalculated by the TransPatterns:visitMatch
+            JCMethodInvocation invokeMethodCall = makeCall(
+                    make.Ident(carrier),
+                    names.fromString("invoke"),
+                    tree.carrierArguments);
+
+            tree.body.stats = tree.body.stats.appendList(List.of(
+                    make.Return(invokeMethodCall),
+                    make.Throw(makeNewClass(syms.matchExceptionType, List.of(makeNull(), makeNull())))));
+        }
+
         Type prevRestype = currentRestype;
         JCMethodDecl prevMethodDef = currentMethodDef;
         MethodSymbol prevMethodSym = currentMethodSym;
@@ -3140,7 +3210,9 @@ public class Lower extends TreeTranslator {
 
     public void visitApply(JCMethodInvocation tree) {
         Symbol meth = TreeInfo.symbol(tree.meth);
-        List<Type> argtypes = meth.type.getParameterTypes();
+        List<Type> argtypes = meth.isPattern()
+                ? List.of(tree.args.head.type)
+                : meth.type.getParameterTypes();
         if (meth.name == names.init && meth.owner == syms.enumSym)
             argtypes = argtypes.tail.tail;
         tree.args = boxArgs(argtypes, tree.args, tree.varargsElement);
@@ -3248,7 +3320,9 @@ public class Lower extends TreeTranslator {
             boxedArgs.type = new ArrayType(varargsElement, syms.arrayClass);
             result.append(boxedArgs);
         } else {
-            if (args.length() != 1) throw new AssertionError(args);
+            if (args.length() != 1) {
+                throw new AssertionError(args);
+            }
             JCExpression arg = translate(args.head, parameter);
             anyChanges |= (arg != args.head);
             result.append(arg);
@@ -3770,7 +3844,7 @@ public class Lower extends TreeTranslator {
     public void visitReturn(JCReturn tree) {
         if (tree.expr != null)
             tree.expr = translate(tree.expr,
-                                  currentRestype);
+                                  currentMethodSym.isPattern() ? syms.objectType : currentRestype);
         result = tree;
     }
 

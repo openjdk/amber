@@ -28,12 +28,31 @@ package java.lang.reflect;
 import jdk.internal.access.JavaLangReflectAccess;
 import jdk.internal.reflect.ConstructorAccessor;
 
+import java.util.ArrayList;
+
 /** Package-private class implementing the
     jdk.internal.access.JavaLangReflectAccess interface, allowing the java.lang
     package to instantiate objects in this package. */
 final class ReflectAccess implements JavaLangReflectAccess {
     public <T> Constructor<T> newConstructorWithAccessor(Constructor<T> original, ConstructorAccessor accessor) {
         return original.newWithAccessor(accessor);
+    }
+
+    public <T> Deconstructor<T> newDeconstructor(Class<T> declaringClass,
+                                                 int modifiers,
+                                                 int patternFlags,
+                                                 int slot,
+                                                 ArrayList<PatternBinding> patternBindings,
+                                                 String signature,
+                                                 byte[] annotations)
+    {
+        return new Deconstructor<>(declaringClass,
+                modifiers,
+                patternFlags,
+                slot,
+                patternBindings,
+                signature,
+                annotations);
     }
 
     public byte[] getExecutableTypeAnnotationBytes(Executable ex) {
@@ -50,7 +69,7 @@ final class ReflectAccess implements JavaLangReflectAccess {
 
     //
     // Copying routines, needed to quickly fabricate new Field,
-    // Method, and Constructor objects from templates
+    // Method, Constructor and Deconstructor objects from templates
     //
     public Method      copyMethod(Method arg) {
         return arg.copy();
@@ -61,6 +80,10 @@ final class ReflectAccess implements JavaLangReflectAccess {
     }
 
     public <T> Constructor<T> copyConstructor(Constructor<T> arg) {
+        return arg.copy();
+    }
+
+    public <T> Deconstructor<T> copyDeconstructor(Deconstructor<T> arg) {
         return arg.copy();
     }
 
@@ -77,5 +100,10 @@ final class ReflectAccess implements JavaLangReflectAccess {
         throws IllegalAccessException, InstantiationException, InvocationTargetException
     {
         return ctor.newInstanceWithCaller(args, true, caller);
+    }
+
+    @Override
+    public String getMangledName(MemberPattern<?> d) {
+        return d.getMangledName();
     }
 }

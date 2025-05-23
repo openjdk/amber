@@ -25,6 +25,13 @@
 
 package jdk.internal.classfile.impl;
 
+import java.lang.constant.MethodTypeDesc;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+
 import java.lang.classfile.*;
 import java.lang.classfile.attribute.*;
 import java.lang.classfile.constantpool.*;
@@ -342,6 +349,47 @@ public abstract sealed class BoundAttribute<T extends Attribute<T>>
                 localVars = List.of(elements);
             }
             return localVars;
+        }
+    }
+
+    public static final class BoundPatternAttribute extends BoundAttribute<PatternAttribute>
+            implements PatternAttribute {
+        private MethodTypeDesc mDesc;
+        private List<Attribute<?>> attributes;
+
+        public BoundPatternAttribute(ClassReader cf, AttributeMapper<PatternAttribute> mapper, int pos) {
+            super(cf, mapper, pos);
+        }
+
+        @Override
+        public Utf8Entry patternName() {
+            return classReader.readEntry(payloadStart, Utf8Entry.class);
+        }
+
+        @Override
+        public int patternFlagsMask() {
+            return classReader.readU2(payloadStart + 2);
+        }
+
+        @Override
+        public Utf8Entry patternMethodType() {
+            return classReader.readEntry(payloadStart + 4, Utf8Entry.class);
+        }
+
+        @Override
+        public MethodTypeDesc patternTypeSymbol() {
+            if (mDesc == null) {
+                mDesc = MethodTypeDesc.ofDescriptor(patternMethodType().stringValue());
+            }
+            return mDesc;
+        }
+
+        @Override
+        public List<Attribute<?>> attributes() {
+            if (attributes == null) {
+                attributes = BoundAttribute.readAttributes(null, classReader, payloadStart + 6, classReader.customAttributes());
+            }
+            return attributes;
         }
     }
 
@@ -1073,6 +1121,8 @@ public abstract sealed class BoundAttribute<T extends Attribute<T>>
                 name.equalsString(NAME_STACK_MAP_TABLE) ? stackMapTable() : null;
             case 0xf2670725 ->
                 name.equalsString(NAME_SYNTHETIC) ? synthetic() : null;
+            case 0x74118370 ->
+                name.equalsString(NAME_PATTERN) ? pattern() : null;
             default -> null;
         };
     }

@@ -119,6 +119,10 @@ public class ClassReader {
      */
     boolean allowRecords;
 
+    /** Switch: allow pattern declarations
+     */
+    boolean allowPatterns;
+
     /** Switch: warn (instead of error) on illegal UTF-8
      */
     boolean warnOnIllegalUtf8;
@@ -294,6 +298,7 @@ public class ClassReader {
         preview = Preview.instance(context);
         allowModules     = Feature.MODULES.allowedInSource(source);
         allowRecords = Feature.RECORDS.allowedInSource(source);
+        allowPatterns = preview.isEnabled() && Feature.PATTERN_DECLARATIONS.allowedInSource(source);
         allowSealedTypes = Feature.SEALED_CLASSES.allowedInSource(source);
         warnOnIllegalUtf8 = Feature.WARN_ON_ILLEGAL_UTF8.allowedInSource(source);
 
@@ -313,7 +318,8 @@ public class ClassReader {
     private void enterMember(ClassSymbol c, Symbol sym) {
         // Synthetic members are not entered -- reason lost to history (optimization?).
         // Lambda methods must be entered because they may have inner classes (which reference them)
-        if ((sym.flags_field & (SYNTHETIC|BRIDGE)) != SYNTHETIC || sym.name.startsWith(names.lambda))
+        // Pattern declarations must be entered because a client needs to link to those methods
+        if ((sym.flags_field & (SYNTHETIC|BRIDGE)) != SYNTHETIC || sym.name.startsWith(names.lambda) || sym.isPattern())
             c.members_field.enter(sym);
     }
 
@@ -1060,6 +1066,24 @@ public class ClassReader {
                         } finally {
                             readingClassAttr = false;
                         }
+                    } else if (sym.type.hasTag(TypeTag.PATTERN)){
+                        Type mtype = poolReader.getType(nextChar());
+
+                        List<Type> erasedBindingTypes = mtype.getParameterTypes()
+                                .stream()
+                                .map(rc -> types.erasure(rc))
+                                .collect(List.collector());
+
+                        Type matchCandidateType = sym.type.getMatchCandidateType();
+                        PatternType patternType = new PatternType(
+                                mtype.getParameterTypes(),
+                                erasedBindingTypes,
+                                syms.voidType,
+                                matchCandidateType,
+                                syms.methodClass);
+
+                        sym.type = patternType;
+                        //TODO: no thrown types for PatternType
                     } else {
                         List<Type> thrown = sym.type.getThrownTypes();
                         sym.type = poolReader.getType(nextChar());
@@ -1341,6 +1365,67 @@ public class ClassReader {
                             subtypes.add(poolReader.getClass(nextChar()));
                         }
                         ((ClassSymbol)sym).setPermittedSubclasses(subtypes.toList());
+                    }
+                }
+            },
+            new AttributeReader(names.Pattern, V66, MEMBER_ATTRIBUTE) {
+                @Override
+                protected boolean accepts(AttributeKind kind) {
+                    return super.accepts(kind) && allowPatterns;
+                }
+                protected void read(Symbol sym, int attrLen) {
+                    if (sym.kind == MTH) {
+                        Name patternName  = poolReader.getName(nextChar());
+                        int  patternFlags = nextChar();
+                        Type patternType  = poolReader.getType(nextChar());
+
+                        var oldParameterAnnotations = parameterAnnotations;
+                        var oldParameterNameIndicesLvt = parameterNameIndicesLvt;
+                        var oldParameterAccessFlags = parameterAccessFlags;
+                        var oldParameterNameIndicesMp = parameterNameIndicesMp;
+                        parameterAnnotations = null;
+                        parameterNameIndicesLvt = null;
+                        parameterNameIndicesMp = null;
+                        parameterAccessFlags = null;
+
+                        MethodSymbol msym = (MethodSymbol) sym;
+
+                        // todo: refactor/improve
+                        List<Type> erasedBindingTypes = patternType.getParameterTypes()
+                                .stream()
+                                .map(rc -> types.erasure(rc))
+                                .collect(List.collector());
+
+                        // up until here msym.type contains a type as a methodtype of the physical method
+                        Type matchcandidatetype = msym.type.getParameterTypes().head;
+                        msym.type = new PatternType(patternType.getParameterTypes(), erasedBindingTypes, syms.voidType, matchcandidatetype, syms.methodClass);
+
+                        readMemberAttrs(sym);
+
+                        msym.bindings = computeParamsFromAttribute(msym, msym.type.asPatternType().getBindingTypes(), 0);
+
+                        parameterAnnotations = oldParameterAnnotations;
+                        parameterNameIndicesLvt = oldParameterNameIndicesLvt;
+                        parameterNameIndicesMp = oldParameterNameIndicesMp;
+                        parameterAccessFlags = oldParameterAccessFlags;
+
+                        msym.name = patternName;
+                        msym.flags_field |= PATTERN;
+
+                        //recover pattern flags:
+                        for (PatternFlags flag : PatternFlags.values()) {
+                            if ((patternFlags & flag.value) != 0) {
+                                msym.patternFlags.add(flag);
+                            }
+                        }
+
+                        if (msym.patternFlags.contains(PatternFlags.DECONSTRUCTOR)) {
+                            //TODO: should check the method is static, and has a reasonable first/only parameter?
+                            //reconstitue the deconstructor back:
+                            msym.flags_field &= ~Flags.STATIC;
+                        }
+
+                        // todo: check if special handling is needed similar to generic methods for binding types
                     }
                 }
             },
@@ -2692,7 +2777,6 @@ public class ClassReader {
         validateMethodType(name, m.type);
         adjustParameterAnnotations(m, descriptorType, forceLocal);
         setParameters(m, type);
-
         if (Integer.bitCount(rawFlags & (PUBLIC | PRIVATE | PROTECTED)) > 1)
             throw badClassFile("illegal.flag.combo", Flags.toString((long)rawFlags), "method", m);
         if ((flags & VARARGS) != 0) {
@@ -2707,7 +2791,7 @@ public class ClassReader {
     }
 
     void validateMethodType(Name name, Type t) {
-        if ((!t.hasTag(TypeTag.METHOD) && !t.hasTag(TypeTag.FORALL)) ||
+        if ((!t.hasTag(TypeTag.METHOD) && !t.hasTag(TypeTag.FORALL) && !t.hasTag(TypeTag.PATTERN)) ||
             (name == names.init && !t.getReturnType().hasTag(TypeTag.VOID))) {
             throw badClassFile("method.descriptor.invalid", name);
         }
@@ -2780,7 +2864,7 @@ public class ClassReader {
                 firstParamLvt += 1;
         }
 
-        if (sym.type != jvmType) {
+        if (sym.type != jvmType && !sym.isPattern()) {
             // reading the method attributes has caused the
             // symbol's type to be changed. (i.e. the Signature
             // attribute.)  This may happen if there are hidden
@@ -2794,6 +2878,12 @@ public class ClassReader {
                     - Code.width(sym.type.getParameterTypes());
             firstParamLvt += skip;
         }
+
+        List<VarSymbol> params = computeParamsFromAttribute(sym, sym.type.getParameterTypes(), firstParamLvt);
+        sym.params = params;
+    }
+
+    private List<VarSymbol> computeParamsFromAttribute(MethodSymbol sym, List<Type> parameterTypes, int firstParamLvt) {
         Set<Name> paramNames = new HashSet<>();
         ListBuffer<VarSymbol> params = new ListBuffer<>();
         // we maintain two index pointers, one for the LocalVariableTable attribute
@@ -2804,7 +2894,7 @@ public class ClassReader {
         int nameIndexLvt = firstParamLvt;
         int nameIndexMp = 0;
         int annotationIndex = 0;
-        for (Type t: sym.type.getParameterTypes()) {
+        for (Type t: parameterTypes) {
             VarSymbol param = parameter(nameIndexMp, nameIndexLvt, t, sym, paramNames);
             params.append(param);
             if (parameterAnnotations != null) {
@@ -2820,13 +2910,17 @@ public class ClassReader {
         }
         Assert.check(parameterAnnotations == null ||
                      parameterAnnotations.length == annotationIndex);
-        Assert.checkNull(sym.params);
+
+        if (!sym.isPattern())
+            Assert.checkNull(sym.params);
+
         sym.params = params.toList();
         parameterAnnotations = null;
         parameterNameIndicesLvt = null;
         parameterNameIndicesMp = null;
         allParameterAccessFlags = null;
         parameterAccessFlags = null;
+        return params.toList();
     }
 
     void adjustParameterAnnotations(MethodSymbol sym, Type methodDescriptor,

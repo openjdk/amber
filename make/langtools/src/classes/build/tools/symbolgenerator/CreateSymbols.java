@@ -941,16 +941,28 @@ public class CreateSymbols {
         if (desc.annotationDefaultValue != null) {
             builder.with(AnnotationDefaultAttribute.of(createAttributeValue(desc.annotationDefaultValue)));
         }
+        parameterableAttributes(desc).forEach(el -> builder.with((MethodElement) el));
+        if (desc.patternDescription != null) {
+            MethodTypeDesc methodType = MethodTypeDesc.ofDescriptor(desc.patternDescription.descriptor);
+            List<Attribute<?>> result = new ArrayList<>();
+            result.addAll(parameterableAttributes(desc.patternDescription).reversed());
+            builder.with(PatternAttribute.of(desc.patternDescription.name, desc.patternDescription.flags, methodType, result));
+        }
+    }
+
+    private List<Attribute<?>> parameterableAttributes(ParameterableDescription desc) {
+        List<Attribute<?>> result = new ArrayList<>();
         if (desc.classParameterAnnotations != null && !desc.classParameterAnnotations.isEmpty()) {
-            builder.with(RuntimeInvisibleParameterAnnotationsAttribute.of(createParameterAnnotations(desc.classParameterAnnotations)));
+            result.add(RuntimeInvisibleParameterAnnotationsAttribute.of(createParameterAnnotations(desc.classParameterAnnotations)));
         }
         if (desc.runtimeParameterAnnotations != null && !desc.runtimeParameterAnnotations.isEmpty()) {
-            builder.with(RuntimeVisibleParameterAnnotationsAttribute.of(createParameterAnnotations(desc.runtimeParameterAnnotations)));
+            result.add(RuntimeVisibleParameterAnnotationsAttribute.of(createParameterAnnotations(desc.runtimeParameterAnnotations)));
         }
         if (desc.methodParameters != null && !desc.methodParameters.isEmpty()) {
-            builder.with(MethodParametersAttribute.of(desc.methodParameters.stream()
+            result.add(MethodParametersAttribute.of(desc.methodParameters.stream()
                     .map(mp -> MethodParameterInfo.ofParameter(Optional.ofNullable(mp.name), mp.flags)).collect(Collectors.toList())));
         }
+        return result;
     }
 
     private void addAttributes(FieldDescription desc, FieldBuilder builder) {
@@ -2165,8 +2177,8 @@ public class CreateSymbols {
             case EnclosingMethodAttribute _ -> {
                 return false;
             }
-            case RuntimeVisibleParameterAnnotationsAttribute a -> ((MethodDescription) feature).runtimeParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
-            case RuntimeInvisibleParameterAnnotationsAttribute a -> ((MethodDescription) feature).classParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
+            case RuntimeVisibleParameterAnnotationsAttribute a -> ((ParameterableDescription) feature).runtimeParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
+            case RuntimeInvisibleParameterAnnotationsAttribute a -> ((ParameterableDescription) feature).classParameterAnnotations = parameterAnnotations2Description(a.parameterAnnotations());
             case ModuleAttribute a -> {
                 ModuleHeaderDescription header = (ModuleHeaderDescription) feature;
                 header.name = a.moduleName().name().stringValue();
@@ -2204,8 +2216,8 @@ public class CreateSymbols {
                     return rcd;
                 }).collect(Collectors.toList());
             }
-            case MethodParametersAttribute a -> ((MethodDescription) feature).methodParameters = a.parameters().stream()
-                    .map(mpi -> new MethodDescription.MethodParam(mpi.flagsMask(), mpi.name().map(Utf8Entry::stringValue).orElse(null)))
+            case MethodParametersAttribute a -> ((ParameterableDescription) feature).methodParameters = a.parameters().stream()
+                    .map(mpi -> new ParameterableDescription.MethodParam(mpi.flagsMask(), mpi.name().map(Utf8Entry::stringValue).orElse(null)))
                     .collect(Collectors.toList());
             case PermittedSubclassesAttribute a -> {
                 var chd = (ClassHeaderDescription) feature;
@@ -2213,6 +2225,19 @@ public class CreateSymbols {
                 chd.permittedSubclasses = a.permittedSubclasses().stream().map(ClassEntry::asInternalName).collect(Collectors.toList());
             }
             case ModuleMainClassAttribute a -> ((ModuleHeaderDescription) feature).moduleMainClass = a.mainClass().asInternalName();
+            case PatternAttribute a -> {
+                assert feature instanceof MethodDescription;
+                MethodDescription method = (MethodDescription) feature;
+                PatternDescription pd = new PatternDescription();
+                pd.flags = a.patternFlagsMask();
+                pd.name = a.patternName().stringValue();
+                pd.descriptor = a.patternMethodType().stringValue();
+                for (Attribute<?> patternAttr : a.attributes()) {
+                    readAttribute(pd, patternAttr);
+                }
+                method.patternDescription = pd;
+                break;
+            }
             case RuntimeVisibleTypeAnnotationsAttribute a -> {/* do nothing for now */}
             default -> throw new IllegalArgumentException("Unhandled attribute: " + attr.attributeName()); // Do nothing
         }
@@ -3264,15 +3289,13 @@ public class CreateSymbols {
 
     }
 
-    static class MethodDescription extends FeatureDescription {
+    static class MethodDescription extends ParameterableDescription {
         static int METHODS_FLAGS_NORMALIZATION = ~0;
         String name;
         String descriptor;
         List<String> thrownTypes;
         Object annotationDefaultValue;
-        List<List<AnnotationDescription>> classParameterAnnotations;
-        List<List<AnnotationDescription>> runtimeParameterAnnotations;
-        List<MethodParam> methodParameters;
+        PatternDescription patternDescription;
 
         public MethodDescription() {
             flagsNormalization = METHODS_FLAGS_NORMALIZATION;
@@ -3309,6 +3332,9 @@ public class CreateSymbols {
             if (!Objects.equals(this.annotationDefaultValue, other.annotationDefaultValue)) {
                 return false;
             }
+            if (!Objects.equals(this.patternDescription, other.patternDescription)) {
+                return false;
+            }
             return true;
         }
 
@@ -3331,6 +3357,144 @@ public class CreateSymbols {
             if (annotationDefaultValue != null)
                 output.append(" annotationDefaultValue " + quote(AnnotationDescription.dumpAnnotationValue(annotationDefaultValue), false));
             writeAttributes(output);
+            output.append("\n");
+
+            if (patternDescription != null) {
+                patternDescription.write(output, baselineVersion, version);
+            }
+        }
+
+        @Override
+        public boolean read(LineBasedReader reader) throws IOException {
+            if (!"method".equals(reader.lineKey))
+                return false;
+
+            name = reader.attributes.get("name");
+            descriptor = reader.attributes.get("descriptor");
+
+            String thrownTypesValue = reader.attributes.get("thrownTypes");
+
+            if (thrownTypesValue != null) {
+                thrownTypes = deserializeList(thrownTypesValue);
+            }
+
+            String inAnnotationDefaultValue = reader.attributes.get("annotationDefaultValue");
+
+            if (inAnnotationDefaultValue != null) {
+                annotationDefaultValue = parseAnnotationValue(inAnnotationDefaultValue, new int[1]);
+            }
+
+            readAttributes(reader);
+
+            reader.moveNext();
+
+            if ("pattern-info".equals(reader.lineKey)) {
+                patternDescription = new PatternDescription();
+                patternDescription.read(reader);
+            }
+
+            return true;
+        }
+
+    }
+
+    static class PatternDescription extends ParameterableDescription {
+        String name;
+        String descriptor;
+
+        public PatternDescription() {
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = super.hashCode();
+            hash = 59 * hash + Objects.hashCode(this.name);
+            hash = 59 * hash + Objects.hashCode(this.descriptor);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (!super.equals(obj)) {
+                return false;
+            }
+            final MethodDescription other = (MethodDescription) obj;
+            if (!Objects.equals(this.name, other.name)) {
+                return false;
+            }
+            if (!Objects.equals(this.descriptor, other.descriptor)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void write(Appendable output, String baselineVersion, String version) throws IOException {
+            output.append("pattern-info");
+            output.append(" name " + quote(name, false));
+            output.append(" descriptor " + quote(descriptor, false));
+            writeAttributes(output);
+            output.append("\n");
+        }
+
+        @Override
+        public boolean read(LineBasedReader reader) throws IOException {
+            if (!"pattern-info".equals(reader.lineKey))
+                return false;
+
+            name = reader.attributes.get("name");
+            descriptor = reader.attributes.get("descriptor");
+
+            readAttributes(reader);
+
+            reader.moveNext();
+
+            return true;
+        }
+
+    }
+
+    static abstract class ParameterableDescription extends FeatureDescription {
+        List<List<AnnotationDescription>> classParameterAnnotations;
+        List<List<AnnotationDescription>> runtimeParameterAnnotations;
+        List<MethodParam> methodParameters;
+
+        public ParameterableDescription() {
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = super.hashCode();
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (obj == null) {
+                return false;
+            }
+            if (!super.equals(obj)) {
+                return false;
+            }
+            final MethodDescription other = (MethodDescription) obj;
+            if (!Objects.equals(this.classParameterAnnotations, other.classParameterAnnotations)) {
+                return false;
+            }
+            if (!Objects.equals(this.runtimeParameterAnnotations, other.runtimeParameterAnnotations)) {
+                return false;
+            }
+            if (!Objects.equals(this.methodParameters, other.methodParameters)) {
+                return false;
+            }
+            return true;
+        }
+
+        @Override
+        public void writeAttributes(Appendable output) throws IOException {
+            super.writeAttributes(output);
             if (classParameterAnnotations != null && !classParameterAnnotations.isEmpty()) {
                 output.append(" classParameterAnnotations ");
                 for (List<AnnotationDescription> pa : classParameterAnnotations) {
@@ -3358,31 +3522,11 @@ public class CreateSymbols {
                                          .collect(Collectors.toList());
                 output.append(" methodParameters " + serializeList(paramsAsStrings));
             }
-            output.append("\n");
         }
 
         @Override
-        public boolean read(LineBasedReader reader) throws IOException {
-            if (!"method".equals(reader.lineKey))
-                return false;
-
-            name = reader.attributes.get("name");
-            descriptor = reader.attributes.get("descriptor");
-
-            String thrownTypesValue = reader.attributes.get("thrownTypes");
-
-            if (thrownTypesValue != null) {
-                thrownTypes = deserializeList(thrownTypesValue);
-            }
-
-            String inAnnotationDefaultValue = reader.attributes.get("annotationDefaultValue");
-
-            if (inAnnotationDefaultValue != null) {
-                annotationDefaultValue = parseAnnotationValue(inAnnotationDefaultValue, new int[1]);
-            }
-
-            readAttributes(reader);
-
+        protected void readAttributes(LineBasedReader reader) {
+            super.readAttributes(reader);
             String inClassParamAnnotations = reader.attributes.get("classParameterAnnotations");
             if (inClassParamAnnotations != null) {
                 List<List<AnnotationDescription>> annos = new ArrayList<>();
@@ -3418,21 +3562,9 @@ public class CreateSymbols {
                                                           .map(string2Param)
                                                           .collect(Collectors.toList());
             }
-
-            reader.moveNext();
-
-            return true;
         }
 
-        public static class MethodParam {
-            public final int flags;
-            public final String name;
-
-            public MethodParam(int flags, String name) {
-                this.flags = flags;
-                this.name = name;
-            }
-        }
+        public record MethodParam(int flags, String name) {}
     }
 
     static class FieldDescription extends FeatureDescription {

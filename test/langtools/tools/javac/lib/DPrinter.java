@@ -677,6 +677,7 @@ public class DPrinter {
             printTree("restype", tree.restype);
             printList("typarams", tree.typarams);
             printTree("recvparam", tree.recvparam);
+            printTree("matchcandparam", tree.matchcandparam);
             printList("params", tree.params);
             printList("thrown", tree.thrown);
             printTree("defaultValue", tree.defaultValue);
@@ -1340,6 +1341,13 @@ public class DPrinter {
             printType("restype", type.restype, Details.FULL);
             printList("thrown", type.thrown);
             printType("recvtype", type.recvtype, Details.FULL);
+            return visitType(type, null);
+        }
+
+        @Override
+        public Void visitPatternType(PatternType type, Void ignore) {
+            printList("bindingtypes", type.bindingtypes);
+            printType("restype", type.restype, Details.FULL);
             return visitType(type, null);
         }
 

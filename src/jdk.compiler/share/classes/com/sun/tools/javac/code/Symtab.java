@@ -177,6 +177,7 @@ public class Symtab {
     public final Type methodHandlesType;
     public final Type methodHandleLookupType;
     public final Type methodTypeType;
+    public final Type carriersType;
     public final Type nativeHeaderType;
     public final Type throwableType;
     public final Type errorType;
@@ -225,6 +226,7 @@ public class Symtab {
     public final Type typeDescriptorType;
     public final Type recordType;
     public final Type switchBootstrapsType;
+    public final Type patternBootstrapsType;
     public final Type constantBootstrapsType;
     public final Type valueBasedType;
     public final Type valueBasedInternalType;
@@ -552,6 +554,8 @@ public class Symtab {
         methodHandlesType = enterClass("java.lang.invoke.MethodHandles");
         methodHandleLookupType = enterClass("java.lang.invoke.MethodHandles$Lookup");
         methodTypeType = enterClass("java.lang.invoke.MethodType");
+        carriersType = enterClass("java.lang.runtime.Carriers");
+
         errorType = enterClass("java.lang.Error");
         illegalArgumentExceptionType = enterClass("java.lang.IllegalArgumentException");
         interruptedExceptionType = enterClass("java.lang.InterruptedException");
@@ -609,6 +613,7 @@ public class Symtab {
         typeDescriptorType = enterClass("java.lang.invoke.TypeDescriptor");
         recordType = enterClass("java.lang.Record");
         switchBootstrapsType = enterClass("java.lang.runtime.SwitchBootstraps");
+        patternBootstrapsType = enterClass("java.lang.runtime.PatternBootstraps");
         constantBootstrapsType = enterClass("java.lang.invoke.ConstantBootstraps");
         valueBasedType = enterClass("jdk.internal.ValueBased");
         valueBasedInternalType = enterSyntheticAnnotation("jdk.internal.ValueBased+Annotation");

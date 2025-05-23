@@ -1641,6 +1641,9 @@ abstract class MethodHandleImpl {
                 return IMPL_LOOKUP.serializableConstructor(decl, ctorToCall);
             }
 
+            @Override
+            public Lookup implLookup() { return IMPL_LOOKUP; }
+
         });
     }
 

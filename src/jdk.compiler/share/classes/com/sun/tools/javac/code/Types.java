@@ -91,7 +91,7 @@ import com.sun.tools.javac.resources.CompilerProperties.Fragments;
 public class Types {
     protected static final Context.Key<Types> typesKey = new Context.Key<>();
 
-    final Symtab syms;
+    public final Symtab syms;
     final JavacMessages messages;
     final Names names;
     final Check chk;
@@ -1441,6 +1441,11 @@ public class Types {
                 // isSameType for methods does not take thrown
                 // exceptions into account!
                 return hasSameArgs(t, s) && visit(t.getReturnType(), s.getReturnType());
+            }
+
+            @Override
+            public Boolean visitPatternType(PatternType t, Type s) {
+                return hasSameArgs(t, s);
             }
 
             @Override
@@ -3298,8 +3303,15 @@ public class Types {
 
             @Override
             public Boolean visitMethodType(MethodType t, Type s) {
-                return s.hasTag(METHOD)
-                    && containsTypeEquivalent(t.argtypes, s.getParameterTypes());
+                if (s.hasTag(METHOD)) {
+                    return containsTypeEquivalent(t.argtypes, s.getParameterTypes());
+                }
+                return false;
+            }
+
+            @Override
+            public Boolean visitPatternType(PatternType t, Type s) {
+                return containsTypeEquivalent(t.bindingtypes, s.getBindingTypes());
             }
 
             @Override
@@ -4938,6 +4950,7 @@ public class Types {
         public R visitWildcardType(WildcardType t, S s) { return visitType(t, s); }
         public R visitArrayType(ArrayType t, S s)       { return visitType(t, s); }
         public R visitMethodType(MethodType t, S s)     { return visitType(t, s); }
+        public R visitPatternType(PatternType t, S s)   { return visitType(t, s); }
         public R visitPackageType(PackageType t, S s)   { return visitType(t, s); }
         public R visitModuleType(ModuleType t, S s)     { return visitType(t, s); }
         public R visitTypeVar(TypeVar t, S s)           { return visitType(t, s); }
@@ -5202,6 +5215,13 @@ public class Types {
                             assembleSig(l.head);
                         }
                     }
+                    break;
+                case PATTERN:
+                    PatternType pt = (PatternType) type;
+                    append('(');
+                    assembleSig(pt.bindingtypes);
+                    append(')');
+                    assembleSig(pt.restype);
                     break;
                 case WILDCARD: {
                     Type.WildcardType ta = (Type.WildcardType) type;

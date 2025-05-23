@@ -611,6 +611,7 @@ public class Pretty extends JCTree.Visitor {
     }
 
     public void visitMethodDef(JCMethodDecl tree) {
+        boolean isPattern = (tree.mods.flags & PATTERN) != 0;
         try {
             // when producing source output, omit anonymous constructors
             if (tree.name == tree.name.table.names.init &&
@@ -623,7 +624,11 @@ public class Pretty extends JCTree.Visitor {
             if (tree.name == tree.name.table.names.init) {
                 print(enclClassName != null ? enclClassName : tree.name);
             } else {
-                printExpr(tree.restype);
+                if  (isPattern) {
+                    print("pattern");
+                } else {
+                    printExpr(tree.restype);
+                }
                 print(' ');
                 print(tree.name);
             }
@@ -634,7 +639,12 @@ public class Pretty extends JCTree.Visitor {
                     print(", ");
                 }
             }
-            printExprs(tree.params);
+            if (isPattern) {
+                printExprs(tree.bindings);
+            }
+            else {
+                printExprs(tree.params);
+            }
             print(')');
             if (tree.thrown.nonEmpty()) {
                 print(" throws ");
@@ -1151,6 +1161,26 @@ public class Pretty extends JCTree.Visitor {
         }
     }
 
+    public void visitMatch(JCMatch tree) {
+        try {
+            print("match ");
+            print(tree.clazz);
+            print('(');
+            printExprs(tree.args);
+            print(");");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitMatchFail(JCMatchFail tree) {
+        try {
+            print("match-fail();");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public void visitApply(JCMethodInvocation tree) {
         try {
             if (!tree.typeargs.isEmpty()) {
@@ -1399,6 +1429,23 @@ public class Pretty extends JCTree.Visitor {
                 printExpr(tree.getType(), TreeInfo.ordPrec + 1);
             }
             close(prec, TreeInfo.ordPrec);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void visitTypeTestStatement(JCInstanceOfStatement tree) {
+        try {
+            open(prec, TreeInfo.ordPrec);
+            printExpr(tree.expr, TreeInfo.ordPrec);
+            print(" instanceof ");
+            if (tree.pattern instanceof JCPattern) {
+                printPattern(tree.pattern);
+            } else {
+                printExpr(tree.getType(), TreeInfo.ordPrec + 1);
+            }
+            close(prec, TreeInfo.ordPrec);
+            print(';');
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

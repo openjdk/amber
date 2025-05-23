@@ -29,6 +29,10 @@ import jdk.internal.javac.PreviewFeature;
 
 import javax.annotation.processing.SupportedSourceVersion;
 import javax.annotation.processing.ProcessingEnvironment;
+import javax.lang.model.SourceVersion;
+import javax.lang.model.element.ElementVisitor;
+import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.RecordComponentElement;
 import static javax.lang.model.SourceVersion.*;
 
 /**
@@ -62,4 +66,17 @@ public abstract class AbstractElementVisitorPreview<R, P> extends AbstractElemen
     protected AbstractElementVisitorPreview(){
         super();
     }
+
+    /**
+     * {@inheritDoc ElementVisitor}
+     *
+     * @implSpec Visits an {@code ExecutableElement} in a manner defined by a
+     * subclass.
+     *
+     * @param e  {@inheritDoc ElementVisitor}
+     * @param p  {@inheritDoc ElementVisitor}
+     * @return   {@inheritDoc ElementVisitor}
+     */
+    @Override
+    public abstract R visitExecutableAsDeconstructor(ExecutableElement e, P p);
 }

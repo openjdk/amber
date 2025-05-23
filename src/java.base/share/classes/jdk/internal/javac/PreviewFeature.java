@@ -80,6 +80,8 @@ public @interface PreviewFeature {
         @JEP(number = 502, title = "Stable Values", status = "Preview")
         STABLE_VALUES,
         LANGUAGE_MODEL,
+        @JEP(number=999, title="Pattern Declarations", status="Preview")
+        PATTERN_DECLARATIONS,
         /**
          * A key for testing.
          */
