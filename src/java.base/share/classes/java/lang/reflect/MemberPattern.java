@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
 
 import static java.lang.runtime.PatternBytecodeName.mangle;
 
+import jdk.internal.access.SharedSecrets;
+
 /**
  * {@code MemberPattern} provides information about, and access to, a single
  * member pattern for a class.
@@ -410,9 +412,9 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
                             .map(PatternBinding::getType)
                             .toArray(Class[]::new)
             );
-            MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
+            MethodHandle initializingConstructor = SharedSecrets.getJavaLangRuntimeAccess().initializingConstructor(bindingMT);
 
-            return (Object[])Carriers.boxedComponentValueArray(bindingMT).invoke(method.invoke(matchCandidate, matchCandidate, initializingConstructor));
+            return (Object[])SharedSecrets.getJavaLangRuntimeAccess().boxedComponentValueArray(bindingMT).invoke(method.invoke(matchCandidate, matchCandidate, initializingConstructor));
         } catch (Throwable e) {
             throw new MatchException(e.getMessage(), e);
         }

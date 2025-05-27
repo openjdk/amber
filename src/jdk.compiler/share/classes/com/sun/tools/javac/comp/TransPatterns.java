@@ -401,6 +401,7 @@ public class TransPatterns extends TreeTranslator {
 
         BindingSymbol    mSymbol = null;
         MethodSymbol     carriersComponentCallSym = null;
+        MethodType       carriersType = null;
 
         // a record pattern always has an associated pattern declaration on the of the following:
         //  - a pattern declaration or
@@ -412,19 +413,21 @@ public class TransPatterns extends TreeTranslator {
             //     1. calculate the returnType MethodType as Constant_MethodType_info
             //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)
             //     3. generate invoke call to pass the bindings (e.g, return carrier.invoke(x, y);)
+            carriersType = new MethodType(recordPattern.patternDeclaration.type.getBindingTypes(), syms.objectType, List.nil(), syms.methodClass);
             MethodSymbol factoryMethodSym =
                     rs.resolveInternalMethod(recordPattern.pos(),
                             env,
                             syms.carriersType,
                             names.fromString("initializingConstructor"),
-                            List.of(syms.methodTypeType),
+                            List.of(syms.methodHandleLookupType, syms.stringType, syms.classType, syms.methodTypeType),
                             List.nil());
+
             DynamicVarSymbol factoryMethodDynamicVar =
-                    (DynamicVarSymbol) invokeMethodWrapper(
-                            names.fromString("carrier"),
-                            recordPattern.pos(),
-                            factoryMethodSym.asHandle(),
-                            new MethodType(recordPattern.patternDeclaration.type.getBindingTypes(), syms.objectType, List.nil(), syms.methodClass));
+                new DynamicVarSymbol(names.fromString("initializingConstructor"),
+                                     factoryMethodSym.owner,
+                                     factoryMethodSym.asHandle(),
+                                     factoryMethodSym.getReturnType(),
+                                     new LoadableConstant[] {carriersType});
 
             mSymbol = new BindingSymbol(Flags.SYNTHETIC,
                     names.fromString(target.syntheticNameChar() + "m" + target.syntheticNameChar() + variableIndex++), syms.objectType,
@@ -441,7 +444,7 @@ public class TransPatterns extends TreeTranslator {
                             env,
                             syms.carriersType,
                             names.component,
-                            List.of(syms.methodTypeType, syms.intType),
+                            List.of(syms.methodHandleLookupType, syms.stringType, syms.methodTypeType, syms.methodTypeType, syms.intType),
                             List.nil());
             components = List.nil();
         } else {
@@ -453,38 +456,35 @@ public class TransPatterns extends TreeTranslator {
             JCExpression accessedComponentValue;
             index++;
             if (allowPatternDeclarations) {
-                /*
-                 *  Generate invoke call for component X
-                 *       component$X.invoke(carrier);
-                 * */
-                List<Type> params = recordPattern.patternDeclaration.type.getBindingTypes();
+                //MethodHandles.Lookup lookup,
+                                        //  String invocationName,
+                                        //  MethodType invocationType,
+                // List<Type> staticArgTypes = List.of(syms.methodHandleLookupType,
+                //         syms.stringType,
+                //         syms.methodTypeType,
+                //         syms.methodTypeType,
+                //         syms.intType);
 
-                MethodType methodType = new MethodType(params, syms.objectType, List.nil(), syms.methodClass);
+                MethodType indyType = new MethodType(
+                        List.of(syms.objectType),
+                        componentType,
+                        List.nil(),
+                        syms.methodClass
+                );
 
-                List<LoadableConstant> carriersComponentParams =
-                        List.of(methodType,
-                                LoadableConstant.Int(index));
+                DynamicMethodSymbol dynSym = new DynamicMethodSymbol(names.fromString("component"),
+                        syms.noSymbol,
+                        carriersComponentCallSym.asHandle(),
+                        indyType,
+                        new LoadableConstant[] {carriersType, LoadableConstant.Int(index)});
 
-                DynamicVarSymbol carriersComponentCallDynamicVar = (DynamicVarSymbol)
-                        invokeMethodWrapper(names.fromString("component$" + index), recordPattern.pos(),
-                                carriersComponentCallSym.asHandle(),
-                                carriersComponentParams.toArray(LoadableConstant[]::new));
-
-                List<JCExpression> invokeComponentParams = List.of(make.Ident(mSymbol));
-
-                MethodSymbol invokeComponentCallSym =
-                        rs.resolveInternalMethod(recordPattern.pos(),
-                                env,
-                                syms.methodHandleType,
-                                names.invoke,
-                                List.of(syms.objectType),
-                                List.nil());
-
-                JCMethodInvocation invokeComponentCall =
-                        make.App(make.Select(make.Ident(carriersComponentCallDynamicVar),
-                                invokeComponentCallSym), invokeComponentParams);
-
-                accessedComponentValue = convert(invokeComponentCall, componentType);
+                JCFieldAccess qualifier = make.Select(make.QualIdent(carriersComponentCallSym.owner), dynSym.name);
+                qualifier.sym = dynSym;
+                qualifier.type = syms.objectType;
+                accessedComponentValue =  make.Apply(List.nil(),
+                                qualifier,
+                                List.of(make.Ident(mSymbol)))
+                            .setType(componentType); //TODO: in case of heap pollution, this will (should) fail with CCE - add tests!
             } else {
                 RecordComponent component = components.head;
                 JCMethodInvocation componentAccessor =
