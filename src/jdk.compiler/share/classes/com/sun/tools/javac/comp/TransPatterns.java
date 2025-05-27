@@ -456,15 +456,6 @@ public class TransPatterns extends TreeTranslator {
             JCExpression accessedComponentValue;
             index++;
             if (allowPatternDeclarations) {
-                //MethodHandles.Lookup lookup,
-                                        //  String invocationName,
-                                        //  MethodType invocationType,
-                // List<Type> staticArgTypes = List.of(syms.methodHandleLookupType,
-                //         syms.stringType,
-                //         syms.methodTypeType,
-                //         syms.methodTypeType,
-                //         syms.intType);
-
                 MethodType indyType = new MethodType(
                         List.of(syms.objectType),
                         componentType,
