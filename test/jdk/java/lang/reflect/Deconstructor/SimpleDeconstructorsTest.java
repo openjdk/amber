@@ -38,6 +38,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Deconstructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.EnumSet;
@@ -52,6 +53,7 @@ public class SimpleDeconstructorsTest {
         testNoReflection();
         testOtherMembersUnaffected();
         testCtorForComparison();
+        testInnerCtorForComparison();
 
         testDtorAttributes();
         testOutParameters();
@@ -59,6 +61,7 @@ public class SimpleDeconstructorsTest {
         testNontrivialOutParams();
 
         testTryMatch();
+        testInnerTryMatch();
         testDeconstructorElementsAnnotations();
         testDeconstructorAnnotations();
         testGenericString();
@@ -75,15 +78,32 @@ public class SimpleDeconstructorsTest {
         public pattern BasicDtor(int field) {
             match BasicDtor(field);
         }
+
+        public class Inner {
+            int field;
+            public Inner(int field) {
+              this.field = field;
+            }
+
+            // TODO: we might set the rule that this needs to declare an explicit
+            // BasicDtor outparam.
+            public pattern Inner(int field) {
+              match Inner(field);
+            }
+        }
     }
 
     // Just demonstrating the deconstructor in operation
     public static void testNoReflection() {
-        assertEquals(true, new BasicDtor(5) instanceof BasicDtor(var i) && i == 5);
+        BasicDtor obj = new BasicDtor(5);
+        assertEquals(true, obj instanceof BasicDtor(var i) && i == 5);
         switch (new BasicDtor(42)) {
             case BasicDtor(var i) -> assertEquals(42, i);
             default -> throw new AssertionError();
         }
+
+        // TODO: it's ignoring the outer state
+        assertEquals(true, obj.new Inner(5) instanceof BasicDtor.Inner(var i) && i == 5);
     }
 
     public static void testOtherMembersUnaffected() {
@@ -129,6 +149,18 @@ public class SimpleDeconstructorsTest {
 
         assertEquals("public SimpleDeconstructorsTest$BasicDtor(int)", ctor.toGenericString());
         assertEquals(false, ctor.isVarArgs());
+    }
+
+    public static void testInnerCtorForComparison() throws Exception {
+        Constructor<BasicDtor.Inner> ctor = BasicDtor.Inner.class.getConstructor(BasicDtor.class, int.class);
+
+        assertEquals(BasicDtor.Inner.class, ctor.getDeclaringClass());
+        assertEquals(BasicDtor.Inner.class.getName(), ctor.getName());
+
+        BasicDtor out = new BasicDtor(42);
+        BasicDtor.Inner in1 = out.new Inner(5);
+        BasicDtor.Inner in2 = ctor.newInstance(out, 5);
+        assertEquals(in1.field, in2.field);
     }
 
     public static void testDtorAttributes() throws NoSuchPatternException {
@@ -258,7 +290,20 @@ public class SimpleDeconstructorsTest {
 
         Deconstructor<Person1> method2 = class1.getDeclaredDeconstructor(int.class);
         Object[] extracted2 = method2.tryMatch(p);
+        assertEquals(1, extracted2.length);
         assertEquals(42, extracted2[0]);
+    }
+
+    public static void testInnerTryMatch() throws IllegalAccessException, NoSuchPatternException {
+        BasicDtor out = new BasicDtor(42);
+        BasicDtor.Inner in = out.new Inner(5);
+
+        // TODO: outer state is being ignored
+        Deconstructor<BasicDtor.Inner> dtor = BasicDtor.Inner.class.getDeclaredDeconstructor(/*BasicDtor.class,*/ int.class);
+        Object[] extracted = dtor.tryMatch(in);
+        assertEquals(1, extracted.length);
+        // assertEquals(dtor, extracted[0]);
+        assertEquals(5, extracted[0]);
     }
 
     public static void testDeconstructorElementsAnnotations() throws NoSuchPatternException {
