@@ -130,6 +130,25 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      */
     public Class<T> getCandidateType() { return candidateType; }
 
+    /**
+     * Returns the (unerased) type of match candidates accepted by this pattern member. In the case
+     * of a deconstructor it is the same as the declaring class
+     * (TODO: probably with unbounded wildcards?).
+     *
+     * @return type of match candidate
+     */
+    public Type getGenericCandidateType() {
+        return candidateType; // TODO: needs to be more than just a Class
+    }
+
+    /**
+     * TODO: javadoc.
+     * @return TODO
+     */
+    public AnnotatedType getAnnotatedCandidateType() {
+        throw new UnsupportedOperationException("TODO");
+    }
+
     @Override
     public int getModifiers() {
         return modifiers;
@@ -142,7 +161,7 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
 
     // Skip the usual way that executables find their Parameters
     // at least for now, we just had them passed in instead
-    // Note that if this is a deconstructor of an inner member class the first eleemnt of the
+    // Note that if this is a deconstructor of an inner member class the first element of the
     // returned array represents the owner/outer instance.
     @Override
     public Parameter[] getParameters() {
@@ -315,6 +334,9 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         return super.getDeclaredAnnotations();
     }
 
+    /**
+     * TODO: need to respecify the parent method so there's some valid option we can do here.
+     */
     @Override
     public AnnotatedType getAnnotatedReturnType() {
         return null;
