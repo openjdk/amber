@@ -25,8 +25,6 @@
 
 package java.lang.reflect;
 
-import jdk.internal.reflect.CallerSensitive;
-import jdk.internal.reflect.Reflection;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ExecutableRepository;
@@ -37,15 +35,12 @@ import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.runtime.Carriers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import static java.lang.runtime.PatternBytecodeName.mangle;
-
-import jdk.internal.access.SharedSecrets;
 
 /**
  * {@code MemberPattern} provides information about, and access to, a single
@@ -413,7 +408,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
                             .map(PatternBinding::getType)
                             .toArray(Class[]::new)
             );
-            MethodHandle pack = MethodHandles.identity(Object[].class).asCollector(Object[].class, this.getPatternBindings().length).asType(bindingMT);
+            MethodHandle pack = CollectHolder.COLLECT_TO_ARRAY.asType(bindingMT);
 
             return (Object[])method.invoke(matchCandidate, matchCandidate, pack);
         } catch (Throwable e) {
@@ -452,5 +447,21 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
 
     String getMangledName() {
         return mangle(this.getDeclaringClass(), Arrays.stream(getPatternBindings()).map(pb -> pb.getType()).toArray(Class[]::new));
+    }
+
+    private static class CollectHolder {
+        private static Object[] collect(Object... params) {
+            return params;
+        }
+
+        static final MethodHandle COLLECT_TO_ARRAY;
+
+        static {
+            try {
+                COLLECT_TO_ARRAY = MethodHandles.lookup().findStatic(CollectHolder.class, "collect", MethodType.methodType(Object[].class, Object[].class));
+            } catch (NoSuchMethodException | IllegalAccessException ex) {
+                throw new IllegalStateException(ex);
+            }
+        }
     }
 }
