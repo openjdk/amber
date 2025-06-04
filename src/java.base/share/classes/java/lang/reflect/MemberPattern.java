@@ -35,6 +35,7 @@ import sun.reflect.generics.scope.MemberPatternScope;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.runtime.Carriers;
 import java.util.ArrayList;
@@ -407,14 +408,14 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
             Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass(), MethodHandle.class);
             method.setAccessible(override);
             MethodType bindingMT = MethodType.methodType(
-                    Object.class,
+                    Object[].class,
                     Arrays.stream(this.getPatternBindings())
                             .map(PatternBinding::getType)
                             .toArray(Class[]::new)
             );
-            MethodHandle initializingConstructor = SharedSecrets.getJavaLangRuntimeAccess().initializingConstructor(bindingMT);
+            MethodHandle pack = MethodHandles.identity(Object[].class).asCollector(Object[].class, this.getPatternBindings().length).asType(bindingMT);
 
-            return (Object[])SharedSecrets.getJavaLangRuntimeAccess().boxedComponentValueArray(bindingMT).invoke(method.invoke(matchCandidate, matchCandidate, initializingConstructor));
+            return (Object[])method.invoke(matchCandidate, matchCandidate, pack);
         } catch (Throwable e) {
             throw new MatchException(e.getMessage(), e);
         }

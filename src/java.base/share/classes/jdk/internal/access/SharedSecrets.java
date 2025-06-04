@@ -67,7 +67,6 @@ public class SharedSecrets {
     private static JavaLangModuleAccess javaLangModuleAccess;
     private static JavaLangRefAccess javaLangRefAccess;
     private static JavaLangReflectAccess javaLangReflectAccess;
-    private static JavaLangRuntimeAccess javaLangRuntimeAccess;
     private static JavaIOAccess javaIOAccess;
     private static JavaIOFileDescriptorAccess javaIOFileDescriptorAccess;
     private static JavaIORandomAccessFileAccess javaIORandomAccessFileAccess;
@@ -201,19 +200,6 @@ public class SharedSecrets {
 
     public static JavaLangReflectAccess getJavaLangReflectAccess() {
         return javaLangReflectAccess;
-    }
-
-    public static void setJavaLangRuntimeAccess(JavaLangRuntimeAccess jlra) {
-        javaLangRuntimeAccess = jlra;
-    }
-
-    public static JavaLangRuntimeAccess getJavaLangRuntimeAccess() {
-        var access = javaLangRuntimeAccess;
-        if (access == null) {
-            ensureClassInitialized(ModuleDescriptor.class);
-            access = javaLangRuntimeAccess;
-        }
-        return access;
     }
 
     public static void setJavaNetUriAccess(JavaNetUriAccess jnua) {

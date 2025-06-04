@@ -31,8 +31,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 
-import jdk.internal.access.JavaLangRuntimeAccess;
-import jdk.internal.access.SharedSecrets;
 import jdk.internal.vm.annotation.Stable;
 
 /**
@@ -158,30 +156,4 @@ public final class Carriers {
     }
 
     private record Carrier(@Stable Object[] data) {}
-
-    //XXX: for reflection:
-    private static final MethodHandle DATA_GETTER;
-
-    static {
-        try {
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            DATA_GETTER = lookup.findVirtual(Carrier.class, "data", MethodType.methodType(Object[].class));
-        } catch (ReflectiveOperationException e) {
-            throw new ExceptionInInitializerError(e);
-        }
-    }
-
-    static {
-        SharedSecrets.setJavaLangRuntimeAccess(new JavaLangRuntimeAccess() {
-            @Override
-            public MethodHandle initializingConstructor(MethodType methodType) {
-                return Carriers.initializingConstructor(null, null, null, methodType);
-            }
-
-            @Override
-            public MethodHandle boxedComponentValueArray(MethodType methodType) {
-                return DATA_GETTER;
-            }
-        });
-    }
 }
