@@ -151,7 +151,7 @@ public final class Carriers {
         return new ConstantCallSite(MethodHandles.insertArguments(COMPONENT_GETTER, 0, i).asType(MethodType.methodType(componentType, Object.class)));
     }
 
-    private static Object componentGetter(int component, Carrier carrier) throws Throwable {
+    private static Object componentGetter(int component, Carrier carrier) {
         return carrier.data()[component];
     }
 
