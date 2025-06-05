@@ -3,7 +3,6 @@ package java.lang.reflect;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
 import java.lang.runtime.Carriers;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -11,10 +10,9 @@ import java.util.List;
  * The reflection view of a single deconstructor, providing relevant information and enabling
  * execution with {@link #tryMatch(Object)}.
  *
- * @param <T> the class declaring this deconstructor; also the deconstructor's match candidate type
- * @since 26
+ * @since 27
  */
-public final class Deconstructor<T> extends PatternMember<T> {
+public final class Deconstructor extends PatternMember {
     /**
      * TODO make private again
      * Package-private member pattern used by ReflectAccess to enable
@@ -29,7 +27,7 @@ public final class Deconstructor<T> extends PatternMember<T> {
      * @param signature       x
      * @param annotations     x
      */
-    public Deconstructor(Class<T> declaringClass,
+    public Deconstructor(Class<?> declaringClass,
                          int modifiers,
                          int patternFlags,
                          List<Parameter> outParameters,
@@ -73,13 +71,10 @@ public final class Deconstructor<T> extends PatternMember<T> {
      *              class, the first element of the returned array is the owning (outer) instance.
      * @throws    IllegalArgumentException  if {@code candidate} is not of this deconstructor's
      *              accepted match candidate type.
-     * @throws    IllegalAccessException    if this {@code PatternMember} object
-     *              is enforcing Java language access control and the underlying
-     *              constructor is inaccessible.
      * @throws    MatchException if the pattern matching provoked
      *              by this {@code PatternMember} fails.
      */
-    public Object[] tryMatch(T candidate) throws IllegalAccessException, MatchException {
+    public Object[] tryMatch(Object candidate) throws MatchException {
         String underlyingName = getMangledName();
 
         try {
@@ -104,11 +99,11 @@ public final class Deconstructor<T> extends PatternMember<T> {
      * ReflectAccess) which returns a copy of this Deconstructor. The copy's
      * "root" field points to this Deconstructor.
      */
-    Deconstructor<T> copy() {
+    Deconstructor copy() {
         if (this.root != null)
             throw new IllegalArgumentException("Can not copy a non-root PatternMember");
 
-        Deconstructor<T> res = new Deconstructor<>(
+        Deconstructor res = new Deconstructor(
                 this.candidateType,
                 this.modifiers,
                 this.patternFlags,

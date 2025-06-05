@@ -31,10 +31,10 @@ import java.lang.reflect.PatternMember;
  * This class represents the scope containing the type variables of
  * a member pattern.
  */
-public class PatternMemberScope extends AbstractScope<PatternMember<?>> {
+public class PatternMemberScope extends AbstractScope<PatternMember> {
 
     // constructor is private to enforce use of factory method
-    private PatternMemberScope(PatternMember<?> c){
+    private PatternMemberScope(PatternMember c){
         super(c);
     }
 
@@ -60,7 +60,7 @@ public class PatternMemberScope extends AbstractScope<PatternMember<?>> {
      * @param c - A member pattern whose scope we want to obtain
      * @return The type-variable scope for the constructor m
      */
-    public static PatternMemberScope make(PatternMember<?> c) {
+    public static PatternMemberScope make(PatternMember c) {
         return new PatternMemberScope(c);
     }
 }

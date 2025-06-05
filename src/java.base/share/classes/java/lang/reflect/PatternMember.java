@@ -47,13 +47,11 @@ import static java.lang.runtime.PatternBytecodeName.mangle;
  * it uses these parameters in a different way: here they are <b>out-parameters</b>, conveying
  * extracted values outward to the client.
  *
- * @param <T> the type of match candidate this pattern member accepts
- *
- * @since 26
+ * @since 27
  */
-public abstract sealed class PatternMember<T> extends Executable permits Deconstructor {
+public abstract sealed class PatternMember extends Executable permits Deconstructor {
     final Class<?>                          declaringClass;
-    final Class<T>                          candidateType;
+    final Class<?>                          candidateType; // TODO: Type?
     final List<Parameter>                   outParameters;
     final List<PatternBinding>              patternBindings;
 
@@ -74,10 +72,10 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
         return CoreReflectionFactory.make(this, PatternMemberScope.make(this));
     }
 
-    PatternMember<T> root;
+    PatternMember root;
 
     @Override
-    PatternMember<T> getRoot() {
+    PatternMember getRoot() {
         return root;
     }
 
@@ -98,7 +96,7 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      * @param parameterAnnotations x
      */
     public PatternMember(Class<?> declaringClass,
-                         Class<T> candidateType,
+                         Class<?> candidateType,
                          int modifiers,
                          int patternFlags,
                          List<Parameter> outParameters,
@@ -128,7 +126,7 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
      *
      * @return type of match candidate
      */
-    public Class<T> getCandidateType() { return candidateType; }
+    public Class<?> getCandidateType() { return candidateType; }
 
     /**
      * Returns the (unerased) type of match candidates accepted by this pattern member. In the case
@@ -219,11 +217,11 @@ public abstract sealed class PatternMember<T> extends Executable permits Deconst
 
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public TypeVariable<PatternMember<T>>[] getTypeParameters() {
+    public TypeVariable<PatternMember>[] getTypeParameters() {
         if (getSignature() != null) {
-            return (TypeVariable<PatternMember<T>>[])getGenericInfo().getTypeParameters();
+            return (TypeVariable<PatternMember>[])getGenericInfo().getTypeParameters();
         } else
-            return (TypeVariable<PatternMember<T>>[])GenericDeclRepository.EMPTY_TYPE_VARS;
+            return (TypeVariable<PatternMember>[])GenericDeclRepository.EMPTY_TYPE_VARS;
     }
 
     @Override

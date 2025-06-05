@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  */
 public final class PatternBinding implements AnnotatedElement {
     // declaring class
-    private PatternMember<?> declaringDeconstructor;
+    private PatternMember                      declaringDeconstructor;
     private String                             name;
     private Class<?>                           type;
     private String                             signature;
@@ -76,7 +76,7 @@ public final class PatternBinding implements AnnotatedElement {
      * @param typeAnnotations x
      *
      */
-    public PatternBinding(PatternMember<?> declaringDeconstructor,
+    public PatternBinding(PatternMember declaringDeconstructor,
                           String name,
                           Class<?> type,
                           String signature,
@@ -252,7 +252,7 @@ public final class PatternBinding implements AnnotatedElement {
      *
      * @return The deconstructor declaring this pattern binding.
      */
-    public PatternMember<?> getDeclaringDeconstructor() {
+    public PatternMember getDeclaringDeconstructor() {
         return declaringDeconstructor;
     }
 }

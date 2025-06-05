@@ -68,5 +68,5 @@ public interface JavaLangReflectAccess {
     public <T> T newInstance(Constructor<T> ctor, Object[] args, Class<?> caller)
         throws IllegalAccessException, InstantiationException, InvocationTargetException;
 
-    public String getMangledName(PatternMember<?> d);
+    public String getMangledName(PatternMember d);
 }

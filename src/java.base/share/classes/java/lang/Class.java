@@ -2080,9 +2080,9 @@ public final class Class<T> implements java.io.Serializable,
      *         of this class.
      *
      * @see #getDeclaredDeconstructors()
-     * @since 23
+     * @since 27
      */
-    public Deconstructor<T>[] getDeconstructors() throws SecurityException {
+    public Deconstructor[] getDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.PUBLIC);
     }
 
@@ -2105,9 +2105,9 @@ public final class Class<T> implements java.io.Serializable,
      *         of this class.
      *
      * @see #getDeclaredDeconstructor(Class<?>[])
-     * @since 23
+     * @since 27
      */
-    public Deconstructor<T> getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+    public Deconstructor getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
         var ret = getDeclaredDeconstructors0(bindingTypes, Member.PUBLIC);
 
         if (ret.length == 0) {
@@ -2145,18 +2145,16 @@ public final class Class<T> implements java.io.Serializable,
      *
      *          </ul>
      *
-     * @since 23
+     * @since 27
      * @see #getDeconstructors()
      */
-    public Deconstructor<T>[] getDeclaredDeconstructors() throws SecurityException {
+    public Deconstructor[] getDeclaredDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.DECLARED);
     }
 
-    private Deconstructor<T>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
+    private Deconstructor[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
         if (this.isPrimitive()) {
-            @SuppressWarnings("unchecked")
-            var result = (Deconstructor<T>[]) new Deconstructor<?>[0];
-            return result;
+            return new Deconstructor[0];
         }
         try (var in = (getClassLoader() != null)
                 ? getClassLoader().getResourceAsStream(getResourcePath())
@@ -2164,7 +2162,7 @@ public final class Class<T> implements java.io.Serializable,
             if (in == null) throw new RuntimeException("Resource not found: " + name);
             byte[] bytes = in.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
-            ArrayList<Deconstructor<T>> decs = new ArrayList<>();
+            ArrayList<Deconstructor> decs = new ArrayList<>();
             for (MethodModel mm : cm.methods()) {
                 PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
                 if (pa != null) {
@@ -2193,7 +2191,7 @@ public final class Class<T> implements java.io.Serializable,
 
                         ArrayList<PatternBinding> deconstructorBindings = new ArrayList<>();
                         ArrayList<Parameter> outParameters = new ArrayList<>();
-                        Deconstructor<T> currentDeconstructor = new Deconstructor<T>(
+                        Deconstructor currentDeconstructor = new Deconstructor(
                                 this,
                                 mm.flags().flagsMask(),
                                 pa.patternFlagsMask(),
@@ -2236,8 +2234,7 @@ public final class Class<T> implements java.io.Serializable,
                     }
                 }
             }
-            @SuppressWarnings("unchecked")
-            var result = (Deconstructor<T>[])decs.toArray(new Deconstructor<?>[decs.size()]);
+            var result = decs.toArray(new Deconstructor[decs.size()]);
             return result;
         } catch (IOException | ReflectiveOperationException e) {
             throw new RuntimeException(e);
@@ -2290,9 +2287,9 @@ public final class Class<T> implements java.io.Serializable,
      *          </ul>
      *
      * @see #getDeconstructor(Class<T>[])
-     * @since 1.1
+     * @since 27
      */
-    public Deconstructor<T> getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+    public Deconstructor getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
         var ret = getDeclaredDeconstructors0(bindingTypes, Member.DECLARED);
 
         if (ret.length == 0) {
