@@ -1269,15 +1269,12 @@ public class JavacParser implements Parser {
                 boolean isPattern = (mods.flags & ~Flags.DEPRECATED) != 0 ||
                                     analyzePattern(0, AnalyzePatternOrigin.INSTANCEOF).fst == PatternResult.PATTERN;
                 if (isPattern) {
-//                    checkSourceLevel(token.pos, Feature.PATTERN_SWITCH);
                     pattern = parsePattern(pos, mods, false);
                     if (pattern instanceof JCBindingPattern bindingPattern) {
                         checkSourceLevel(bindingPattern.var.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
                     } else {
-                        //TODO: UNNAMED_VARIABLES!
                         checkSourceLevel(pattern.pos, Feature.RECORD_PATTERNS);
                     }
-                    //TODO: source level checks
                 } else {
                     checkNoMods(token.pos, mods.flags & ~Flags.DEPRECATED);
                     JCExpression type = unannotatedType(false);
