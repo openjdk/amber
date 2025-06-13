@@ -497,7 +497,7 @@ public final class MethodHandles {
      * <tbody>
      * <tr>
      *     <th scope="row">{@link java.lang.invoke.MethodHandles.Lookup#findGetter lookup.findGetter(C.class,"f",FT.class)}</th>
-     *     <td>{@code FT f;}</td><td>{@code (T) this.f;}</td>
+     *     <td>{@code FT f;}</td><td>{@code (FT) this.f;}</td>
      * </tr>
      * <tr>
      *     <th scope="row">{@link java.lang.invoke.MethodHandles.Lookup#findStaticGetter lookup.findStaticGetter(C.class,"f",FT.class)}</th>
@@ -3361,7 +3361,7 @@ return mh1;
                 return unreflect(
                     ownerType.getDeclaredMethod(
                         SharedSecrets.getJavaLangReflectAccess().getMangledName(d),
-                        ownerType
+                        ownerType, MethodHandle.class
                     )
                 );
             } catch (NoSuchMethodException | SecurityException ex) {

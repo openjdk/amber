@@ -240,7 +240,7 @@ public class Flow {
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
         if (!speculative) {
-            diagHandler = new Log.DiscardDiagnosticHandler(log);
+            diagHandler = log.new DiscardDiagnosticHandler();
         }
         try {
             new LambdaAliveAnalyzer().analyzeTree(env, that, make);
@@ -258,7 +258,7 @@ public class Flow {
         //message will be reported and will cause compilation to skip the flow analysis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
-        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
+        Log.DiagnosticHandler diagHandler = log.new DiscardDiagnosticHandler();
         try {
             new LambdaAssignAnalyzer(env).analyzeTree(env, that, make);
             LambdaFlowAnalyzer flowAnalyzer = new LambdaFlowAnalyzer();
@@ -275,7 +275,7 @@ public class Flow {
         //message will be reported and will cause compilation to skip the flow analysis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
-        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
+        Log.DiagnosticHandler diagHandler = log.new DiscardDiagnosticHandler();
         try {
             SnippetAliveAnalyzer analyzer = new SnippetAliveAnalyzer();
 
@@ -292,7 +292,7 @@ public class Flow {
         //message will be reported and will cause compilation to skip the flow analysis
         //step - if we suppress diagnostics, we won't stop at Attr for flow-analysis
         //related errors, which will allow for more errors to be detected
-        Log.DiagnosticHandler diagHandler = new Log.DiscardDiagnosticHandler(log);
+        Log.DiagnosticHandler diagHandler = log.new DiscardDiagnosticHandler();
         try {
             SnippetBreakToAnalyzer analyzer = new SnippetBreakToAnalyzer(breakTo);
 
