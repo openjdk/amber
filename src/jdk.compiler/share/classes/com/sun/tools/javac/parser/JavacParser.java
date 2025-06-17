@@ -989,16 +989,16 @@ public class JavacParser implements Parser {
     /** parses patterns.
      */
     public JCPattern parsePattern(int pos, JCModifiers mods, boolean allowVar) {
+        int patternStart = mods != null && mods.pos != Position.NOPOS ? mods.pos : token.pos;
         JCPattern pattern;
         mods = mods != null ? mods : optFinal(0);
         JCExpression e;
         if (token.kind == UNDERSCORE && !peekToken(LPAREN)) {
             nextToken();
             checkSourceLevel(Feature.UNNAMED_VARIABLES);
-            pattern = toP(F.at(token.pos).AnyPattern());
+            pattern = toP(F.at(patternStart).AnyPattern());
         }
         else {
-            int patternStart = token.pos;
             int dotLookahead = analyzePattern(0, AnalyzePatternOrigin.PATTERN).snd;
             if (dotLookahead != (-1)) {
                 limitTokens = dotLookahead - 1;
