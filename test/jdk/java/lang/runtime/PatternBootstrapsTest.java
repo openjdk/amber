@@ -23,22 +23,11 @@
 
 import org.testng.annotations.Test;
 
-import java.io.Serializable;
-import java.lang.Enum.EnumDesc;
-import java.lang.classfile.ClassFile;
-import java.lang.constant.ClassDesc;
-import java.lang.constant.ConstantDescs;
-import java.lang.constant.MethodTypeDesc;
 import java.lang.invoke.CallSite;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.reflect.AccessFlag;
-import java.lang.runtime.Carriers;
 import java.lang.runtime.PatternBootstraps;
-import java.lang.runtime.SwitchBootstraps;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.testng.Assert.*;
 
@@ -84,10 +73,9 @@ public class PatternBootstrapsTest {
         MethodType dtorType = MethodType.methodType(Object.class, targetType, MethodHandle.class);
         MethodHandle indy = ((CallSite) INVK_PATTERN.invoke(MethodHandles.lookup(), "", dtorType, mangledName)).dynamicInvoker();
 
-        MethodType bindingMT = MethodType.methodType(Object.class, int.class, int.class);
-        MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
-        List<MethodHandle> components = Carriers.components(bindingMT);
-        assertEquals((int) components.get(componentNo).invokeExact(indy.invoke(target, initializingConstructor)), result);
+        MethodHandle toArray = MethodHandles.identity(Object[].class).asCollector(Object[].class, 2);
+        Object[] valuesFromPattern = (Object[]) (Object) indy.invoke(target, toArray);
+        assertEquals((int) valuesFromPattern[componentNo], result);
     }
 
     public void testPatternInvocations() throws Throwable {
