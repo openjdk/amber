@@ -554,6 +554,7 @@ public class TransPatterns extends TreeTranslator {
         List<Type> staticArgTypes = List.of(syms.methodHandleLookupType,
                 syms.stringType,
                 syms.methodTypeType,
+                syms.classType,
                 syms.stringType);
 
         MethodSymbol bsm = rs.resolveInternalMethod(
@@ -574,7 +575,7 @@ public class TransPatterns extends TreeTranslator {
         }
         else {
             invocationParamTypes = List.of(recordPattern.type, factoryMethodDynamicVar.type);
-            invocationParams     = List.of(make.Ident(matchCandidate), make.Ident(factoryMethodDynamicVar) );
+            invocationParams     = List.of(make.Ident(matchCandidate), make.Ident(factoryMethodDynamicVar));
         }
         MethodType indyType = new MethodType(
                 invocationParamTypes,
@@ -585,6 +586,7 @@ public class TransPatterns extends TreeTranslator {
 
         String mangledName = ((MethodSymbol)(recordPattern.patternDeclaration.baseSymbol())).externalName(types).toString();
         LoadableConstant[] staticArgValues = new LoadableConstant[] {
+                (ClassType) recordPattern.patternDeclaration.baseSymbol().owner.type,
                 LoadableConstant.String(mangledName)
         };
 
