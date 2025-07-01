@@ -34,6 +34,7 @@ package java.lang.runtime;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,12 +59,12 @@ public class CarriersTest {
                         char.class, int.class, long.class,
                         float.class, double.class,
                         boolean.class, String.class);
-        MethodHandle constructor = Carriers.initializingConstructor(methodType);
+        MethodHandle constructor = Carriers.initializingConstructor(null, null, null, methodType);
         Object object = (Object)constructor.invokeExact((byte)0xFF, (short)0xFFFF,
                 'C', 0xFFFFFFFF, 0xFFFFFFFFFFFFFFFFL,
                 1.0f / 3.0f, 1.0 / 3.0,
                 true, "abcde");
-        List<MethodHandle> components = Carriers.components(methodType);
+        List<MethodHandle> components = components(methodType);
         assertTrue((byte)components.get(0).invokeExact(object) == (byte)0xFF,
                 "primitive byte test failure");
         assertTrue((short)components.get(1).invokeExact(object) == (short)0xFFFF,
@@ -84,6 +85,15 @@ public class CarriersTest {
                 "primitive String test failure");
     }
 
+    private static List<MethodHandle> components(MethodType methodType) {
+        List<MethodHandle> result = new ArrayList<>();
+
+        for (int i = 0; i < methodType.parameterCount(); i++) {
+            result.add(Carriers.component(null, null, MethodType.methodType(methodType.parameterType(i), Object.class), methodType, i).getTarget());
+        }
+        return result;
+    }
+
     static void primitivesTestLarge() throws Throwable {
         MethodType methodType =
                 MethodType.methodType(Object.class, byte.class, short.class,
@@ -98,7 +108,7 @@ public class CarriersTest {
                         Object.class, Object.class,Object.class,Object.class,
                         Object.class, Object.class,Object.class,Object.class
                 );
-        MethodHandle constructor = Carriers.initializingConstructor(methodType);
+        MethodHandle constructor = Carriers.initializingConstructor(null, null, null, methodType);
         Object object = (Object)constructor.invokeExact((byte)0xFF, (short)0xFFFF,
                 'C', 0xFFFFFFFF, 0xFFFFFFFFFFFFFFFFL,
                 1.0f / 3.0f, 1.0 / 3.0,
@@ -111,7 +121,7 @@ public class CarriersTest {
                 (Object)null, (Object)null, (Object)null, (Object)null,
                 (Object)null, (Object)null, (Object)null, (Object)null
         );
-        List<MethodHandle> components = Carriers.components(methodType);
+        List<MethodHandle> components = components(methodType);
         assertTrue((byte)components.get(0).invokeExact(object) == (byte)0xFF,
                 "large primitive byte test failure");
         assertTrue((short)components.get(1).invokeExact(object) == (short)0xFFFF,
@@ -132,35 +142,35 @@ public class CarriersTest {
                 "large primitive String test failure");
     }
 
-    static void limitsTest() {
-        boolean passed;
+   static void limitsTest() {
+       boolean passed;
 
-        passed = false;
-        try {
-            Class<?>[] ptypes = new Class<?>[MAX_COMPONENTS + 1];
-            Arrays.fill(ptypes, Object.class);
-            MethodType methodType = MethodType.methodType(Object.class, ptypes);
-            MethodHandle constructor = Carriers.constructor(methodType);
-        } catch (IllegalArgumentException ex) {
-            passed = true;
-        }
+       passed = false;
+       try {
+           Class<?>[] ptypes = new Class<?>[MAX_COMPONENTS + 1];
+           Arrays.fill(ptypes, Object.class);
+           MethodType methodType = MethodType.methodType(Object.class, ptypes);
+           MethodHandle constructor = Carriers.initializingConstructor(null, null, null, methodType);
+       } catch (IllegalArgumentException ex) {
+           passed = true;
+       }
 
-        if (!passed) {
-            throw new RuntimeException("failed to report too many components ");
-        }
+       if (!passed) {
+           throw new RuntimeException("failed to report too many components ");
+       }
 
-        passed = false;
-        try {
-            Class<?>[] ptypes = new Class<?>[MAX_COMPONENTS / 2 + 1];
-            Arrays.fill(ptypes, long.class);
-            MethodType methodType = MethodType.methodType(Object.class, ptypes);
-            MethodHandle constructor = Carriers.constructor(methodType);
-        } catch (IllegalArgumentException ex) {
-            passed = true;
-        }
+       passed = false;
+       try {
+           Class<?>[] ptypes = new Class<?>[MAX_COMPONENTS / 2 + 1];
+           Arrays.fill(ptypes, long.class);
+           MethodType methodType = MethodType.methodType(Object.class, ptypes);
+           MethodHandle constructor = Carriers.initializingConstructor(null, null, null, methodType);
+       } catch (IllegalArgumentException ex) {
+           passed = true;
+       }
 
-        if (!passed) {
-            throw new RuntimeException("failed to report too many components ");
-        }
-    }
+       if (!passed) {
+           throw new RuntimeException("failed to report too many components ");
+       }
+   }
 }

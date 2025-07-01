@@ -25,8 +25,6 @@
 
 package java.lang.reflect;
 
-import jdk.internal.reflect.CallerSensitive;
-import jdk.internal.reflect.Reflection;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ExecutableRepository;
@@ -35,8 +33,8 @@ import sun.reflect.generics.scope.MemberPatternScope;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
-import java.lang.runtime.Carriers;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.StringJoiner;
@@ -405,14 +403,14 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
             Method method = getDeclaringClass().getDeclaredMethod(underlyingName, matchCandidate.getClass(), MethodHandle.class);
             method.setAccessible(override);
             MethodType bindingMT = MethodType.methodType(
-                    Object.class,
+                    Object[].class,
                     Arrays.stream(this.getPatternBindings())
                             .map(PatternBinding::getType)
                             .toArray(Class[]::new)
             );
-            MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
+            MethodHandle pack = CollectHolder.COLLECT_TO_ARRAY.asType(bindingMT);
 
-            return (Object[])Carriers.boxedComponentValueArray(bindingMT).invoke(method.invoke(matchCandidate, matchCandidate, initializingConstructor));
+            return (Object[])method.invoke(matchCandidate, matchCandidate, pack);
         } catch (Throwable e) {
             throw new MatchException(e.getMessage(), e);
         }
@@ -449,5 +447,21 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
 
     String getMangledName() {
         return mangle(this.getDeclaringClass(), Arrays.stream(getPatternBindings()).map(pb -> pb.getType()).toArray(Class[]::new));
+    }
+
+    private static class CollectHolder {
+        private static Object[] collect(Object... params) {
+            return params;
+        }
+
+        static final MethodHandle COLLECT_TO_ARRAY;
+
+        static {
+            try {
+                COLLECT_TO_ARRAY = MethodHandles.lookup().findStatic(CollectHolder.class, "collect", MethodType.methodType(Object[].class, Object[].class));
+            } catch (NoSuchMethodException | IllegalAccessException ex) {
+                throw new IllegalStateException(ex);
+            }
+        }
     }
 }
