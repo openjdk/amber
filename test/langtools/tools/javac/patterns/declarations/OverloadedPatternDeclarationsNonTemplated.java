@@ -244,6 +244,44 @@ public class OverloadedPatternDeclarationsNonTemplated extends TestRunner {
                         """, Task.Expect.SUCCESS);
     }
 
+    @Test
+    public void test5(Path base) throws Exception {
+        String source =
+                """
+                package test;
+
+                class Test {
+                    public static void main(String... args) {
+                        String s = "42";
+
+                        switch (s) {
+                            case MyStaticPatterns.Outer(MyStaticPatterns.Inner(int i)) -> {}
+                        }
+                    }
+
+                    static class A{}
+                    static class B{}
+
+                    static class MyStaticPatterns {
+                        static pattern A Inner(int datum) { match Inner(1); }
+                        static pattern B Inner(int datum) { match Inner(2); }
+
+                        static pattern String Outer(A a)  { match Outer(new A()); }
+                        static pattern String Outer(B b)  { match Outer(new B()); }
+                    }
+                }
+                """;
+
+        compileAndRun(base, source,
+                """
+                        Test.java:17:26: compiler.err.already.defined: kindname.method, Inner(), kindname.class, test.Test.MyStaticPatterns
+                        Test.java:8:18: compiler.err.matcher.overloading.ambiguity: test.Test.MyStaticPatterns
+                        - compiler.note.preview.filename: Test.java, DEFAULT
+                        - compiler.note.preview.recompile
+                        2 errors
+                        """, Task.Expect.FAIL);
+    }
+
     private void compileAndRun(Path base, String source, String expected, Task.Expect compilationExpectation) throws IOException {
         Path current = base.resolve(".");
         Path src = current.resolve("src");

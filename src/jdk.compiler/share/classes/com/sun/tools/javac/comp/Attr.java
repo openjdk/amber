@@ -4484,7 +4484,14 @@ public class Attr extends JCTree.Visitor {
                 case JCBindingPattern jcBindingPattern when jcBindingPattern.var.isImplicitlyTyped() -> Type.noType;
                 case JCBindingPattern jcBindingPattern -> attribType(jcBindingPattern.var.vartype, env);
                 case JCRecordPattern jcRecordPattern when jcRecordPattern.deconstructor == null -> Type.noType;
-                case JCRecordPattern jcRecordPattern -> attribType(jcRecordPattern.deconstructor, env);
+                case JCRecordPattern jcRecordPattern -> {
+                    Symbol type = rs.findType(env, TreeInfo.name(jcRecordPattern.deconstructor));
+                    if (type.exists()) {
+                        yield type.type;
+                    } else {
+                        yield Type.noType;
+                    }
+                }
             };
             notionalTypesBuffer.append(patternType);
         }
@@ -4718,7 +4725,7 @@ public class Attr extends JCTree.Visitor {
                         .collect(List.collector());
                 PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, uncaptured, syms.methodClass);
 
-                MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
+                MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN | DTOR, ((ClassSymbol) site.tsym).name, pt, site.tsym);
 
                 synthesized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
                 synthesized.patternFlags.add(PatternFlags.TOTAL);

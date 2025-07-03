@@ -480,7 +480,7 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
     /** Is this symbol a deconstructor?
      */
     public boolean isDeconstructor() {
-        return isPattern() && name == owner.name;
+        return isPattern() && (flags() & DTOR) != 0 ;
     }
 
     /** Is this symbol an instance pattern?

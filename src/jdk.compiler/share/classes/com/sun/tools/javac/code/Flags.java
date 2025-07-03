@@ -130,6 +130,7 @@ public class Flags {
     /** Method is a matcher method.
      */
     public static final int PATTERN = 1<<19; // MethodSymbols
+    public static final int DTOR = 1<<18;    // MethodSymbols
 
     /** Flag is set for compiler-generated anonymous method symbols
      *  that `own' an initializer block.

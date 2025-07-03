@@ -75,6 +75,7 @@ import static com.sun.tools.javac.code.Flags.*;
 import static com.sun.tools.javac.code.Kinds.Kind.*;
 
 import com.sun.tools.javac.code.Scope.LookupKind;
+import sun.invoke.util.BytecodeName;
 
 import static com.sun.tools.javac.code.TypeTag.ARRAY;
 import static com.sun.tools.javac.code.TypeTag.CLASS;
@@ -2773,6 +2774,9 @@ public class ClassReader {
             readMemberAttrs(m);
         } finally {
             currentOwner = prevOwner;
+        }
+        if (m.isPattern() && name.toString().startsWith(BytecodeName.toBytecodeName(name.table.names.dinit.toString()))){
+            m.flags_field |= DTOR;
         }
         validateMethodType(name, m.type);
         adjustParameterAnnotations(m, descriptorType, forceLocal);
