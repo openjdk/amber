@@ -4999,11 +4999,12 @@ public class JavacParser implements Parser {
 
             JCExpression matchCandidateType = type;
 
-            matcherCandidate = toP(F.at(pos).VarDef(
+            //TODO: presumably should not be added here (i.e. in the frontend):
+            matcherCandidate = F.at(pos).VarDef(
                     F.Modifiers(Flags.GENERATED_MEMBER),
                     names._that,
                     matchCandidateType,
-                    null));
+                    null);
         }
 
         // Constructor or deconstructor

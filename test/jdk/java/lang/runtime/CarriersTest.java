@@ -89,7 +89,7 @@ public class CarriersTest {
         List<MethodHandle> result = new ArrayList<>();
 
         for (int i = 0; i < methodType.parameterCount(); i++) {
-            result.add(Carriers.component(null, null, null, methodType, i).getTarget());
+            result.add(Carriers.component(null, null, MethodType.methodType(methodType.parameterType(i), Object.class), methodType, i).getTarget());
         }
         return result;
     }

@@ -35,6 +35,7 @@
  * @run testng SnippetHighlightTest
  */
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -114,6 +115,27 @@ public class SnippetHighlightTest extends KullaTesting {
                          "Highlight[start=32, end=38, attributes=[KEYWORD]]");
     }
 
+    public void testDeconstructor() {
+        assertHighlights("""
+                         class C {
+                            private int i;
+                            public pattern C(int i) {
+                                match C(this.i);
+                            }
+                         }
+                         """,
+                         "Highlight[start=0, end=5, attributes=[KEYWORD]]",
+                         "Highlight[start=6, end=7, attributes=[DECLARATION]]",
+                         "Highlight[start=13, end=20, attributes=[KEYWORD]]",
+                         "Highlight[start=21, end=24, attributes=[KEYWORD]]",
+                         "Highlight[start=25, end=26, attributes=[DECLARATION]]",
+                         "Highlight[start=31, end=37, attributes=[KEYWORD]]",
+                         "Highlight[start=46, end=47, attributes=[DECLARATION]]",
+                         "Highlight[start=48, end=51, attributes=[KEYWORD]]",
+                         "Highlight[start=52, end=53, attributes=[DECLARATION]]",
+                         "Highlight[start=72, end=76, attributes=[KEYWORD]]");
+    }
+
     private void assertHighlights(String code, String... expected) {
         List<String> completions = computeHighlights(code);
         assertEquals(completions, Arrays.asList(expected), "Input: " + code + ", " + completions.toString());
@@ -126,7 +148,17 @@ public class SnippetHighlightTest extends KullaTesting {
                 getAnalysis().highlights(code);
         return highlights.stream()
                           .map(h -> h.toString())
-                          .distinct()
                           .collect(Collectors.toList());
+    }
+
+    @org.testng.annotations.BeforeMethod
+    public void setUp(Method m) {
+        switch (m.getName()) {
+            case "testDeconstructor" ->
+                super.setUp(bc -> bc.compilerOptions("--source", System.getProperty("java.specification.version"),
+                                                     "--enable-preview"));
+            default ->
+                super.setUp(bc -> {});
+        }
     }
 }
