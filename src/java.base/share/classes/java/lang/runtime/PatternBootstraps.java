@@ -88,6 +88,7 @@ public class PatternBootstraps {
      * @param invocationName unused
      * @param invocationType The invocation type of the {@code CallSite} with one parameter,
      *                       a reference type, and an {@code Object} as a return type.
+     * @param patternClass   The containing class for the pattern declaration
      * @param mangledName    The mangled name of the method declaration that will act as a pattern.
      * @return a {@code CallSite} returning the first matching element as described above
      * @throws NullPointerException     if any argument is {@code null}
@@ -99,15 +100,19 @@ public class PatternBootstraps {
     public static CallSite invokePattern(MethodHandles.Lookup lookup,
                                          String invocationName,
                                          MethodType invocationType,
+                                         Class<?> patternClass,
                                          String mangledName) {
         MethodHandle target = null;
 
         switch (detectPatternUseSite(invocationType, mangledName)) {
             case Deconstructor -> {
                 Class<?> matchCandidateType = invocationType.parameterType(0);
+                if (!patternClass.equals(matchCandidateType)) {
+                    throw new IllegalArgumentException("Unexpected patternClass: " + patternClass + " (was expecting: " + matchCandidateType + ")");
+                }
                 try {
                     // Attempt 1: discover the deconstructor
-                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
+                    target = lookup.findStatic(patternClass, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
                 } catch (Throwable t) {
                     // Attempt 2: synthesize the pattern declaration from the record components
                     if (!matchCandidateType.isRecord()) {
@@ -129,8 +134,11 @@ public class PatternBootstraps {
             case InstancePattern -> {
                 Class<?> receiverType = invocationType.parameterType(0);
                 Class<?> matchCandidateType = invocationType.parameterType(1);
+                if (!patternClass.equals(receiverType)) {
+                    throw new IllegalArgumentException("Unexpected patternClass: " + patternClass + " (was expecting: " + receiverType + ")");
+                }
                 try {
-                    target = lookup.findVirtual(receiverType, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
+                    target = lookup.findVirtual(patternClass, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
                 }
                 catch (Throwable t) {
                     throw new IllegalArgumentException("Unexpected instance pattern: " + mangledName + " (type: " + invocationType + ")");
@@ -139,7 +147,7 @@ public class PatternBootstraps {
             case StaticPattern -> {
                 Class<?> matchCandidateType = invocationType.parameterType(0);
                 try {
-                    target = lookup.findStatic(matchCandidateType, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
+                    target = lookup.findStatic(patternClass, mangledName, MethodType.methodType(Object.class, matchCandidateType, MethodHandle.class));
                 }
                 catch (Throwable t) {
                     throw new IllegalArgumentException("Unexpected static pattern: " + mangledName + " (type: " + invocationType + ")");
