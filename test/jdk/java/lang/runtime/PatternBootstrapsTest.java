@@ -48,7 +48,7 @@ public class PatternBootstrapsTest {
     static {
         try {
             INVK_PATTERN = MethodHandles.lookup().findStatic(PatternBootstraps.class, "invokePattern",
-                    MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, String.class));
+                    MethodType.methodType(CallSite.class, MethodHandles.Lookup.class, String.class, MethodType.class, Class.class, String.class));
         }
         catch (ReflectiveOperationException e) {
             throw new AssertionError("Should not happen", e);
@@ -71,7 +71,7 @@ public class PatternBootstrapsTest {
 
     private void testPatternInvocation(Object target, Class<?> targetType, String mangledName, int componentNo, int result) throws Throwable {
         MethodType dtorType = MethodType.methodType(Object.class, targetType, MethodHandle.class);
-        MethodHandle indy = ((CallSite) INVK_PATTERN.invoke(MethodHandles.lookup(), "", dtorType, mangledName)).dynamicInvoker();
+        MethodHandle indy = ((CallSite) INVK_PATTERN.invoke(MethodHandles.lookup(), "", dtorType, targetType, mangledName)).dynamicInvoker();
 
         MethodHandle toArray = MethodHandles.identity(Object[].class).asCollector(Object[].class, 2);
         Object[] valuesFromPattern = (Object[]) (Object) indy.invoke(target, toArray);

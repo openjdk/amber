@@ -3556,6 +3556,8 @@ public class JavacParser implements Parser {
                         return Pair.of(PatternResult.EXPRESSION, -1);
                     }
                     break OUTER;
+                case EQEQ, BANGEQ:
+                    break OUTER;
                 //TODO: error recovery stop tokens(?)
 
             }
