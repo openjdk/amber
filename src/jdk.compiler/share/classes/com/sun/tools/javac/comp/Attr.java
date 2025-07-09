@@ -4445,6 +4445,7 @@ public class Attr extends JCTree.Visitor {
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
             tree.record = syms.errSymbol;
+            tree.fullComponentTypes = List.fill(tree.nested.size(), syms.errType);
         } else {
             tree.fullComponentTypes = nestedPatternsTargetTypes;
         }
@@ -4467,7 +4468,8 @@ public class Attr extends JCTree.Visitor {
         }
         //TODO: are these types sensible?
         if (tree.patternDeclaration != null) { // TODO: improve error recovery
-            tree.type = tree.deconstructor.type = tree.patternDeclaration.type.getMatchCandidateType();
+            Type patternDeclarationType = types.memberType(uncapturedSite, tree.patternDeclaration);
+            tree.type = tree.deconstructor.type = patternDeclarationType.getMatchCandidateType();
         } else if (tree.deconstructor != null) {
             tree.type = tree.deconstructor.type = uncapturedSite;;
         }
@@ -4706,23 +4708,21 @@ public class Attr extends JCTree.Visitor {
             ClassSymbol record = (ClassSymbol) site.tsym;
 
             if (record.getRecordComponents().size() == nestedPatternCount) {
-                List<Type> recordComponents = ((ClassSymbol) record.type.tsym).getRecordComponents()
-                        .stream()
-                        .map(rc -> types.memberType(site, rc))
-                        .collect(List.collector());
+                if (record.syntheticDeconstructor == null) {
+                    List<Type> recordComponents = record.getRecordComponents()
+                                                        .map(rc -> rc.type);
 
-                // todo: refactor/improve
-                List<Type> erasedComponents = ((ClassSymbol) record.type.tsym).getRecordComponents()
-                        .stream()
-                        .map(rc -> types.erasure(rc.type))
-                        .collect(List.collector());
-                PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, uncaptured, syms.methodClass);
+                    // todo: refactor/improve
+                    List<Type> erasedComponents = recordComponents.map(types::erasure);
+                    PatternType pt = new PatternType(recordComponents, erasedComponents, syms.voidType, record.type, syms.methodClass);
 
-                MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
+                    MethodSymbol synthesized = new MethodSymbol(PUBLIC | SYNTHETIC | PATTERN, ((ClassSymbol) site.tsym).name, pt, site.tsym);
 
-                synthesized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
-                synthesized.patternFlags.add(PatternFlags.TOTAL);
-                patternDeclarations = patternDeclarations.prepend(synthesized);
+                    synthesized.patternFlags.add(PatternFlags.DECONSTRUCTOR);
+                    synthesized.patternFlags.add(PatternFlags.TOTAL);
+                    record.syntheticDeconstructor = synthesized;
+                }
+                patternDeclarations = patternDeclarations.prepend(record.syntheticDeconstructor);
             }
         }
 

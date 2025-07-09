@@ -392,7 +392,7 @@ public class TransPatterns extends TreeTranslator {
 
         VarSymbol recordBinding = recordBindingVar.sym;
         List<? extends RecordComponent> components;
-        List<? extends Type> nestedFullComponentTypes = recordPattern.fullComponentTypes;
+        List<Type> nestedFullComponentTypes = recordPattern.fullComponentTypes;
         List<? extends JCPattern> nestedPatterns = recordPattern.nested;
 
         JCExpression firstLevelChecks = null;
@@ -413,7 +413,7 @@ public class TransPatterns extends TreeTranslator {
             //     1. calculate the returnType MethodType as Constant_MethodType_info
             //     2. generate factory code on carrier for the types we want (e.g., Object carrier = Carriers.initializingConstructor(returnType);)
             //     3. generate invoke call to pass the bindings (e.g, return carrier.invoke(x, y);)
-            carriersType = new MethodType(recordPattern.patternDeclaration.type.getBindingTypes(), syms.objectType, List.nil(), syms.methodClass);
+            carriersType = new MethodType(nestedFullComponentTypes, syms.objectType, List.nil(), syms.methodClass);
             MethodSymbol factoryMethodSym =
                     rs.resolveInternalMethod(recordPattern.pos(),
                             env,
