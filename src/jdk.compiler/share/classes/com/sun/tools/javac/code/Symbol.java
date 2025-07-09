@@ -1371,6 +1371,10 @@ public abstract class Symbol extends AnnoConstruct implements PoolConstant, Elem
          */
         private List<RecordComponent> recordComponents = List.nil();
 
+        /* the pre-defined automatically available deconstructor for this record:
+         */
+        public MethodSymbol syntheticDeconstructor;
+
         // sealed classes related fields
         /** The classes, or interfaces, permitted to extend this class, or interface
          */

@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 /**
  * @test
  * @enablePreview
+ * @compile InstanceOfStatementInMethodsTest.java
  * @run main InstanceOfStatementInMethodsTest
  */
 public class InstanceOfStatementInMethodsTest {
