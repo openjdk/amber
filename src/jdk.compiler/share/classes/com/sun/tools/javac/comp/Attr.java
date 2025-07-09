@@ -4445,7 +4445,9 @@ public class Attr extends JCTree.Visitor {
                                 .limit(tree.nested.size())
                                 .collect(List.collector());
             tree.record = syms.errSymbol;
-            tree.fullComponentTypes = List.fill(tree.nested.size(), syms.errType);
+            tree.fullComponentTypes = Stream.generate(() -> syms.errType)
+                                            .limit(tree.nested.size())
+                                            .collect(List.collector());
         } else {
             tree.fullComponentTypes = nestedPatternsTargetTypes;
         }
