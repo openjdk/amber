@@ -26,8 +26,7 @@
 class GuardNotAllowed {
     private void doSwitch(int i, boolean b) {
         switch (i) {
-            case 0 when b -> {}
-            default -> {}
+            default when b -> {}
         }
     }
 }

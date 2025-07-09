@@ -1016,7 +1016,7 @@ public class JavacParser implements Parser {
                 boolean var = token.kind == IDENTIFIER && token.name() == names.var;
                 e = unannotatedType(allowVar, TYPE | NOLAMBDA);
                 if (var) {
-                    if (token.kind == LPAREN) {
+                    if (token.kind == LPAREN && !allowVar) {
                         //error recovery
                     } else {
                         e = null;
