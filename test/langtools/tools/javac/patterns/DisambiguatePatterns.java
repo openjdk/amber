@@ -41,6 +41,7 @@ import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.PatternCaseLabelTree;
 import com.sun.source.tree.PatternTree;
 import com.sun.source.tree.SwitchTree;
+import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.file.JavacFileManager;
 import com.sun.tools.javac.parser.JavacParser;
 import com.sun.tools.javac.parser.ParserFactory;
@@ -202,6 +203,15 @@ public class DisambiguatePatterns {
 //                                 ExpressionType.EXPRESSION);
 
         test.ifDisambiguationTest("byte[]", InstanceOfType.TYPE);
+        test.ifDisambiguationTest("String str", InstanceOfType.PATTERN);
+        test.ifDisambiguationTest("String == i.m()", InstanceOfType.TYPE);
+        test.ifDisambiguationTest("String != i.m()", InstanceOfType.TYPE);
+        test.ifDisambiguationTest("String && i.m()", InstanceOfType.TYPE);
+        test.ifDisambiguationTest("String || i.m()", InstanceOfType.TYPE);
+        test.ifDisambiguationTest("String str == i.m()", InstanceOfType.PATTERN);
+        test.ifDisambiguationTest("String str != i.m()", InstanceOfType.PATTERN);
+        test.ifDisambiguationTest("String str && i.m()", InstanceOfType.PATTERN);
+        test.ifDisambiguationTest("String str || i.m()", InstanceOfType.PATTERN);
     }
 
     private final ParserFactory factory;
@@ -259,15 +269,23 @@ public class DisambiguatePatterns {
         ClassTree clazz = (ClassTree) result.getTypeDecls().get(0);
         MethodTree method = (MethodTree) clazz.getMembers().get(0);
         IfTree it = (IfTree) method.getBody().getStatements().get(0);
-        InstanceOfTree instOf = (InstanceOfTree) ((ParenthesizedTree) it.getCondition()).getExpression();
-        InstanceOfType actualType;
-        if (instOf instanceof PatternTree) {
-            actualType = InstanceOfType.PATTERN;
-        } else {
-            actualType = InstanceOfType.TYPE;
-        }
-        if (expectedType != actualType) {
-            throw new AssertionError("Expected: " + expectedType + ", actual: " + actualType +
+        InstanceOfType[] actualType = new InstanceOfType[1];
+        new TreeScanner<Void, Void>() {
+            @Override
+            public Void visitInstanceOf(InstanceOfTree node, Void p) {
+                if (actualType[0] != null) {
+                    throw new AssertionError("More than one instanceof seen!");
+                }
+                if (node.getPattern() instanceof PatternTree) {
+                    actualType[0] = InstanceOfType.PATTERN;
+                } else {
+                    actualType[0] = InstanceOfType.TYPE;
+                }
+                return super.visitInstanceOf(node, p);
+            }
+        }.scan((ParenthesizedTree) it.getCondition(), null);
+        if (expectedType != actualType[0]) {
+            throw new AssertionError("Expected: " + expectedType + ", actual: " + actualType[0] +
                                       ", for: " + code + ", parsed: " + result);
         }
     }

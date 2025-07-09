@@ -32,7 +32,6 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.Deconstructor;
-import java.lang.runtime.Carriers;
 import java.util.Arrays;
 
 public class UnreflectPattern {
@@ -49,15 +48,8 @@ public class UnreflectPattern {
                 MethodHandles.lookup().unreflectDeconstructor(deconstructor);
         if (!MethodType.methodType(Object.class, UnreflectPattern.class, MethodHandle.class).equals(unreflected.type()))
             throw new AssertionError("Unexpected type: " + unreflected.type());
-        MethodType bindingMT = MethodType.methodType(Object.class, String.class, Integer.TYPE);
-        MethodHandle deconstructorHandle =
-            MethodHandles.filterReturnValue(
-                unreflected,
-                Carriers.boxedComponentValueArray(bindingMT)
-            );
-        MethodHandle initializingConstructor = Carriers.initializingConstructor(bindingMT);
-
-        Object[] result2 = (Object[]) deconstructorHandle.invokeExact(instance, initializingConstructor);
+        MethodHandle toArray = MethodHandles.identity(Object[].class).asCollector(Object[].class, 2);
+        Object[] result2 = (Object[]) (Object) unreflected.invokeExact(instance, toArray);
         if (!Arrays.equals(expected, result2)) {
             throw new AssertionError("Unexpected result: " + Arrays.toString(result2));
         }

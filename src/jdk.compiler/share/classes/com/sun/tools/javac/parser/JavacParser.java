@@ -1016,7 +1016,7 @@ public class JavacParser implements Parser {
                 boolean var = token.kind == IDENTIFIER && token.name() == names.var;
                 e = unannotatedType(allowVar, TYPE | NOLAMBDA);
                 if (var) {
-                    if (token.kind == LPAREN) {
+                    if (token.kind == LPAREN && !allowVar) {
                         //error recovery
                     } else {
                         e = null;
@@ -3556,6 +3556,8 @@ public class JavacParser implements Parser {
                         return Pair.of(PatternResult.EXPRESSION, -1);
                     }
                     break OUTER;
+                case EQEQ, BANGEQ:
+                    break OUTER;
                 //TODO: error recovery stop tokens(?)
 
             }
@@ -4999,11 +5001,12 @@ public class JavacParser implements Parser {
 
             JCExpression matchCandidateType = type;
 
-            matcherCandidate = toP(F.at(pos).VarDef(
+            //TODO: presumably should not be added here (i.e. in the frontend):
+            matcherCandidate = F.at(pos).VarDef(
                     F.Modifiers(Flags.GENERATED_MEMBER),
                     names._that,
                     matchCandidateType,
-                    null));
+                    null);
         }
 
         // Constructor or deconstructor
