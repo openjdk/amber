@@ -3602,9 +3602,8 @@ public class Flow {
         } else if (pattern instanceof JCRecordPattern record) {
             Type[] componentTypes;
 
-            MethodSymbol patternDeclaration = ((JCRecordPattern) pattern).patternDeclaration;
-            if (!record.type.isErroneous() && patternDeclaration != null) {
-                componentTypes = patternDeclaration.type.asPatternType().bindingtypes.toArray(Type[]::new);
+            if (!record.type.isErroneous()) {
+                componentTypes = record.fullComponentTypes.toArray(Type[]::new);
             }
             else {
                 componentTypes = record.nested.map(t -> types.createErrorType(t.type)).toArray(s -> new Type[s]);;
