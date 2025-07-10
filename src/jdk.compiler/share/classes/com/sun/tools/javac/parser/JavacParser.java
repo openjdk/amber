@@ -334,7 +334,14 @@ public class JavacParser implements Parser {
         return token;
     }
 
+    int limitTokens = -1;
     public void nextToken() {
+        if (limitTokens == 0) {
+            token = new Token(TokenKind.EOF, token.endPos, token.endPos, List.nil());
+            return ;
+        } else if (limitTokens > 0) {
+            limitTokens--;
+        }
         S.nextToken();
         token = S.token();
     }
@@ -981,25 +988,40 @@ public class JavacParser implements Parser {
 
     /** parses patterns.
      */
-    public JCPattern parsePattern(int pos, JCModifiers mods, JCExpression parsedType,
-                                  boolean allowVar, boolean checkGuard) {
+    public JCPattern parsePattern(int pos, JCModifiers mods, boolean allowVar) {
+        int patternStart = mods != null && mods.pos != Position.NOPOS ? mods.pos : token.pos;
         JCPattern pattern;
         mods = mods != null ? mods : optFinal(0);
         JCExpression e;
-        if (token.kind == UNDERSCORE && parsedType == null) {
+        if (token.kind == UNDERSCORE && !peekToken(LPAREN)) {
             nextToken();
             checkSourceLevel(Feature.UNNAMED_VARIABLES);
-            pattern = toP(F.at(token.pos).AnyPattern());
+            pattern = toP(F.at(patternStart).AnyPattern());
         }
         else {
-            if (parsedType == null) {
+            int dotLookahead = analyzePattern(0, AnalyzePatternOrigin.PATTERN).snd;
+            if (dotLookahead != (-1)) {
+                limitTokens = dotLookahead - 1;
+                JCExpression qual = parseExpression();
+                limitTokens = -1;
+                nextToken();
+                accept(DOT);
+                if (token.kind == IDENTIFIER) {
+                    e = to(F.at(token.pos).Select(qual, token.name()));
+                    nextToken();
+                } else {
+                    e = syntaxError(token.pos, Errors.Expected(IDENTIFIER)); //TODO: also '<'
+                }
+            } else {
                 boolean var = token.kind == IDENTIFIER && token.name() == names.var;
                 e = unannotatedType(allowVar, TYPE | NOLAMBDA);
                 if (var) {
-                    e = null;
+                    if (token.kind == LPAREN && !allowVar) {
+                        //error recovery
+                    } else {
+                        e = null;
+                    }
                 }
-            } else {
-                e = parsedType;
             }
             if (token.kind == LPAREN) {
                 //deconstruction pattern:
@@ -1008,14 +1030,14 @@ public class JavacParser implements Parser {
                 if (!peekToken(RPAREN)) {
                     do {
                         nextToken();
-                        JCPattern nestedPattern = parsePattern(token.pos, null, null, true, false);
+                        JCPattern nestedPattern = parsePattern(token.pos, null, true);
                         nested.append(nestedPattern);
                     } while (token.kind == COMMA);
                 } else {
                     nextToken();
                 }
                 accept(RPAREN);
-                pattern = toP(F.at(pos).RecordPattern(e, nested.toList()));
+                pattern = toP(F.at(patternStart).RecordPattern(e, nested.toList()));
                 if (mods.annotations.nonEmpty()) {
                     log.error(mods.annotations.head.pos(), Errors.RecordPatternsAnnotationsNotAllowed);
                 }
@@ -1040,7 +1062,7 @@ public class JavacParser implements Parser {
                         log.error(DiagnosticFlag.SYNTAX, varPos, Errors.UseOfUnderscoreNotAllowed);
                     }
                 }
-                pattern = toP(F.at(pos).BindingPattern(var));
+                pattern = toP(F.at(patternStart).BindingPattern(var));
             }
         }
         return pattern;
@@ -1243,38 +1265,32 @@ public class JavacParser implements Parser {
                 int pos = token.pos;
                 nextToken();
                 JCTree pattern;
-                if (token.kind == LPAREN) {
-                    checkSourceLevel(token.pos, Feature.PATTERN_SWITCH);
-                    pattern = parsePattern(token.pos, null, null, false, false);
-                } else {
-                    int patternPos = token.pos;
-                    JCModifiers mods = optFinal(0);
-                    int typePos = token.pos;
-                    JCExpression type = unannotatedType(false);
-                    if (token.kind == IDENTIFIER) {
-                        checkSourceLevel(token.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
-                        pattern = parsePattern(patternPos, mods, type, false, false);
-                    } else if (token.kind == LPAREN) {
-                        pattern = parsePattern(patternPos, mods, type, false, false);
-                    } else if (token.kind == UNDERSCORE) {
-                        checkSourceLevel(token.pos, Feature.UNNAMED_VARIABLES);
-                        pattern = parsePattern(patternPos, mods, type, false, false);
+                JCModifiers mods = optFinal(0);
+                boolean isPattern = (mods.flags & ~Flags.DEPRECATED) != 0 ||
+                                    analyzePattern(0, AnalyzePatternOrigin.INSTANCEOF).fst == PatternResult.PATTERN;
+                if (isPattern) {
+                    pattern = parsePattern(pos, mods, false);
+                    if (pattern instanceof JCBindingPattern bindingPattern) {
+                        checkSourceLevel(bindingPattern.var.pos, Feature.PATTERN_MATCHING_IN_INSTANCEOF);
                     } else {
-                        checkNoMods(typePos, mods.flags & ~Flags.DEPRECATED);
-                        if (mods.annotations.nonEmpty()) {
-                            List<JCAnnotation> typeAnnos =
-                                    mods.annotations
-                                        .map(decl -> {
-                                            JCAnnotation typeAnno = F.at(decl.pos)
-                                                                     .TypeAnnotation(decl.annotationType,
-                                                                                      decl.args);
-                                            endPosTable.replaceTree(decl, typeAnno);
-                                            return typeAnno;
-                                        });
-                            type = insertAnnotationsToMostInner(type, typeAnnos, false);
-                        }
-                        pattern = type;
+                        checkSourceLevel(pattern.pos, Feature.RECORD_PATTERNS);
                     }
+                } else {
+                    checkNoMods(token.pos, mods.flags & ~Flags.DEPRECATED);
+                    JCExpression type = unannotatedType(false);
+                    if (mods.annotations.nonEmpty()) {
+                        List<JCAnnotation> typeAnnos =
+                                mods.annotations
+                                    .map(decl -> {
+                                        JCAnnotation typeAnno = F.at(decl.pos)
+                                                                 .TypeAnnotation(decl.annotationType,
+                                                                                  decl.args);
+                                        endPosTable.replaceTree(decl, typeAnno);
+                                        return typeAnno;
+                                    });
+                        type = insertAnnotationsToMostInner(type, typeAnnos, false);
+                    }
+                    pattern = type;
                 }
                 odStack[top] = F.at(pos).TypeTest(odStack[top], pattern);
             } else {
@@ -3413,10 +3429,10 @@ public class JavacParser implements Parser {
         } else {
             JCModifiers mods = optFinal(0);
             boolean pattern = mods.flags != 0 || mods.annotations.nonEmpty() ||
-                              analyzePattern(0) == PatternResult.PATTERN;
+                              analyzePattern(0, AnalyzePatternOrigin.CASE).fst == PatternResult.PATTERN;
             if (pattern) {
                 checkSourceLevel(token.pos, Feature.PATTERN_SWITCH);
-                JCPattern p = parsePattern(patternPos, mods, null, false, true);
+                JCPattern p = parsePattern(patternPos, mods, false);
                 return toP(F.at(patternPos).PatternCaseLabel(p));
             } else {
                 JCExpression expr = term(EXPR | NOLAMBDA);
@@ -3444,87 +3460,204 @@ public class JavacParser implements Parser {
         return guard;
     }
     @SuppressWarnings("fallthrough")
-    PatternResult analyzePattern(int lookahead) {
+    Pair<PatternResult, Integer> analyzePattern(int lookahead, AnalyzePatternOrigin origin) {
+        int startLookahead = lookahead;
+        int lookaheadOfLastRelevantTopLevelDot = -1;
+        boolean hasMethodsOrRecordPatterns = false;
+        Map<Integer, Integer> annotationEndLookup2StartLookup = new HashMap<>();
         int typeDepth = 0;
-        int parenDepth = 0;
-        PatternResult pendingResult = PatternResult.EXPRESSION;
-        while (true) {
+        OUTER: while (true) {
             TokenKind token = S.token(lookahead).kind;
             switch (token) {
-                case BYTE: case SHORT: case INT: case LONG: case FLOAT:
-                case DOUBLE: case BOOLEAN: case CHAR: case VOID:
-                case ASSERT, ENUM, IDENTIFIER:
-                    if (typeDepth == 0 && peekToken(lookahead, LAX_IDENTIFIER)) {
-                        if (parenDepth == 0) {
-                            return PatternResult.PATTERN;
-                        } else {
-                            pendingResult = PatternResult.PATTERN;
-                        }
-                    } else if (typeDepth == 0 && parenDepth == 0 && (peekToken(lookahead, tk -> tk == ARROW || tk == COMMA))) {
-                        return PatternResult.EXPRESSION;
-                    }
-                    break;
-                case UNDERSCORE:
-                    // TODO: REFACTOR to remove the code duplication
-                    if (typeDepth == 0 && peekToken(lookahead, tk -> tk == RPAREN || tk == COMMA)) {
-                        return PatternResult.PATTERN;
-                    } else if (typeDepth == 0 && peekToken(lookahead, LAX_IDENTIFIER)) {
-                        if (parenDepth == 0) {
-                            return PatternResult.PATTERN;
-                        } else {
-                            pendingResult = PatternResult.PATTERN;
+                case LPAREN: {
+                    //assume balanced
+                    int depth = 1;
+                    while (depth > 0) {
+                        switch (S.token(lookahead + 1).kind) {
+                            case LPAREN: depth++; lookahead++; break;
+                            case RPAREN: depth--; lookahead++; break;
+                            case EOF: break OUTER;
+                            default: lookahead++; break;
                         }
                     }
+                    if (peekToken(lookahead, IDENTIFIER) && S.token(lookahead + 1).name() == names.when) {
+                        //end token - seeing "when" i.e. a guard
+                        lookahead += 1;
+                        break OUTER;
+                    }
                     break;
-                case DOT, QUES, EXTENDS, SUPER, COMMA: break;
-                case LT: typeDepth++; break;
-                case GTGTGT: typeDepth--;
-                case GTGT: typeDepth--;
-                case GT:
-                    typeDepth--;
-                    if (typeDepth == 0 && !peekToken(lookahead, DOT)) {
-                         return peekToken(lookahead, LAX_IDENTIFIER) ||
-                                peekToken(lookahead, tk -> tk == LPAREN) ? PatternResult.PATTERN
-                                                                         : PatternResult.EXPRESSION;
-                    } else if (typeDepth < 0) return PatternResult.EXPRESSION;
+                }
+                case LBRACE: {
+                    //assume balanced
+                    int depth = 1;
+                    while (depth > 0) {
+                        switch (S.token(lookahead + 1).kind) {
+                            case LBRACE: depth++; lookahead++; break;
+                            case RBRACE: depth--; lookahead++; break;
+                            case EOF: break OUTER;
+                            default: lookahead++; break;
+                        }
+                    }
                     break;
+                }
                 case MONKEYS_AT:
+                    int annotationStartLookahead = lookahead;
                     lookahead = skipAnnotation(lookahead);
+                    annotationEndLookup2StartLookup.put(lookahead, annotationStartLookahead);
                     break;
-                case LBRACKET:
-                    if (peekToken(lookahead, RBRACKET, LAX_IDENTIFIER)) {
-                        return PatternResult.PATTERN;
-                    } else if (peekToken(lookahead, RBRACKET)) {
+                case IDENTIFIER, UNDERSCORE: {
+                    if (peekToken(lookahead, IDENTIFIER) && S.token(lookahead + 1).name() == names.when) {
+                        //end token - seeing "when" i.e. a guard
                         lookahead++;
-                        break;
-                    } else {
-                        // This is a potential guard, if we are already in a pattern
-                        return pendingResult;
+                        break OUTER;
                     }
-                case LPAREN:
-                    if (S.token(lookahead + 1).kind == RPAREN) {
-                        return parenDepth != 0 && S.token(lookahead + 2).kind == ARROW
-                                ? PatternResult.EXPRESSION
-                                : PatternResult.PATTERN;
+                    hasMethodsOrRecordPatterns = hasMethodsOrRecordPatterns || S.token(lookahead + 1).kind == LPAREN;
+                    break;
+                }
+                case LT:
+                    typeDepth++;
+                    break;
+                case GT, GTGT, GTGTGT:
+                    if (!hasMethodsOrRecordPatterns && S.token(lookahead + 1).kind == LPAREN) {
+                        //if the code looks like this:
+                        //name<type-args>(
+                        //then we are looking at a pattern
+                        int typeArgsStartLookahead =
+                                findTypeArgsStartLookahead(startLookahead,
+                                                           lookahead,
+                                                           annotationEndLookup2StartLookup);
+                        if (typeArgsStartLookahead > startLookahead) {
+                            if (S.token(typeArgsStartLookahead - 1).kind == IDENTIFIER) {
+                                hasMethodsOrRecordPatterns = true;
+                            }
+                        }
                     }
-                    parenDepth++; break;
-                case RPAREN:
-                    parenDepth--;
-                    if (parenDepth == 0 &&
-                        typeDepth == 0 &&
-                        peekToken(lookahead, TokenKind.IDENTIFIER) &&
-                        S.token(lookahead + 1).name() == names.when) {
-                        return PatternResult.PATTERN;
+                    typeDepth -= token.name.length();
+                    break;
+                case DOT:
+                    if (peekToken(lookahead, IDENTIFIER, LPAREN)) {
+                        lookaheadOfLastRelevantTopLevelDot = lookahead;
                     }
                     break;
-                case ARROW: return parenDepth > 0 ? PatternResult.EXPRESSION
-                                                   : pendingResult;
-                case FINAL:
-                    if (parenDepth > 0) return PatternResult.PATTERN;
-                default: return pendingResult;
+                //stop tokens:
+                case COMMA:
+                    if (typeDepth == 0) {
+                        break OUTER;
+                    }
+                    break;
+                case ARROW, COLON, EOF, RPAREN, SEMI:
+                    break OUTER;
+                case QUES:
+                    if (typeDepth > 0) {
+                        break;
+                    }
+                case BAR, BARBAR, AMP, AMPAMP:
+                    if (origin == AnalyzePatternOrigin.CASE) {
+                        return Pair.of(PatternResult.EXPRESSION, -1);
+                    }
+                    break OUTER;
+                case EQEQ, BANGEQ:
+                    break OUTER;
+                //TODO: error recovery stop tokens(?)
+
             }
             lookahead++;
         }
+
+        if (hasMethodsOrRecordPatterns) {
+            //there is <identifier>( somewhere on the top-level of the code.
+            //that cannot be a constant expression, so this is a pattern
+
+            return Pair.of(PatternResult.PATTERN, lookaheadOfLastRelevantTopLevelDot);
+        }
+
+        while (lookahead > startLookahead + 2 && peekToken(lookahead - 3, LBRACKET, RBRACKET)) {
+            if (origin != AnalyzePatternOrigin.INSTANCEOF) {
+                //error recovery:
+                //[] before the stop token, this cannot be a valid (constant) expression,
+                //but may be a malformed pattern:
+                return Pair.of(PatternResult.PATTERN, lookaheadOfLastRelevantTopLevelDot);
+            }
+            //may be a type, or an (illegal) pattern of form TYPE NAME[]:
+            lookahead -= 2;
+        }
+
+        //lookahead must be on the stop token
+        if (lookahead > startLookahead + 1 && (S.token(lookahead - 1).kind == IDENTIFIER || S.token(lookahead - 1).kind == UNDERSCORE)) {
+            //the last token before stop token was an identifier.
+            //look if the code preceding the identifier looks like a type (this is a pattern then):
+            TokenKind previous = S.token(lookahead - 2).kind;
+
+            switch (previous) {
+                case IDENTIFIER:
+                case RBRACKET: //TODO: some handling for "...[a] a" needed?
+                case BYTE: case SHORT: case INT: case LONG: case FLOAT:
+                case DOUBLE: case BOOLEAN: case CHAR: case VOID:
+                    return Pair.of(PatternResult.PATTERN, lookaheadOfLastRelevantTopLevelDot);
+                case GT, GTGT, GTGTGT:
+                    int typeArgsStartLookahead =
+                                findTypeArgsStartLookahead(startLookahead,
+                                                           lookahead - 2,
+                                                           annotationEndLookup2StartLookup);
+
+                    if (typeArgsStartLookahead == (-1)) {
+                        return Pair.of(PatternResult.EXPRESSION, lookaheadOfLastRelevantTopLevelDot);
+                    }
+
+                    return Pair.of(PatternResult.PATTERN, lookaheadOfLastRelevantTopLevelDot);
+            }
+        }
+
+        return Pair.of(PatternResult.EXPRESSION, -1);
+    }
+
+    private enum AnalyzePatternOrigin {
+        INSTANCEOF,
+        CASE,
+        PATTERN;
+    }
+
+    private int findTypeArgsStartLookahead(int minimalLookahead,
+                                           int closingLookahead,
+                                           Map<Integer, Integer> annotationEndLookup2StartLookup) {
+        TokenKind previous = S.token(closingLookahead).kind;
+        //need to search from right to left, searching for a token that
+        //cannot be part of a type - then we see an expression.
+        int currentTypeDepth = previous.name.length();
+        int currentLookahead = closingLookahead - 1;
+
+        while (currentLookahead >= minimalLookahead && currentTypeDepth > 0) {
+            Integer annotationStart = annotationEndLookup2StartLookup.get(currentLookahead);
+
+            if (annotationStart != null) {
+                currentLookahead = annotationStart - 1;
+            }
+
+            TokenKind currentTokenKind = S.token(currentLookahead).kind;
+
+            switch (currentTokenKind) {
+                case GT, GTGT, GTGTGT:
+                    currentTypeDepth += currentTokenKind.name.length();
+                    break;
+                case LT:
+                    currentTypeDepth--;
+                    break;
+                case DOT, IDENTIFIER, EXTENDS, QUES, SUPER, COMMA:
+                    //part of type
+                    break;
+                default:
+                    //anything else - expression:
+                    //TODO: cleaner? (and what if we know we are inside a pattern?)
+                    return -1;
+            }
+            currentLookahead--;
+        }
+        if (currentTypeDepth > 0) {
+            //'<' and '>' don't match, an expression:
+            return -1;
+        }
+
+        return currentLookahead + 1;
     }
 
     private enum PatternResult {

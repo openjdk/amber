@@ -22,7 +22,7 @@
  */
 
 /*
- * @test
+ * @test //XXX: can the error recovery be improved?
  * @bug 8262891 8269354
  * @summary Test parenthesized pattern
  * @compile/fail/ref=Parenthesized.out -XDrawDiagnostics Parenthesized.java

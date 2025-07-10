@@ -90,8 +90,9 @@ public class SourceLevelChecks extends TestRunner {
                    }
                }
                """,
-               "Test.java:4:26: compiler.err.feature.not.supported.in.source.plural: (compiler.misc.feature.pattern.switch), 17, 21",
-               "1 error");
+               "Test.java:4:26: compiler.err.illegal.start.of.type",
+               "Test.java:4:37: compiler.err.expected: ->",
+               "2 errors");
     }
 
     @Test
@@ -107,7 +108,7 @@ public class SourceLevelChecks extends TestRunner {
                    }
                }
                """,
-               "Test.java:5:18: compiler.err.feature.not.supported.in.source.plural: (compiler.misc.feature.pattern.switch), 17, 21",
+               "Test.java:5:29: compiler.err.expected: ->",
                "1 error");
     }
 

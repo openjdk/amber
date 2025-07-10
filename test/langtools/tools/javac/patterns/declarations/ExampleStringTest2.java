@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2024, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * This code is free software; you can redistribute it and/or modify it
@@ -21,12 +21,39 @@
  * questions.
  */
 
-// key: compiler.err.guard.not.allowed
+/**
+ * @test
+ * @enablePreview
+ * @run main ExampleStringTest2
+ */
 
-class GuardNotAllowed {
-    private void doSwitch(int i, boolean b) {
-        switch (i) {
-            default when b -> {}
+import java.util.Objects;
+
+public class ExampleStringTest2 {
+
+    public static pattern String ParsedInt(int datum) {
+        try {
+            int res = Integer.parseInt(that);
+            match ParsedInt(res);
+        } catch (NumberFormatException n) {
+            match-fail();
+        }
+    }
+
+    static int examineString(String s) {
+        return switch (s) {
+            case ExampleStringTest2.ParsedInt(int left) -> left;
+            default -> 0;
+        };
+    }
+
+    public static void main(String[] args) {
+        assertEquals(42, new ExampleStringTest2().examineString("42"));
+    }
+
+    private static <T> void assertEquals(T expected, T actual) {
+        if (!Objects.equals(expected, actual)) {
+            throw new AssertionError("Expected: " + expected + ", but got: " + actual);
         }
     }
 }

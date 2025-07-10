@@ -314,11 +314,13 @@ public abstract class Type extends AnnoConstruct implements TypeMirror, PoolCons
         public Type visitPatternType(PatternType t, S s) {
             List<Type> bindingtypes = t.bindingtypes;
             List<Type> bindingtypes1 = visit(bindingtypes, s);
+            Type matchcandidatetype = t.matchcandidatetype;
+            Type matchcandidatetype1 = visit(matchcandidatetype, s);
             List<Type> erasedBindingTypes1 = visit(t.erasedBindingTypes, s);
 
-            if (bindingtypes1 == bindingtypes) return t;
+            if (bindingtypes1 == bindingtypes && matchcandidatetype == matchcandidatetype1) return t;
             else {
-                PatternType patternType = new PatternType(bindingtypes1, erasedBindingTypes1, /*XXX*/t.restype, t.matchcandidatetype, t.tsym) {
+                PatternType patternType = new PatternType(bindingtypes1, erasedBindingTypes1, /*XXX*/t.restype, matchcandidatetype1, t.tsym) {
                     @Override
                     protected boolean needsStripping() {
                         return true;
