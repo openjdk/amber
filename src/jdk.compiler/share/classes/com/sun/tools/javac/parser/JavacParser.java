@@ -5022,6 +5022,10 @@ public class JavacParser implements Parser {
                 mods.flags |= Flags.COMPACT_RECORD_CONSTRUCTOR;
             }
 
+            if (isPattern) {
+                mods.flags |= Flags.DTOR; // TODO classreading
+            }
+
             return List.of(methodDeclaratorRest(
                     pos, mods, null, isPattern ? tk.name() : names.init, typarams, matcherCandidate,
                     isInterface, true, isRecord, dc));
