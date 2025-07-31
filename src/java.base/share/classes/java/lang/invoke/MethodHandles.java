@@ -3355,7 +3355,7 @@ return mh1;
          * @throws IllegalAccessException if access checking fails
          * @throws NullPointerException if the argument is null
          */
-        public MethodHandle unreflectDeconstructor(Deconstructor<?> d) throws IllegalAccessException {
+        public MethodHandle unreflectDeconstructor(Deconstructor d) throws IllegalAccessException {
             Class<?> ownerType = d.getDeclaringClass(); // Implicit null-check of d
             try {
                 return unreflect(

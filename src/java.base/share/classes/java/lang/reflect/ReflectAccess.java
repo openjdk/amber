@@ -38,18 +38,18 @@ final class ReflectAccess implements JavaLangReflectAccess {
         return original.newWithAccessor(accessor);
     }
 
-    public <T> Deconstructor<T> newDeconstructor(Class<T> declaringClass,
+    public <T> Deconstructor newDeconstructor(Class<T> declaringClass,
                                                  int modifiers,
                                                  int patternFlags,
-                                                 int slot,
+                                                 ArrayList<Parameter> outParameters,
                                                  ArrayList<PatternBinding> patternBindings,
                                                  String signature,
                                                  byte[] annotations)
     {
-        return new Deconstructor<>(declaringClass,
+        return new Deconstructor(declaringClass,
                 modifiers,
                 patternFlags,
-                slot,
+                outParameters,
                 patternBindings,
                 signature,
                 annotations);
@@ -83,7 +83,7 @@ final class ReflectAccess implements JavaLangReflectAccess {
         return arg.copy();
     }
 
-    public <T> Deconstructor<T> copyDeconstructor(Deconstructor<T> arg) {
+    public <T> Deconstructor copyDeconstructor(Deconstructor arg) {
         return arg.copy();
     }
 
@@ -103,7 +103,7 @@ final class ReflectAccess implements JavaLangReflectAccess {
     }
 
     @Override
-    public String getMangledName(MemberPattern<?> d) {
+    public String getMangledName(PatternMember d) {
         return d.getMangledName();
     }
 }

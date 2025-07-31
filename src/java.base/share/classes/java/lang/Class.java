@@ -59,17 +59,15 @@ import java.lang.reflect.GenericDeclaration;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.constant.Constable;
-import java.lang.reflect.MemberPattern;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Parameter;
 import java.lang.reflect.PatternBinding;
-import java.lang.reflect.Proxy;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.security.AccessController;
 import java.security.AllPermission;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
@@ -2082,9 +2080,9 @@ public final class Class<T> implements java.io.Serializable,
      *         of this class.
      *
      * @see #getDeclaredDeconstructors()
-     * @since 23
+     * @since 27
      */
-    public Deconstructor<?>[] getDeconstructors() throws SecurityException {
+    public Deconstructor[] getDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.PUBLIC);
     }
 
@@ -2107,9 +2105,9 @@ public final class Class<T> implements java.io.Serializable,
      *         of this class.
      *
      * @see #getDeclaredDeconstructor(Class<?>[])
-     * @since 23
+     * @since 27
      */
-    public Deconstructor<?> getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+    public Deconstructor getDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
         var ret = getDeclaredDeconstructors0(bindingTypes, Member.PUBLIC);
 
         if (ret.length == 0) {
@@ -2147,22 +2145,24 @@ public final class Class<T> implements java.io.Serializable,
      *
      *          </ul>
      *
-     * @since 23
+     * @since 27
      * @see #getDeconstructors()
      */
-    public Deconstructor<?>[] getDeclaredDeconstructors() throws SecurityException {
+    public Deconstructor[] getDeclaredDeconstructors() throws SecurityException {
         return getDeclaredDeconstructors0(EMPTY_CLASS_ARRAY, Member.DECLARED);
     }
 
-    private Deconstructor<?>[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
-        if (this.isPrimitive()) return new Deconstructor<?>[0];
+    private Deconstructor[] getDeclaredDeconstructors0(Class<?>[] params, int which) {
+        if (this.isPrimitive()) {
+            return new Deconstructor[0];
+        }
         try (var in = (getClassLoader() != null)
                 ? getClassLoader().getResourceAsStream(getResourcePath())
                 : ClassLoader.getSystemResourceAsStream(getResourcePath())) {
             if (in == null) throw new RuntimeException("Resource not found: " + name);
             byte[] bytes = in.readAllBytes();
             ClassModel cm = ClassFile.of().parse(bytes);
-            ArrayList<Deconstructor<?>> decs = new ArrayList<>();
+            ArrayList<Deconstructor> decs = new ArrayList<>();
             for (MethodModel mm : cm.methods()) {
                 PatternAttribute pa = mm.findAttribute(Attributes.pattern()).orElse(null);
                 if (pa != null) {
@@ -2190,10 +2190,12 @@ public final class Class<T> implements java.io.Serializable,
                         ByteBuffer assembled_rva = getAnnotationContents(rva != null, (BoundAttribute) rva);
 
                         ArrayList<PatternBinding> deconstructorBindings = new ArrayList<>();
-                        Deconstructor<?> currentDeconstructor = new Deconstructor<T>(this,
+                        ArrayList<Parameter> outParameters = new ArrayList<>();
+                        Deconstructor currentDeconstructor = new Deconstructor(
+                                this,
                                 mm.flags().flagsMask(),
                                 pa.patternFlagsMask(),
-                                0,
+                                outParameters,
                                 deconstructorBindings,
                                 pa.patternTypeSymbol().descriptorString(),
                                 rva == null ? null : assembled_rva.array()
@@ -2212,6 +2214,11 @@ public final class Class<T> implements java.io.Serializable,
 
                         for (int i = 0; i < parameterList.size(); i++) {
                             Class<?> bindingClass = parameterList.get(i).resolveConstantDesc(MethodHandles.privateLookupIn(this, SharedSecrets.getJavaLangInvokeAccess().implLookup()));
+                            outParameters.add(new Parameter(
+                                    mp.parameters().get(i).name().map(Utf8Entry::stringValue).orElse("arg" + i),
+                                    0, // no modifiers
+                                    currentDeconstructor,
+                                    i));
                             deconstructorBindings.add(new PatternBinding(
                                     currentDeconstructor,
                                     mp.parameters().get(i).name().map(Utf8Entry::stringValue).orElse("arg" + i),
@@ -2227,7 +2234,8 @@ public final class Class<T> implements java.io.Serializable,
                     }
                 }
             }
-            return decs.toArray(new Deconstructor<?>[decs.size()]);
+            var result = decs.toArray(new Deconstructor[decs.size()]);
+            return result;
         } catch (IOException | ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }
@@ -2278,10 +2286,10 @@ public final class Class<T> implements java.io.Serializable,
      *
      *          </ul>
      *
-     * @see #getDeconstructor(Class<?>[])
-     * @since 1.1
+     * @see #getDeconstructor(Class<T>[])
+     * @since 27
      */
-    public Deconstructor<?> getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
+    public Deconstructor getDeclaredDeconstructor(Class<?>... bindingTypes) throws NoSuchPatternException, SecurityException {
         var ret = getDeclaredDeconstructors0(bindingTypes, Member.DECLARED);
 
         if (ret.length == 0) {

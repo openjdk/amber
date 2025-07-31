@@ -25,11 +25,12 @@
 
 package java.lang.reflect;
 
+import java.util.List;
 import sun.reflect.generics.factory.CoreReflectionFactory;
 import sun.reflect.generics.factory.GenericsFactory;
 import sun.reflect.generics.repository.ExecutableRepository;
 import sun.reflect.generics.repository.GenericDeclRepository;
-import sun.reflect.generics.scope.MemberPatternScope;
+import sun.reflect.generics.scope.PatternMemberScope;
 
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
@@ -43,22 +44,20 @@ import java.util.stream.Collectors;
 import static java.lang.runtime.PatternBytecodeName.mangle;
 
 /**
- * {@code MemberPattern} provides information about, and access to, a single
- * member pattern for a class.
+ * The reflection view of a single deconstructor or pattern method. These both accept a <b>match
+ * candidate</b>, determine whether a match is found, and if so, produce <b>extracted values</b>.
  *
- * @param <T> the class in which the member pattern is declared
+ * <p>Like other {@link Executable}s (methods and constructors), it includes parameters. However,
+ * it uses these parameters in a different way: here they are <b>out-parameters</b>, conveying
+ * extracted values outward to the client.
  *
- * @see Executable
- * @see Class
- *
- * @since 24
+ * @since 27
  */
-public abstract sealed class MemberPattern<T> extends Executable permits Deconstructor {
-    final Class<T>                          clazz;
-    final int                               slot;
-    final Class<?>[]                        parameterTypes;
-    final Class<?>[]                        exceptionTypes;
-    final ArrayList<PatternBinding>         patternBindings;
+public abstract sealed class PatternMember extends Executable permits Deconstructor {
+    final Class<?>                          declaringClass;
+    final Class<?>                          candidateType; // TODO: Type?
+    final List<Parameter>                   outParameters;
+    final List<PatternBinding>              patternBindings;
 
     final int                               modifiers;
     final int                               patternFlags;
@@ -74,151 +73,137 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     // Accessor for factory
     private GenericsFactory getFactory() {
         // create scope and factory
-        return CoreReflectionFactory.make(this, MemberPatternScope.make(this));
+        return CoreReflectionFactory.make(this, PatternMemberScope.make(this));
     }
 
-    MemberPattern<T> root;
+    PatternMember root;
 
     @Override
-    MemberPattern<T> getRoot() {
+    PatternMember getRoot() {
         return root;
     }
 
     /**
      * TODO make private again
      * Package-private member pattern used by ReflectAccess to enable
-     * instantiation of these objects in Java code from the java.lang
-     * package via jdk.internal.access.JavaLangReflectAccess.
+     * instantiation of these objects in Java code from the java.lang package via
+     * jdk.internal.access.JavaLangReflectAccess.
      *
-     * @param declaringClass x
-     * @param parameterTypes x
-     * @param checkedExceptions x
-     * @param modifiers x
-     * @param patternFlags x
-     * @param slot x
-     * @param patternBindings x
-     * @param signature x
-     * @param annotations x
+     * @param declaringClass       x
+     * @param candidateType        x
+     * @param modifiers            x
+     * @param patternFlags         x
+     * @param outParameters        x
+     * @param patternBindings      x
+     * @param signature            x
+     * @param annotations          x
      * @param parameterAnnotations x
-     *
      */
-    public MemberPattern(Class<T> declaringClass,
-                         Class<?>[] parameterTypes,
-                         Class<?>[] checkedExceptions,
+    public PatternMember(Class<?> declaringClass,
+                         Class<?> candidateType,
                          int modifiers,
                          int patternFlags,
-                         int slot,
-                         ArrayList<PatternBinding> patternBindings,
+                         List<Parameter> outParameters,
+                         List<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations,
                          byte[] parameterAnnotations) {
-        this.clazz = declaringClass;
-        this.parameterTypes = parameterTypes;
-        this.exceptionTypes = checkedExceptions;
+        this.declaringClass = declaringClass;
+        this.candidateType = candidateType;
         this.modifiers = modifiers;
         this.patternFlags = patternFlags;
-        this.slot = slot;
+        this.outParameters = outParameters;
         this.patternBindings = patternBindings;
         this.signature = signature;
         this.annotations = annotations;
         this.parameterAnnotations = parameterAnnotations;
     }
 
-    /**
-     * Returns the {@code Class} object representing the class that
-     * declares the constructor represented by this object.
-     */
     @Override
-    public Class<T> getDeclaringClass() {
-        return clazz;
+    public Class<?> getDeclaringClass() {
+        return declaringClass;
     }
 
     /**
-     * Returns the name of this constructor, as a string.  This is
-     * the binary name of the constructor's declaring class.
+     * Returns the (erased) type of match candidates accepted by this pattern member. In the case
+     * of a deconstructor it is the same as the declaring class.
+     *
+     * @return type of match candidate
      */
-    @Override
-    public String getName() {
-        return getDeclaringClass().getName();
+    public Class<?> getCandidateType() { return candidateType; }
+
+    /**
+     * Returns the (unerased) type of match candidates accepted by this pattern member. In the case
+     * of a deconstructor it is the same as the declaring class
+     * (TODO: probably with unbounded wildcards?).
+     *
+     * @return type of match candidate
+     */
+    public Type getGenericCandidateType() {
+        return candidateType; // TODO: needs to be more than just a Class
     }
 
     /**
-     * {@inheritDoc}
-     * @jls 8.8.3 Constructor Modifiers
+     * TODO: javadoc.
+     * @return TODO
      */
+    public AnnotatedType getAnnotatedCandidateType() {
+        throw new UnsupportedOperationException("TODO");
+    }
+
     @Override
     public int getModifiers() {
         return modifiers;
     }
 
-    /**
-     * {@inheritDoc}
-     * @jls X.X.X MemberPattern Modifiers
-     */
     @Override
     public boolean isSynthetic() {
         return Modifier.isSynthetic(getModifiers());
     }
 
+    // Skip the usual way that executables find their Parameters
+    // at least for now, we just had them passed in instead
+    // Note that if this is a deconstructor of an inner member class the first element of the
+    // returned array represents the owner/outer instance.
+    @Override
+    public Parameter[] getParameters() {
+        return outParameters.toArray(Parameter[]::new);
+    }
+
     @Override
     public Annotation[][] getParameterAnnotations() {
-        return sharedGetParameterAnnotations(parameterTypes, parameterAnnotations);
+        return sharedGetParameterAnnotations(getParameterTypes(), parameterAnnotations);
     }
 
-    byte[] getRawParameterAnnotations() {
-        return parameterAnnotations;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     public Class<?>[] getParameterTypes() {
-        return parameterTypes.length == 0 ? parameterTypes : parameterTypes.clone();
+        return outParameters.stream().map(p -> p.getType()).toArray(Class<?>[]::new);
     }
 
-    /**
-     * {@inheritDoc}
-     * @since 1.8
-     */
-    public int getParameterCount() { return parameterTypes.length; }
+    @Override
+    public int getParameterCount() { return outParameters.size(); }
 
-    /**
-     * {@inheritDoc}
-     * @throws GenericSignatureFormatError {@inheritDoc}
-     * @throws TypeNotPresentException {@inheritDoc}
-     * @throws MalformedParameterizedTypeException {@inheritDoc}
-     * @since 1.5
-     */
+    // Probably not technically necessary to override
     @Override
     public Type[] getGenericParameterTypes() {
         return super.getGenericParameterTypes();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public Class<?>[] getExceptionTypes() {
-        return exceptionTypes.length == 0 ? exceptionTypes : exceptionTypes.clone();
+    public final Class<?>[] getExceptionTypes() {
+        return new Class<?>[0];
     }
 
-    /**
-     * {@inheritDoc}
-     * @throws GenericSignatureFormatError {@inheritDoc}
-     * @throws TypeNotPresentException {@inheritDoc}
-     * @throws MalformedParameterizedTypeException {@inheritDoc}
-     * @since 1.5
-     */
+    // Probably not technically necessary to override
     @Override
-    public Type[] getGenericExceptionTypes() {
-        return super.getGenericExceptionTypes();
+    public final Type[] getGenericExceptionTypes() {
+        return new Type[0];
     }
 
     /**
      * Returns an array of arrays of {@code Annotation}s that
      * represent the annotations on the bindings, in
-     * declaration order, of the {@code MemberPattern} represented by
+     * declaration order, of the {@code PatternMember} represented by
      * this object.
      *
      * @return an array of arrays that represent the annotations on
@@ -234,58 +219,15 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
         return false;
     }
 
-    /**
-     * {@inheritDoc}
-     * @throws GenericSignatureFormatError {@inheritDoc}
-     * @since 1.5
-     */
     @Override
     @SuppressWarnings({"rawtypes", "unchecked"})
-    public TypeVariable<MemberPattern<T>>[] getTypeParameters() {
-      if (getSignature() != null) {
-        return (TypeVariable<MemberPattern<T>>[])getGenericInfo().getTypeParameters();
-      } else
-          return (TypeVariable<MemberPattern<T>>[])GenericDeclRepository.EMPTY_TYPE_VARS;
+    public TypeVariable<PatternMember>[] getTypeParameters() {
+        if (getSignature() != null) {
+            return (TypeVariable<PatternMember>[])getGenericInfo().getTypeParameters();
+        } else
+            return (TypeVariable<PatternMember>[])GenericDeclRepository.EMPTY_TYPE_VARS;
     }
 
-
-
-    /**
-     * Returns a string describing this {@code MemberPattern},
-     * including type parameters.  The string is formatted as the
-     * constructor access modifiers, if any, followed by an
-     * angle-bracketed comma separated list of the constructor's type
-     * parameters, if any, including  informative bounds of the
-     * type parameters, if any, followed by the fully-qualified name of the
-     * declaring class, followed by a parenthesized, comma-separated
-     * list of the {@code MemberPattern}'s generic formal parameter types.
-     *
-     * If this constructor was declared to take a variable number of
-     * arguments, instead of denoting the last parameter as
-     * "<code><i>Type</i>[]</code>", it is denoted as
-     * "<code><i>Type</i>...</code>".
-     *
-     * A space is used to separate access modifiers from one another
-     * and from the type parameters or class name.  If there are no
-     * type parameters, the type parameter list is elided; if the type
-     * parameter list is present, a space separates the list from the
-     * class name.  If the constructor is declared to throw
-     * exceptions, the parameter list is followed by a space, followed
-     * by the word "{@code throws}" followed by a
-     * comma-separated list of the generic thrown exception types.
-     *
-     * <p>The only possible modifiers for constructors are the access
-     * modifiers {@code public}, {@code protected} or
-     * {@code private}.  Only one of these may appear, or none if the
-     * constructor has default (package) access.
-     *
-     * @return a string describing this {@code MemberPattern},
-     * include type parameters
-     *
-     * @since 1.5
-     * @jls 8.8.3 Constructor Modifiers
-     * @jls 8.9.2 Enum Body Declarations
-     */
     @Override
     public String toGenericString() {
         return sharedToGenericString(Modifier.constructorModifiers(), false);
@@ -328,7 +270,6 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
         specificToStringHeader(sb);
     }
 
-
     String sharedToGenericString(int modifierMask, boolean isDefault) {
         try {
             StringBuilder sb = new StringBuilder();
@@ -364,7 +305,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     }
 
     /**
-     * Returns the pattern bindings of {@code MemberPattern}.
+     * Returns the pattern bindings of {@code PatternMember}.
      *
      * @return pattern bindings
      */
@@ -373,7 +314,7 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
     }
 
     /**
-     * Returns the pattern flags of {@code MemberPattern}.
+     * Returns the pattern flags of {@code PatternMember}.
      *
      * @return pattern bindings
      */
@@ -420,26 +361,19 @@ public abstract sealed class MemberPattern<T> extends Executable permits Deconst
         return annotations;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @throws NullPointerException  {@inheritDoc}
-     * @since 1.5
-     */
     @Override
     public <T extends Annotation> T getAnnotation(Class<T> annotationClass) {
         return super.getAnnotation(annotationClass);
     }
 
-    /**
-     * {@inheritDoc}
-     * @since 1.5
-     */
     @Override
     public Annotation[] getDeclaredAnnotations()  {
         return super.getDeclaredAnnotations();
     }
 
+    /**
+     * TODO: need to respecify the parent method so there's some valid option we can do here.
+     */
     @Override
     public AnnotatedType getAnnotatedReturnType() {
         return null;

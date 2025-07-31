@@ -1,53 +1,45 @@
 package java.lang.reflect;
 
-import java.util.ArrayList;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.runtime.Carriers;
 import java.util.Arrays;
-
-import static java.lang.runtime.PatternBytecodeName.mangle;
+import java.util.List;
 
 /**
- * {@code Deconstructor} provides information about, and access to, a single
- * deconstructor for a class.
+ * The reflection view of a single deconstructor, providing relevant information and enabling
+ * execution with {@link #tryMatch(Object)}.
  *
- * @param <T> the class in which the deconstructor is declared
- *
- * @see Member
- * @see Class
- * @see Class#getDeconstructors()
- * @see Class#getDeconstructor(Class[])
- * @see Class#getDeclaredDeconstructors()
- * @see Class#getDeclaredDeconstructor(Class[])
- *
- * @since 24
+ * @since 27
  */
-public final class Deconstructor<T> extends MemberPattern<T> {
+public final class Deconstructor extends PatternMember {
     /**
      * TODO make private again
      * Package-private member pattern used by ReflectAccess to enable
      * instantiation of these objects in Java code from the java.lang
      * package via jdk.internal.access.JavaLangReflectAccess.
      *
-     * @param declaringClass x
-     * @param modifiers    x
-     * @param patternFlags x
-     * @param slot         x
-     * @param patternBindings    x
-     * @param signature    x
-     * @param annotations  x
+     * @param declaringClass  x
+     * @param modifiers       x
+     * @param patternFlags    x
+     * @param outParameters   x
+     * @param patternBindings x
+     * @param signature       x
+     * @param annotations     x
      */
-    public Deconstructor(Class<T> declaringClass,
+    public Deconstructor(Class<?> declaringClass,
                          int modifiers,
                          int patternFlags,
-                         int slot,
-                         ArrayList<PatternBinding> patternBindings,
+                         List<Parameter> outParameters,
+                         List<PatternBinding> patternBindings,
                          String signature,
                          byte[] annotations) {
         super(declaringClass,
-                null,
-                null,
+                declaringClass,
                 modifiers,
                 patternFlags,
-                slot,
+                outParameters,
                 patternBindings,
                 signature,
                 annotations,
@@ -55,8 +47,13 @@ public final class Deconstructor<T> extends MemberPattern<T> {
     }
 
     @Override
+    public String getName() {
+        return getDeclaringClass().getName();
+    }
+
+    @Override
     Class<?>[] getSharedParameterTypes() {
-        return new Class<?>[0];
+        return patternBindings.stream().map(p -> p.getType()).toArray(Class<?>[]::new);
     }
 
     @Override
@@ -64,19 +61,54 @@ public final class Deconstructor<T> extends MemberPattern<T> {
         return new Class<?>[0];
     }
 
-    @Override
-    public Class<?>[] getParameterTypes() {
-        return new Class<?>[0];
-    }
+    /**
+     * Reflectively invoke this pattern member to determine whether {@code candidate} is a match,
+     * and if so, extract values.
+     *
+     * @param candidate the match candidate to perform pattern matching over.
+     *
+     * @return if the pattern matches, an array containing the extracted values; if not,
+     *              {@code null} is returned instead. If this deconstructor belongs to an inner
+     *              class, the first element of the returned array is the owning (outer) instance.
+     * @throws    IllegalArgumentException  if {@code candidate} is not of this deconstructor's
+     *              accepted match candidate type.
+     * @throws    MatchException if the pattern matching provoked
+     *              by this {@code PatternMember} fails.
+     */
+    public Object[] tryMatch(Object candidate) throws MatchException {
+        String underlyingName = getMangledName();
 
-    @Override
-    public int getParameterCount() {
-        return 0;
-    }
+        try {
+            Method method = getDeclaringClass().getDeclaredMethod(underlyingName, candidate.getClass(), MethodHandle.class);
+            method.setAccessible(override);
+            MethodType bindingMT = MethodType.methodType(
+                Object.class,
+                Arrays.stream(this.getPatternBindings())
+                    .map(PatternBinding::getType)
+                    .toArray(Class[]::new)
+            );
+            MethodHandle pack = CollectHolder.COLLECT_TO_ARRAY.asType(bindingMT);
 
-    @Override
-    public Class<?>[] getExceptionTypes() {
-        return new Class<?>[0];
+            return (Object[])method.invoke(candidate, candidate, pack);
+        } catch (Throwable e) {
+          throw new MatchException(e.getMessage(), e);
+        }
+    }
+    // TODO: copied from PatternMember
+    private static class CollectHolder {
+        private static Object[] collect(Object... params) {
+            return params;
+        }
+
+        static final MethodHandle COLLECT_TO_ARRAY;
+
+        static {
+            try {
+                COLLECT_TO_ARRAY = MethodHandles.lookup().findStatic(CollectHolder.class, "collect", MethodType.methodType(Object[].class, Object[].class));
+            } catch (NoSuchMethodException | IllegalAccessException ex) {
+                throw new IllegalStateException(ex);
+            }
+        }
     }
 
     /**
@@ -84,14 +116,15 @@ public final class Deconstructor<T> extends MemberPattern<T> {
      * ReflectAccess) which returns a copy of this Deconstructor. The copy's
      * "root" field points to this Deconstructor.
      */
-    Deconstructor<T> copy() {
+    Deconstructor copy() {
         if (this.root != null)
-            throw new IllegalArgumentException("Can not copy a non-root MemberPattern");
+            throw new IllegalArgumentException("Can not copy a non-root PatternMember");
 
-        Deconstructor<T> res = new Deconstructor<>(this.clazz,
+        Deconstructor res = new Deconstructor(
+                this.candidateType,
                 this.modifiers,
                 this.patternFlags,
-                this.slot,
+                this.outParameters,
                 this.patternBindings,
                 this.signature,
                 this.annotations);
