@@ -33,7 +33,7 @@ import java.util.Arrays;
 public class CanInvokeMemberPattern {
     public static void main(String... args) throws Exception {
         Object o = new CanInvokeMemberPattern();
-        Deconstructor<?> deconstructor = CanInvokeMemberPattern.class.getDeconstructor(String.class, int.class, boolean.class);
+        Deconstructor deconstructor = CanInvokeMemberPattern.class.getDeconstructor(String.class, int.class, boolean.class);
         Object[] actualValues = deconstructor.invoke(o);
         Object[] expectedValues = new Object[] {
             "result", 1, true
