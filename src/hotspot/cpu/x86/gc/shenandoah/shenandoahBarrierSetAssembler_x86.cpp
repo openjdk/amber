@@ -507,6 +507,32 @@ void ShenandoahBarrierSetAssembler::try_peek_weak_handle_in_nmethod(MacroAssembl
   __ bind(done);
 }
 
+void ShenandoahBarrierSetAssembler::check_oop(MacroAssembler* masm, Register obj, Register tmp1, Register tmp2, Label& L_error) {
+  // Check if the oop is in the right area of memory
+  __ movptr(tmp1, obj);
+  __ movptr(tmp2, (intptr_t) Universe::verify_oop_mask());
+  __ andptr(tmp1, tmp2);
+  __ movptr(tmp2, (intptr_t) Universe::verify_oop_bits());
+  __ cmpptr(tmp1, tmp2);
+  __ jcc(Assembler::notZero, L_error);
+
+  // This routine is sometimes called before applying GC barriers.
+  // With +COH, loading the klass may end up loading forwarding pointer instead.
+  Label L_skip;
+  if (UseCompactObjectHeaders) {
+    Address gc_state(r15_thread, ShenandoahThreadLocalData::gc_state_offset());
+    __ testb(gc_state, ShenandoahHeap::HAS_FORWARDED);
+    __ jcc(Assembler::notZero, L_skip);
+  }
+
+  // Make sure klass is 'reasonable', which is not zero.
+  __ load_narrow_klass(tmp1, obj);
+  __ testl(tmp1, tmp1);
+  __ jcc(Assembler::zero, L_error);
+
+  __ bind(L_skip);
+}
+
 #ifdef PRODUCT
 #define BLOCK_COMMENT(str) /* nothing */
 #else
